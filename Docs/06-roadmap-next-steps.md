@@ -10,7 +10,7 @@
 1. Diseño (wireframe → UI 3–5 páginas) + textos
 2. Frontend + galería + formulario cotizador → WhatsApp/Supabase
 3. Botones MP (links) o Checkout Pro + páginas exito/fallo/pendiente
-4. SEO básico + Analytics + dominio .cl + SSL
+4. SEO básico + Analytics + dominio .uy + SSL
 5. Pruebas TEST + 1 cobro real + capacitación en video 20 min
 
 ## Fase 2 — Tienda + automatización (2–3 semanas, si aplica)
@@ -25,7 +25,7 @@
 - Mantención: hora bolsa o mensual (definir en 3.7)
 
 ## Qué responderle al cliente sobre Mercado Pago (guion corto)
-> "Sí, Mercado Pago te sirve en Chile. Partimos con links de pago para cobrar abonos esta misma semana sin programar nada. En paralelo integramos el botón en tu página para que el pago confirme solo y te avise por WhatsApp. Necesito que tengas tu cuenta verificada y definamos el monto del abono y la política de devolución. La comisión la cobra Mercado Pago por cada venta, no es costo mío."
+> "Sí, Mercado Pago te sirve en Uruguay. Partimos con links de pago para cobrar abonos esta misma semana sin programar nada. En paralelo integramos el botón en tu página para que el pago confirme solo y te avise por WhatsApp. Necesito que tengas tu cuenta verificada y definamos el monto del abono y la política de devolución. La comisión la cobra Mercado Pago por cada venta, no es costo mío."
 
 ## Próxima acción tuya
 1. Revisa estos .md y ajusta precios/nombres.

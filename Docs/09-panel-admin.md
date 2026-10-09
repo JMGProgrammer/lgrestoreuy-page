@@ -113,7 +113,7 @@ Acciones:
 - Duplicar (para piezas similares), eliminar con confirmación (solo borrador/pausada)
 - Botón "Copiar link pago MP" y "Ver ficha pública"
 
-Validaciones: no se puede poner disponible sin foto ni precio; slug único; precio en CLP sin puntos.
+Validaciones: no se puede poner disponible sin foto ni precio; slug único; precio en UYU (pesos uruguayos, solo números).
 
 ## 6. Cotizaciones + Órdenes
 - Cotización: cambiar estado en 1 click, ingresar `monto_cotizado + abono`, botón "Generar link MP abono" (crea order tipo abono + preferencia), botón WhatsApp con texto prellenado.

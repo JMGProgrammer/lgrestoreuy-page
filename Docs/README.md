@@ -2,7 +2,8 @@
 
 **Fecha:** 2026-10-09
 **Estado:** Fase 0 — Levantamiento por cuestionario
-**Desafío principal:** Integrar métodos de pago (Mercado Pago)
+**País:** Uruguay (UYU, .uy, DAC/Correo Uruguayo, DGI)
+**Desafío principal:** Integrar métodos de pago (Mercado Pago) — primera integración, ver `11-mercado-pago-desde-cero.md`
 
 ## Qué hay en esta carpeta
 
@@ -18,6 +19,8 @@
 | `07-respuestas-cuestionario.md` | Respuestas dadas en motor OpenCode 2026-10-09 |
 | `08-definicion-final.md` | Stack cerrado + páginas + tablas + endpoints MP |
 | `09-panel-admin.md` | Panel admin: dashboard, CRUD piezas, RLS, flujos |
+| `10-modelo-relacional.md` | Modelo relacional planteado (ER, estados, índices, RLS) — sin migrar |
+| `11-mercado-pago-desde-cero.md` | Guía MP paso a paso primera vez (links, TEST, PROD, errores) |
 
 ## Cómo usar esto
 

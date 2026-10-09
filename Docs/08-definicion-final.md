@@ -10,7 +10,7 @@
   - Día 1: Links de pago manuales para piezas únicas
   - MVP: Checkout Pro por pieza (`/pagar/:id`) + webhook `/api/mercadopago/webhook` + páginas exito/fallo/pendiente
 - **Contacto:** WhatsApp flotante + formulario cotizador guiado → Supabase + aviso WhatsApp
-- **Hosting:** Vercel + Supabase free tier, dominio .cl Nic Chile
+- **Hosting:** Vercel + Supabase free tier, dominio .uy Nic Uruguay
 - **Mantención:** plan mensual (tú subes galería/piezas)
 
 ## Páginas MVP ajustadas (sin carrito, con vitrina pagable)

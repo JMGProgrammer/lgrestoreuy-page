@@ -14,11 +14,11 @@
 | Pagos | **Mercado Pago Checkout Pro + Links de pago** | Menos código, Mercado Pago hospeda el checkout. Soporta tarjetas, transferencia, cuotas. Webhook para confirmar pago. |
 | Contacto | WhatsApp API / link + formulario a email | Lo que ya usa el cliente, cero fricción. |
 | Mapas / SEO local | Google Maps embed + schema.org LocalBusiness | Para "restauración muebles + ciudad". |
-| Hosting | **Vercel (frontend) + Supabase (backend)** | Deploy gratis/muy barato, SSL gratis, rápido en Chile. |
-| Dominio / Email | Nic Chile (.cl) + Google Workspace o Zoho | .cl da confianza local. |
+| Hosting | **Vercel (frontend) + Supabase (backend)** | Deploy gratis/muy barato, SSL gratis, rápido en Uruguay. |
+| Dominio / Email | Nic Uruguay (.uy) + Google Workspace o Zoho | .uy da confianza local. |
 | Analytics | Plausible o GA4 + Meta Pixel | Medir cotizaciones y pagos. |
 
-**Costo mensual estimado:** $0–15.000 CLP/mes al inicio (dominio aparte ~$10.950/año .cl). Mercado Pago cobra comisión por transacción (~3% aprox, varía por país/medio — confirmar en developer.mercadopago.cl).
+**Costo mensual estimado:** $0–600 UYU/mes al inicio (dominio .uy aparte, ver tarifa vigente en nic.uy). Mercado Pago cobra comisión por transacción (varía por medio — confirmar en developer.mercadopago.com.uy / panel MP, no asumo %).
 
 **Pros:** rápido de construir (2–4 semanas MVP), SEO top, mantención mínima.
 **Contras:** si la tienda crece a 200+ productos con variantes, conviene migrar a Next.js completo o Shopify.
@@ -32,7 +32,7 @@
 | Frontend + Tienda | Next.js + Tailwind + Supabase o **Shopify Starter** |
 | Pagos | Mercado Pago Checkout API (embebido) + Checkout Pro fallback |
 | Admin | Panel Supabase / Shopify admin (el cliente sube productos solo) |
-| Despacho | Módulo de retiro en taller / despacho por pagar / Starken/Chilexpress manual |
+| Despacho | Módulo de retiro en taller / despacho por pagar / DAC/Correo Uruguayo manual |
 
 **Cuándo elegirla:** si en cuestionario 04 marca "quiero vender antigüedades online con stock y despacho". Suma 2–3 semanas y más costo.
 

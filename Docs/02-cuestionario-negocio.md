@@ -15,7 +15,7 @@
 ## 1.2 ¿Cómo trabaja hoy?
 - [ ] A) Solo en su taller (el cliente lleva y retira)
 - [ ] B) Va a domicilio a evaluar / retirar
-- [ ] C) Despacha a todo Chile (Starken, Chilexpress, flete)
+- [ ] C) Despacha a todo Uruguay (DAC, Correo Uruguayo, flete)
 - [ ] D) Solo su ciudad/comuna
 - [ ] E) Vende por Instagram / Facebook Marketplace
 - ✏️ Comuna/ciudad base: _______________
@@ -34,7 +34,7 @@
 - [ ] B) Abono previo (¿qué %? ✏️ ___%) + saldo contra entrega
 - [ ] C) Pago total por adelantado en piezas en venta
 - [ ] D) Ya tiene Mercado Pago (links, QR, Point)
-- [ ] E) Otro medio (Transbank, Flow, etc.): ✏️ _______________
+- [ ] E) Otro medio (transferencia bancaria, PayPal, etc.): ✏️ _______________
 - ✏️ Principal dolor con cobros hoy: _______________
 
 ## 1.5 ¿Qué quiere lograr con la página? (ordena 1-5 por prioridad)
@@ -60,5 +60,5 @@
 - [ ] Tiene RUT empresa o persona natural con giro: [ ] Sí [ ] No [ ] En trámite
 - [ ] Tiene cuenta bancaria a su nombre/RUT: [ ] Sí [ ] No
 - [ ] Ya tiene cuenta Mercado Pago verificada: [ ] Sí [ ] No [ ] No sé
-- [ ] Tiene dominio (.cl u otro): [ ] Sí → ✏️ ____ [ ] No
-- [ ] Emite boleta/factura SII: [ ] Sí [ ] No [ ] Quiere hacerlo
+- [ ] Tiene dominio (.uy u otro): [ ] Sí → ✏️ ____ [ ] No
+- [ ] Emite factura DGI: [ ] Sí [ ] No [ ] Quiere hacerlo

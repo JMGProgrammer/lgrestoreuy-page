@@ -6,7 +6,7 @@ Taller / persona que hace:
 - Restauración / venta de antigüedades y objetos decorativos
 - Posiblemente: retiro y despacho a domicilio, trabajos a pedido
 
-> **Por confirmar en cuestionario 02:** ¿Es 1 persona o taller con equipo? ¿Atiende solo su comuna/ciudad o todo Chile? ¿Vende antigüedades con stock o solo restaura lo que le llevan?
+> **Por confirmar en cuestionario 02:** ¿Es 1 persona o taller con equipo? ¿Atiende solo su comuna/ciudad o todo Uruguay? ¿Vende antigüedades con stock o solo restaura lo que le llevan?
 
 ## 2. Problema que resuelve la página
 Hoy probablemente consigue clientes por boca a boca / Instagram / WhatsApp, sin:
@@ -36,13 +36,13 @@ Hoy probablemente consigue clientes por boca a boca / Instagram / WhatsApp, sin:
 - [ ] Pago completo online + webhooks + estados de pedido
 - [ ] Panel admin para subir trabajos/productos
 - [ ] Agenda de retiros / visitas a domicilio
-- [ ] Facturación / boleta (SII) — fuera de Mercado Pago
+- [ ] Facturación / boleta (DGI) — fuera de Mercado Pago
 
 ### Fuera de alcance (salvo que lo pida)
 - App móvil nativa
 - Facturación electrónica automática
 - Multi-vendedor / marketplace
-- Integración con Transbank adicional (se puede, pero suma costo)
+- Integración con otra pasarela adicional (se puede, pero suma costo)
 
 ## 5. Riesgos / desafíos detectados
 1. **Pagos:** Mercado Pago exige cuenta empresa/persona verificada, credenciales, webhooks, políticas de devolución. Si el cliente no tiene RUT/empresa clara, se traba. → Ver `05-cuestionario-mercado-pago.md`.

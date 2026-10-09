@@ -1,6 +1,6 @@
 # 05 — Cuestionario 4: Mercado Pago (el desafío)
 
-> Mercado Pago SÍ sirve para Chile. Cobra comisión por venta (~2.9–3.5% + IVA aprox según medio — verificar tarifa vigente). El dinero llega a su cuenta MP y de ahí a su banco. Sin esto respondido no se puede integrar pagos.
+> Mercado Pago SÍ sirve para Uruguay. Cobra comisión por venta (~2.9–3.5% + IVA aprox según medio — verificar tarifa vigente). El dinero llega a su cuenta MP y de ahí a su banco. Sin esto respondido no se puede integrar pagos.
 
 ## 4.1 Estado de cuenta (bloqueante)
 - [ ] A) Ya tiene cuenta Mercado Pago verificada (puede recibir pagos)
@@ -27,7 +27,7 @@
 ## 4.4 Medios que quiere aceptar (múltiple)
 - [ ] Tarjeta crédito (cuotas)
 - [ ] Tarjeta débito / prepago
-- [ ] Transferencia / PSE / cuenta MP
+- [ ] Transferencia bancaria / dinero en cuenta MP
 - [ ] Efectivo vía red de pago (si aplica en su país)
 - [ ] Mercado Créditos (cuotas sin tarjeta — lo ofrece MP)
 - ✏️ ¿Permite cuotas? ¿Hasta cuántas? ¿Quién asume interés? _______________

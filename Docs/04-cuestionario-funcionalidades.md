@@ -22,9 +22,9 @@
 - [ ] A) No vende online, solo muestra trabajos (más simple y barato)
 - [ ] B) Vitrina sin pago (muestra piezas, consulta por WhatsApp)
 - [ ] C) Tienda pequeña con pago online (hasta ~50 productos, stock, despacho/retiro)
-- [ ] D) Tienda completa (categorías, buscador, cupones, despacho a todo Chile)
+- [ ] D) Tienda completa (categorías, buscador, cupones, despacho a todo Uruguay)
 - Si C o D → ✏️ ¿Quién sube productos? [ ] Él [ ] Tú [ ] Ambos
-- Si C o D → ✏️ Despacho: [ ] Retiro en taller [ ] Flete propio [ ] Starken/Chilexpress [ ] Por pagar
+- Si C o D → ✏️ Despacho: [ ] Retiro en taller [ ] Flete propio [ ] DAC/Correo Uruguayo [ ] Por pagar
 
 ## 3.4 Cuentas y panel admin
 - [ ] A) Sin cuentas, todo por WhatsApp/formulario (MVP más rápido)
@@ -42,8 +42,8 @@
 - [ ] Reseñas Google incrustadas
 - [ ] Instagram feed automático
 - [ ] Mapa Google + cómo llegar + estacionamiento
-- [ ] Boleta/factura SII (ojo: es integración aparte, no la hace MP)
-- [ ] Transbank / Flow como 2do medio además de MP: [ ] Sí [ ] No
+- [ ] Factura DGI (ojo: es integración aparte, no la hace MP)
+- [ ] Otro medio (transferencia / PayPal) como 2do medio además de MP: [ ] Sí [ ] No
 - [ ] Píxel Meta + GA4 para anuncios: [ ] Sí [ ] No [ ] Más adelante
 
 ## 3.7 Mantención post-entrega
