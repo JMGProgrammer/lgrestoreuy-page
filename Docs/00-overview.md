@@ -18,23 +18,31 @@ Hoy probablemente consigue clientes por boca a boca / Instagram / WhatsApp, sin:
 ## 3. Objetivos de la página (a priorizar con cliente)
 1. **Confianza:** galería antes/después + testimonios + proceso de trabajo.
 2. **Contacto calificado:** formulario + cotizador que filtre por tipo de mueble, medidas, fotos.
-3. **Venta / reserva con pago:** abono de reserva (ej. 30-50%), pago total de piezas en venta, saldo contra entrega.
+3. **Autonomía total del cliente:** cargar servicios, precios, fotos y textos sin llamarte (objetivo clave, ver `12`).
 4. **SEO local:** aparecer en "restauración de muebles [ciudad]" en Google.
-5. **Autonomía:** que el cliente pueda subir fotos y piezas sin llamarte cada vez.
+5. **Venta / reserva:** vitrina de piezas propias en venta. El cobro online (Checkout Pro) es Fase 2; mientras tanto sigue con links manuales.
 
 ## 4. Alcance tentativo
 
-### MVP (Fase 1 — recomendado)
-- [ ] Home + Servicios + Galería antes/después + Nosotros/Taller + Contacto
-- [ ] Cotizador guiado (sin pago todavía, solo solicitud + fotos por WhatsApp/form)
-- [ ] Botón Mercado Pago para **reserva/abono** (link de pago o Checkout Pro simple)
+> Actualizado 2026-10-13 según `12-decisiones-mvp-sin-mp.md`.
+
+### MVP (Fase 1 — vigente)
+- [ ] Home + Servicios + Galería antes/después + Nosotros/Taller + Contacto + Legal
+- [ ] **Panel `/admin`** (auth + CRUD servicios, precios, piezas, fotos, galería, contenido, cotizaciones) — **es parte del MVP**
+- [ ] Cotizador guiado (sin pago: la solicitud + fotos llegan a WhatsApp/email)
+- [ ] Vitrina `/piezas` con botón de consulta por WhatsApp
 - [ ] WhatsApp flotante + formulario
 - [ ] Responsive + SEO básico + Google Maps
+- [ ] Contenido semilla para que se vea bien en la primera reunión
 
-### Fase 2 (si lo pide en cuestionario)
+### Fase 2
+- [ ] Mercado Pago: Checkout Pro por pieza + webhook + páginas de retorno (guía en `11`)
+- [ ] Botón "generar link de abono" desde el admin
+- [ ] Avisos automáticos de WhatsApp + solicitud de reseña
+
+### Fase 3
 - [ ] Tienda de antigüedades (10-50 productos, stock, despacho)
-- [ ] Pago completo online + webhooks + estados de pedido
-- [ ] Panel admin para subir trabajos/productos
+- [ ] Cuentas de cliente para seguir su restauración
 - [ ] Agenda de retiros / visitas a domicilio
 - [ ] Facturación / boleta (DGI) — fuera de Mercado Pago
 
@@ -45,16 +53,16 @@ Hoy probablemente consigue clientes por boca a boca / Instagram / WhatsApp, sin:
 - Integración con otra pasarela adicional (se puede, pero suma costo)
 
 ## 5. Riesgos / desafíos detectados
-1. **Pagos:** Mercado Pago exige cuenta empresa/persona verificada, credenciales, webhooks, políticas de devolución. Si el cliente no tiene RUT/empresa clara, se traba. → Ver `05-cuestionario-mercado-pago.md`.
-2. **Fotos:** Sin fotos buenas de antes/después, la página no vende. Hay que pedirle 20-30 fotos reales mínimo.
-3. **Precios variables:** Cada restauración es distinta. No se puede poner "precio fijo" sin un cotizador por rangos. Hay que definirlo.
-4. **Logística:** Retiro/despacho de muebles grandes define el costo y la zona de cobertura.
-5. **Mantención:** ¿Quién actualiza galería y stock? Definir plan de mantención.
+1. **Pagos:** *(bajado de prioridad 2026-10-13)* el MVP arranca sin MP y el cliente cobra con links manuales. Mercado Pago sigue siendo la vía correcta, pero ya no bloquea el arranque. → ver `05`.
+2. **Fotos:** no es bloqueante — el sitio se publica con contenido semilla y el cliente sube sus fotos desde `/admin`. Sigue siendo el mayor límite de conversión una vez publicada.
+3. **Precios variables:** cada restauración es distinta. Se resuelve con rangos de precio por servicio (editables en `/admin/servicios`) y cotización manual.
+4. **Logística:** retiro/despacho de muebles grandes define el costo y la zona de cobertura.
+5. **Mantención/autogestión:** el panel existe justamente para que el cliente no dependa de vos. Si no lo usa, la web se queda sin contenido → contenido semilla + capacitación.
 
 ## 6. Qué necesitamos del cliente (checklist)
-- [ ] Respuestas a cuestionarios 02–05
-- [ ] 20–30 fotos (antes/después, taller, equipo)
+- [x] Respuestas a cuestionarios 02–04
+- [ ] Ok al alcance del MVP sin MP
 - [ ] Logo / colores / Instagram / Facebook
-- [ ] Lista de servicios + rangos de precio
-- [ ] Datos Mercado Pago (o crear cuenta juntos)
-- [ ] Textos: historia del taller, garantías, tiempos de entrega
+- [ ] Datos del taller (WhatsApp, dirección, horarios) — o los carga él en `/admin/contenido`
+- [ ] Datos Mercado Pago — **Fase 2**, no bloquea
+- Todo lo demás (servicios, precios, fotos, textos) **lo carga él desde `/admin`**

@@ -1,5 +1,7 @@
 # 04 — Cuestionario 3: Funcionalidades y Páginas
 
+> **Actualizado 2026-10-13** (`12-decisiones-mvp-sin-mp.md`): el **panel admin es parte del MVP** (respuesta a 3.4 = B) y el MVP **arranca sin Mercado Pago** (secciones 3.5 y 3.6 pasan a Fase 2).
+
 ## 3.1 Cotizador (corazón de la página)
 ¿Cómo quiere recibir cotizaciones?
 - [ ] A) Formulario simple (nombre, teléfono, fotos, descripción) → le llega a WhatsApp/email
@@ -20,22 +22,22 @@
 
 ## 3.3 Tienda de antigüedades (define stack A vs B)
 - [ ] A) No vende online, solo muestra trabajos (más simple y barato)
-- [ ] B) Vitrina sin pago (muestra piezas, consulta por WhatsApp)
-- [ ] C) Tienda pequeña con pago online (hasta ~50 productos, stock, despacho/retiro)
-- [ ] D) Tienda completa (categorías, buscador, cupones, despacho a todo Uruguay)
-- Si C o D → ✏️ ¿Quién sube productos? [ ] Él [ ] Tú [ ] Ambos
+- [x] B) Vitrina sin pago (muestra piezas, consulta por WhatsApp) — **elegido para el MVP**
+- [ ] C) Tienda pequeña con pago online (hasta ~50 productos, stock, despacho/retiro) — Fase 2/3
+- [ ] D) Tienda completa (categorías, buscador, cupones, despacho a todo Uruguay) — Fase 3
+- Si C o D → ✏️ ¿Quién sube productos? [ ] Él [ ] Tú [ ] Ambos → **él, desde `/admin/piezas`**
 - Si C o D → ✏️ Despacho: [ ] Retiro en taller [ ] Flete propio [ ] DAC/Correo Uruguayo [ ] Por pagar
 
-## 3.4 Cuentas y panel admin
+## 3.4 Cuentas y panel admin — **parte del MVP**
 - [ ] A) Sin cuentas, todo por WhatsApp/formulario (MVP más rápido)
-- [ ] B) Panel simple para ÉL: subir fotos a galería + piezas + ver cotizaciones/pagos
-- [ ] C) Cuentas para clientes (ver estado de su restauración: recibido/en proceso/listo)
-- Recomendación: partir en A, escalar a B. C solo si tiene volumen.
+- [x] B) Panel simple para ÉL: servicios + precios + fotos + galería + cotizaciones — **elegido**
+- [ ] C) Cuentas para clientes (ver estado de su restauración) — Fase 2
+- Motivo: es la única forma de que el cliente cargue contenido sin llamarte. Detalle en `09-panel-admin.md`.
 
-## 3.5 Comunicación automática
+## 3.5 Comunicación automática — Fase 2
 - [ ] Confirmación de cotización recibida (email/WhatsApp)
-- [ ] Aviso "tu abono fue recibido, tu trabajo entra a cola"
-- [ ] Aviso "tu mueble está listo, paga el saldo aquí [link MP]"
+- [ ] Aviso "tu abono fue recibido, tu trabajo entra a cola" (requiere MP)
+- [ ] Aviso "tu mueble está listo, coordinamos el saldo" — se puede hacer sin MP
 - [ ] Reseña post-entrega (pedir review Google)
 
 ## 3.6 Extras / integraciones (múltiple)
@@ -43,7 +45,8 @@
 - [ ] Instagram feed automático
 - [ ] Mapa Google + cómo llegar + estacionamiento
 - [ ] Factura DGI (ojo: es integración aparte, no la hace MP)
-- [ ] Otro medio (transferencia / PayPal) como 2do medio además de MP: [ ] Sí [ ] No
+- [ ] Mercado Pago (Checkout Pro) — **Fase 2**, ver `05` y `11`
+- [ ] Otro medio (transferencia / PayPal) como 2do medio: [ ] Sí [ ] No
 - [ ] Píxel Meta + GA4 para anuncios: [ ] Sí [ ] No [ ] Más adelante
 
 ## 3.7 Mantención post-entrega

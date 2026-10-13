@@ -1,6 +1,24 @@
-# 07 — Respuestas Cuestionario (motor OpenCode) — 2026-10-09
+# 07 — Respuestas Cuestionario
 
-Respuestas dadas por ti en modo interactivo. Esto cierra la Fase 0.
+## Actualización 2026-10-13 (cierra la Fase 0)
+
+Decisiones del cliente que pisan lo del 2026-10-09:
+
+| Tema | Respuesta | Consecuencia |
+|---|---|---|
+| Servicios, precios, fotos | **Los carga el cliente desde `/admin`** | No se piden fotos/precios antes de arrancar; el panel deja de ser extra y pasa a ser núcleo del MVP (`09`, `12`) |
+| Mercado Pago | **Fuera del MVP por ahora** | Se elimina Checkout Pro, webhook, `/pagar/:id`, `/pago/*` y `orders` del alcance actual. Fase 2. Cobro con links manuales mientras tanto |
+| MVP | **Sin MP, con panel admin completo** | `/admin/servicios` y `/admin/contenido` son módulos nuevos |
+
+Consecuencias documentadas en `12-decisiones-mvp-sin-mp.md` y reflejadas en `00`, `01`, `03`, `04`, `05`, `06`, `08`, `09`, `10` y `11`.
+
+**Pendiente antes de empezar a codear:** que el cliente dé el ok al alcance del MVP sin MP (ver `06` Fase 0).
+
+---
+
+# Respuestas del 2026-10-09 (motor OpenCode)
+
+Respuestas dadas por ti en modo interactivo. Esto cerró la Fase 0.
 
 ## Resumen ejecutivo
 - **Modelo negocio:** doble: 1) compra él mismo muebles/antigüedades → restaura → vende (pago total pieza), 2) restauración por encargo con **retiro en casa del cliente**.
@@ -9,8 +27,8 @@ Respuestas dadas por ti en modo interactivo. Esto cierra la Fase 0.
 - **Estilo:** vintage retro.
 - **Fotos:** pocas → hay que exigir pack mínimo o sesión.
 - **Stack:** Astro + Supabase.
-- **Admin/mantención:** plan mensual contigo.
-- **Mercado Pago:** cuenta **verificada**, objetivo **pago total pieza**. Integración aún por definir → se recomienda Links día 1 + Checkout Pro MVP.
+- **Admin/mantención:** plan mensual contigo. → **2026-10-13:** el admin pasa a ser parte del MVP y el cliente se autogestiona servicios/precios/fotos.
+- **Mercado Pago:** cuenta **verificada**, objetivo **pago total pieza**. → **2026-10-13:** se posterga a Fase 2; el MVP no lo incluye.
 
 ## Contradicción detectada y resolución
 Elegiste `Sin tienda` pero luego `Pago total pieza` + `venta por compra propia`.
@@ -32,8 +50,10 @@ Elegiste `Sin tienda` pero luego `Pago total pieza` + `venta por compra propia`.
 ## Qué falta preguntar al cliente real (no a ti)
 - Comuna base + cobertura retiro (km máximo)
 - Ticket promedio restauración simple vs antigüedad
-- Monto abono encargo (% o fijo) y política arrepentimiento
 - Garantía (meses) y plazos (silla X días, etc.)
 - Horarios taller + quién concilia pagos
 - Instagram/FB + logo en buena calidad
-- Credenciales TEST MP (Public Key + Access Token) + logo checkout
+- ~~Monto abono encargo (% o fijo) y política arrepentimiento~~ → Fase 2 (define los links de MP)
+- ~~Credenciales TEST MP (Public Key + Access Token) + logo checkout~~ → Fase 2
+
+> Nota 2026-10-13: de esta lista, **solo el logo/redes y los datos del taller son necesarios para arrancar**. El resto se resuelve por `/admin` o pertenece a la Fase 2.

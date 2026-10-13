@@ -1,5 +1,8 @@
 # 11 — Mercado Pago desde cero (guía para tu primera integración)
 
+> **CONGELADO 2026-10-13 — es Fase 2.** No abras esta guía hasta que el cliente pida cobrar online desde la web (ver `12-decisiones-mvp-sin-mp.md`). El MVP no incluye pagos, así que no hay nada que integrar todavía.
+> Úsala tal cual cuando llegue el momento: el modelo de datos ya está preparado en `10-modelo-relacional.md` (tabla `orders` + columnas `mp_*`), así que sumar MP es aplicar la migración y montar dos endpoints.
+
 > Es tu primera vez con MP: esta guía no da nada por sentado. Lee en orden. Si algo no te suena, frena y pregúntame antes de tocar código.
 > Todo Uruguay. No asumo comisiones ni plazos: donde haya plata de por medio te digo dónde verificarlo en el panel oficial.
 

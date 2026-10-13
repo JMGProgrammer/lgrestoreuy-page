@@ -1,33 +1,45 @@
 # 06 — Roadmap y Next Steps
 
-## Fase 0 — Levantamiento (esta semana, con estos .md)
-- [ ] Enviar cuestionarios 02–05 al cliente o responderlos en reunión 60–90 min
-- [ ] Pedir fotos + logo + redes + lista servicios/precios
-- [ ] Reunión 30 min solo Mercado Pago: crear/verificar cuenta si falta
-- **Salida:** stack cerrado (Astro vs Next, tienda sí/no, Checkout Pro vs links)
+> Actualizado 2026-10-13 según `12-decisiones-mvp-sin-mp.md`: **MVP sin Mercado Pago** y **contenido cargado desde `/admin`**.
 
-## Fase 1 — MVP (2–4 semanas estimado)
-1. Diseño (wireframe → UI 3–5 páginas) + textos
-2. Frontend + galería + formulario cotizador → WhatsApp/Supabase
-3. Botones MP (links) o Checkout Pro + páginas exito/fallo/pendiente
-4. SEO básico + Analytics + dominio .uy + SSL
-5. Pruebas TEST + 1 cobro real + capacitación en video 20 min
+## Fase 0 — Levantamiento ✅ cerrada (2026-10-09 → 2026-10-13)
+- [x] Cuestionarios 02–04 respondidos (ver `07-respuestas-cuestionario.md`)
+- [x] Stack cerrado: Astro + Tailwind + Supabase + admin propio
+- [x] Alcance cerrado: MVP **sin MP**, contenido desde `/admin`
+- [x] Modelo relacional y panel admin planteados (`09`, `10`)
+- [ ] Enviarle al cliente el alcance del MVP para que lo apruebe (importante antes de facturar)
 
-## Fase 2 — Tienda + automatización (2–3 semanas, si aplica)
-- Catálogo + ficha + carrito + Checkout Pro/API + webhook Supabase
-- Panel admin (subir piezas, ver órdenes, reenviar links)
-- Avisos WhatsApp/email automáticos + solicitud de reseña
+## Fase 1 — MVP sin MP (2–3 semanas estimado)
+1. Proyecto Astro + Tailwind con tema vintage (tokens de color, tipografía, textura sutil)
+2. Migraciones Supabase del MVP: `profiles`, `services`, `site_settings`, `pieces`, `gallery_items`, `quotes` + buckets Storage + RLS
+3. **Panel admin primero** (es la fuente del contenido): login, servicios, piezas, galería, contenido, cotizaciones, dashboard
+4. Páginas públicas leyendo de Supabase: `/`, `/servicios`, `/piezas`, `/piezas/:slug`, `/cotizar`, `/nosotros`, `/contacto`, `/legal`
+5. Cotizador 4 pasos + upload de fotos + aviso por WhatsApp
+6. Contenido semilla (3–5 servicios, 4–6 piezas demo, slider antes/después de ejemplo) para que se vea bien en la primera reunión
+7. SEO básico + Analytics + dominio .uy + SSL + deployment en Vercel
+8. Capacitación en video 20 min: cómo cargar servicios, precios y fotos
 
-## Estimación honesta (a afinar con cuestionario)
-- MVP sin tienda, pagos con links: **más rápido y barato** (diseño + 4–6 páginas + cotizador + WhatsApp)
-- MVP + Checkout Pro integrado: **+40–60%** vs anterior (webhooks, pruebas, estados)
-- Tienda pequeña (≤50 productos): **+80–120%** vs MVP base
-- Mantención: hora bolsa o mensual (definir en 3.7)
+## Fase 2 — Pagos + automatización (2–3 semanas, cuando el cliente lo pida)
+1. Reunión 30 min MP: crear/verificar credenciales TEST + PROD (`11-mercado-pago-desde-cero.md`)
+2. Migración de `orders` + columnas `mp_*` (ya están desenhadas, solo aplicar)
+3. Checkout Pro por pieza (`/pagar/:id`) + webhook `/api/mercadopago/webhook` + páginas `/pago/exito|fallo|pendiente`
+4. Botón "Generar link MP abono" en `/admin/cotizaciones/:id`
+5. Avisos automáticos de WhatsApp (cotización recibida, trabajo listo) + solicitud de reseña
+6. Facturación DGI (proyecto aparte, no lo hace MP)
 
-## Qué responderle al cliente sobre Mercado Pago (guion corto)
-> "Sí, Mercado Pago te sirve en Uruguay. Partimos con links de pago para cobrar abonos esta misma semana sin programar nada. En paralelo integramos el botón en tu página para que el pago confirme solo y te avise por WhatsApp. Necesito que tengas tu cuenta verificada y definamos el monto del abono y la política de devolución. La comisión la cobra Mercado Pago por cada venta, no es costo mío."
+## Fase 3 — Tienda (solo si hace falta)
+- Catálogo con stock, carrito, despacho a todo Uruguay, cuentas de cliente para seguir el estado de su restauración.
+
+## Estimación honesta (a afinar con el alcance visual final)
+- MVP sin MP: **más rápido y barato** que con MP — no hay webhooks, ni estados de pago, ni pruebas de transacción.
+- Lo que se paga ahora: el panel admin (auth + RLS + CRUD + Storage) es **más trabajo que el checkout**, pero es lo que el cliente necesita para.autoatenderse.
+- Costo mensual estimado: $0–600 UYU/mes al inicio (dominio .uy aparte, ver tarifa vigente en nic.uy). Mercado Pago (cuando entre) cobra comisión por transacción — verificar tarifa vigente en el panel de MP, no asumo %.
+- Mantención: plan mensual (ver `04` §3.7) o por evento.
+
+## Qué se puede decir del Mercado Pago si pregunta
+> "Sí, Mercado Pago te sirve en Uruguay y la cuenta ya está verificada. Vamos a publicar primero la web con catálogo, galería y cotizador, que es lo que te trae clientes. Mientras tanto cobrás con los links de Mercado Pago que ya usás, como hoy. Cuando tenga clientes entrando y los turnos llenos, ahí integramos el botón de pago para que la página te cobre sola. La comisión la cobra Mercado Pago por cada venta, no es costo mío."
 
 ## Próxima acción tuya
-1. Revisa estos .md y ajusta precios/nombres.
-2. Agenda reunión y lleva impreso o en tablet el 02 + 05.
-3. Cuando tengas respuestas, pégamelas y genero: stack final + cotización + estructura de DB + endpoints MP.
+1. Pasame el ok del cliente sobre el alcance del MVP sin MP.
+2. Arranco por las migraciones de Supabase + el panel admin.
+3. Mientras tanto definimos juntos el tema vintage (tipografía, paleta, textura) para el primer wireframe.

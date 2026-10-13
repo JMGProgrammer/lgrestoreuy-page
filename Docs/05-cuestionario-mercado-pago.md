@@ -1,6 +1,9 @@
 # 05 — Cuestionario 4: Mercado Pago (el desafío)
 
-> Mercado Pago SÍ sirve para Uruguay. Cobra comisión por venta (~2.9–3.5% + IVA aprox según medio — verificar tarifa vigente). El dinero llega a su cuenta MP y de ahí a su banco. Sin esto respondido no se puede integrar pagos.
+> **CONGELADO 2026-10-13 — es Fase 2.** El MVP se construye **sin Mercado Pago** (ver `12-decisiones-mvp-sin-mp.md`). No hace falta responder esto ni tener credenciales para arrancar. Se completa recién cuando el cliente pida cobrar online desde la web.
+> Mientras tanto el cliente cobra como hoy: links manuales de Mercado Pago o transferencia por WhatsApp.
+
+> Mercado Pago SÍ sirve para Uruguay. Cobra comisión por venta (~2.9–3.5% + IVA aprox según medio — verificar tarifa vigente). El dinero llega a su cuenta MP y de ahí a su banco.
 
 ## 4.1 Estado de cuenta (bloqueante)
 - [ ] A) Ya tiene cuenta Mercado Pago verificada (puede recibir pagos)
@@ -20,7 +23,7 @@
 
 ## 4.3 Modalidad de integración (elegir una — explícale simple)
 - [ ] **A) Links de pago manuales (recomendado para partir)** — Él los crea en MP, tú pones botones "Pagar abono" en la web. 0 código, funciona día 1. Contra: conciliación manual.
-- [ ] **B) Checkout Pro (recomendado MVP integrado)** — Botón en la web → redirige a Mercado Pago → paga → vuelve a la web. Soporta tarjetas, débito, transferencia, cuotas. Requiere desarrollo + webhook.
+- [ ] **B) Checkout Pro (recomendado para Fase 2)** — Botón en la web → redirige a Mercado Pago → paga → vuelve a la web. Soporta tarjetas, débito, transferencia, cuotas. Requiere desarrollo + webhook.
 - [ ] **C) Checkout API/Bricks (fase 2)** — Paga sin salir de la página. Mejor conversión, más desarrollo y validaciones.
 - [ ] D) No sabe → tú decides (sugerido: A ahora, B en 2–3 semanas)
 
