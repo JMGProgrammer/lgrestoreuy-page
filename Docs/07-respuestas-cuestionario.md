@@ -2,7 +2,7 @@
 
 ## Actualización 2026-10-13 (cierra la Fase 0)
 
-Decisiones del cliente que pisan lo del 2026-10-09:
+**Origen de los cambios:** sugerencia del cliente, aprobada. No hace falta pedir un ok de alcance adicional: el MVP ya es lo que pidió.
 
 | Tema | Respuesta | Consecuencia |
 |---|---|---|
@@ -12,7 +12,7 @@ Decisiones del cliente que pisan lo del 2026-10-09:
 
 Consecuencias documentadas en `12-decisiones-mvp-sin-mp.md` y reflejadas en `00`, `01`, `03`, `04`, `05`, `06`, `08`, `09`, `10` y `11`.
 
-**Pendiente antes de empezar a codear:** que el cliente dé el ok al alcance del MVP sin MP (ver `06` Fase 0).
+**Pendiente antes de empezar a codear:** acordar la cotización del alcance con el cliente (el contenido del MVP ya está definido por él).
 
 ---
 

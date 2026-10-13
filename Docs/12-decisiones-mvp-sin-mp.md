@@ -1,6 +1,7 @@
 # 12 — Decisiones de alcance: MVP sin Mercado Pago + contenido desde admin
 
 **Fecha:** 2026-10-13
+**Origen:** sugerencia del cliente, aprobada.
 **Estado:** vigente — pisa a lo definido en `08-definicion-final.md` (2026-10-09) donde se contradiga.
 
 ## Decisión 1 — Servicios, precios y fotos los carga el cliente desde `/admin`

@@ -1,13 +1,13 @@
 # 06 — Roadmap y Next Steps
 
-> Actualizado 2026-10-13 según `12-decisiones-mvp-sin-mp.md`: **MVP sin Mercado Pago** y **contenido cargado desde `/admin`**.
+> Actualizado 2026-10-13 según `12-decisiones-mvp-sin-mp.md` (sugerencia del cliente, aprobada): **MVP sin Mercado Pago** y **contenido cargado desde `/admin`**.
 
 ## Fase 0 — Levantamiento ✅ cerrada (2026-10-09 → 2026-10-13)
 - [x] Cuestionarios 02–04 respondidos (ver `07-respuestas-cuestionario.md`)
 - [x] Stack cerrado: Astro + Tailwind + Supabase + admin propio
-- [x] Alcance cerrado: MVP **sin MP**, contenido desde `/admin`
+- [x] Alcance cerrado: MVP **sin MP**, contenido desde `/admin` (propuesto por el cliente)
 - [x] Modelo relacional y panel admin planteados (`09`, `10`)
-- [ ] Enviarle al cliente el alcance del MVP para que lo apruebe (importante antes de facturar)
+- [ ] Acordar la cotización del alcance con el cliente (el MVP ya está definido)
 
 ## Fase 1 — MVP sin MP (2–3 semanas estimado)
 1. Proyecto Astro + Tailwind con tema vintage (tokens de color, tipografía, textura sutil)
@@ -40,6 +40,6 @@
 > "Sí, Mercado Pago te sirve en Uruguay y la cuenta ya está verificada. Vamos a publicar primero la web con catálogo, galería y cotizador, que es lo que te trae clientes. Mientras tanto cobrás con los links de Mercado Pago que ya usás, como hoy. Cuando tenga clientes entrando y los turnos llenos, ahí integramos el botón de pago para que la página te cobre sola. La comisión la cobra Mercado Pago por cada venta, no es costo mío."
 
 ## Próxima acción tuya
-1. Pasame el ok del cliente sobre el alcance del MVP sin MP.
+1. Cerrar la cotización del MVP con el cliente (alcance ya definido).
 2. Arranco por las migraciones de Supabase + el panel admin.
 3. Mientras tanto definimos juntos el tema vintage (tipografía, paleta, textura) para el primer wireframe.

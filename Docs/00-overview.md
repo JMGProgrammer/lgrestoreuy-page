@@ -24,7 +24,7 @@ Hoy probablemente consigue clientes por boca a boca / Instagram / WhatsApp, sin:
 
 ## 4. Alcance tentativo
 
-> Actualizado 2026-10-13 según `12-decisiones-mvp-sin-mp.md`.
+> Actualizado 2026-10-13 según `12-decisiones-mvp-sin-mp.md`. Los cambios de alcance (MVP sin MP, contenido desde `/admin`) son **sugerencia del cliente, aprobada**.
 
 ### MVP (Fase 1 — vigente)
 - [ ] Home + Servicios + Galería antes/después + Nosotros/Taller + Contacto + Legal
@@ -61,8 +61,9 @@ Hoy probablemente consigue clientes por boca a boca / Instagram / WhatsApp, sin:
 
 ## 6. Qué necesitamos del cliente (checklist)
 - [x] Respuestas a cuestionarios 02–04
-- [ ] Ok al alcance del MVP sin MP
+- [x] Alcance del MVP definido (propuesto por el cliente, aprobado)
 - [ ] Logo / colores / Instagram / Facebook
 - [ ] Datos del taller (WhatsApp, dirección, horarios) — o los carga él en `/admin/contenido`
+- [ ] Cotización acordada
 - [ ] Datos Mercado Pago — **Fase 2**, no bloquea
 - Todo lo demás (servicios, precios, fotos, textos) **lo carga él desde `/admin`**

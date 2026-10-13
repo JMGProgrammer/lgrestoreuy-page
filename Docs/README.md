@@ -3,7 +3,7 @@
 **Fecha:** 2026-10-13
 **Estado:** Fase 0 cerrada — especificación lista para arrancar el MVP
 **País:** Uruguay (UYU, .uy, DAC/Correo Uruguayo, DGI)
-**Decisiones vigentes:** `12-decisiones-mvp-sin-mp.md` — **MVP sin Mercado Pago** + **servicios/precios/fotos se cargan desde `/admin`**
+**Decisiones vigentes:** `12-decisiones-mvp-sin-mp.md` — **MVP sin Mercado Pago** + **servicios/precios/fotos se cargan desde `/admin`** (sugerencia del cliente, aprobada)
 **Desafío principal:** Mercado Pago queda para Fase 2 (guía congelada en `11-mercado-pago-desde-cero.md`)
 
 ## Qué hay en esta carpeta
