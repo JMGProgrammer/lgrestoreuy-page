@@ -60,14 +60,23 @@ export const POST: APIRoute = async ({ request }) => {
   };
 
   const supabase = getSupabaseAnon();
-  const { data, error } = await supabase
-    .from('quotes')
-    .insert(datos)
-    .select('id')
-    .single();
+
+  // El id se genera acá y NO se pide la fila de vuelta con .select().
+  //
+  // .select() después de .insert() le agrega a supabase-js un
+  // "Prefer: return=representation", y eso hace que PostgREST lea la fila
+  // recién insertada para devolverla. El anónimo no tiene permiso de
+  // lectura sobre quotes (a propósito: nadie puede ver las solicitudes
+  // ajenas), así que ese SELECT viola la RLS y la respuesta termina
+  // diciendo "new row violates row-level security policy" — aunque el
+  // INSERT sí se haya hecho. Por eso el pedido llegaba guardándose pero el
+  // formulario le mostraba error al visitante.
+  const id = crypto.randomUUID();
+
+  const { error } = await supabase.from('quotes').insert({ id, ...datos });
 
   if (error) {
-    console.error('[api/cotizaciones]', error.message);
+    console.error('[api/cotizaciones]', error.message, error.code);
     return json(
       {
         ok: false,
@@ -78,7 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  return json({ ok: true, id: data?.id ?? null }, 201);
+  return json({ ok: true, id }, 201);
 };
 
 function json(payload: unknown, status: number): Response {
