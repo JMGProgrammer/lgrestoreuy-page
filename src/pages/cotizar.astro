@@ -1,0 +1,393 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getServices, MODO_DEMO } from '../lib/content';
+import { whatsappLink, generalInquiryMessage } from '../lib/whatsapp';
+import { getSiteSettings } from '../lib/content';
+
+const [services, settings] = await Promise.all([getServices(), getSiteSettings()]);
+const servicioPrevio = Astro.url.searchParams.get('servicio') ?? '';
+const waAyuda = whatsappLink(settings.whatsapp, generalInquiryMessage(settings.nombre_taller));
+
+const tiposMueble = [
+  'Silla',
+  'Mesa',
+  'Cómoda',
+  'Armario',
+  'Sofá / sillón',
+  'Antigüedad',
+  'Otro',
+];
+---
+
+<BaseLayout
+  title="Cotizar"
+  description="Contanos qué pieza tenés y te pasamos un presupuesto de restauración sin compromiso."
+>
+  <section class="mx-auto max-w-3xl px-4 py-14">
+    <p class="rotulo">Sin compromiso</p>
+    <h1 class="mt-2 text-4xl text-tinta sm:text-5xl">Pedir cotización</h1>
+    <p class="mt-4 max-w-xl leading-relaxed text-tinta-suave">
+      Cuatro pasos cortos y unas fotos. Con eso alcanza para decirte si lo podemos
+      hacer y en cuántos días.
+    </p>
+
+    {
+      MODO_DEMO && (
+        <p class="mt-6 rounded border border-latón/40 bg-latón-tenue/40 px-4 py-3 text-sm text-caoba">
+          Modo demostración: el formulario no guarda nada hasta conectar
+          Supabase en el <code>.env</code>.
+        </p>
+      )
+    }
+
+    <form id="form-cotizacion" class="mt-10 space-y-8" novalidate>
+      <!-- Paso 1 -->
+      <fieldset data-paso="1">
+        <legend class="rotulo mb-4">Paso 1 de 4 · ¿Qué pieza es?</legend>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          {
+            tiposMueble.map((tipo) => (
+              <label class="flex cursor-pointer items-center gap-3 rounded border border-linea bg-papel px-4 py-3 text-sm transition-colors hover:border-latón">
+                <input
+                  type="radio"
+                  name="tipoMueble"
+                  value={tipo}
+                  class="accent-[#a8763e]"
+                />
+                {tipo}
+              </label>
+            ))
+          }
+        </div>
+      </fieldset>
+
+      <!-- Paso 2 -->
+      <fieldset data-paso="2" hidden>
+        <legend class="rotulo mb-4">Paso 2 de 4 · ¿Qué necesita?</legend>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          {
+            services.map((servicio) => (
+              <label class="flex cursor-pointer items-center gap-3 rounded border border-linea bg-papel px-4 py-3 text-sm transition-colors hover:border-latón">
+                <input
+                  type="radio"
+                  name="servicio"
+                  value={servicio.nombre}
+                  checked={servicio.nombre === servicioPrevio}
+                  class="accent-[#a8763e]"
+                />
+                {servicio.nombre}
+              </label>
+            ))
+          }
+          <label class="flex cursor-pointer items-center gap-3 rounded border border-linea bg-papel px-4 py-3 text-sm transition-colors hover:border-latón">
+            <input type="radio" name="servicio" value="No sé" class="accent-[#a8763e]" />
+            No sé todavía
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- Paso 3 -->
+      <fieldset data-paso="3" hidden>
+        <legend class="rotulo mb-4">Paso 3 de 4 · Medidas, fotos y descripción</legend>
+
+        <div class="space-y-5">
+          <div>
+            <label class="campo-label" for="medidas">
+              Medidas aproximadas (ancho × alto × fondo)
+            </label>
+            <input
+              class="campo"
+              id="medidas"
+              name="medidas"
+              type="text"
+              placeholder="Ej: 120 × 80 × 45 cm"
+            />
+          </div>
+
+          <div>
+            <span class="campo-label">Fotos (hasta 5)</span>
+            <label
+              for="fotos"
+              class="flex cursor-pointer flex-col items-center gap-2 rounded border border-dashed border-linea bg-papel px-4 py-8 text-center transition-colors hover:border-latón"
+            >
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-tinta-tenue" aria-hidden="true">
+                <path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z" />
+                <circle cx="12" cy="13" r="3.5" />
+              </svg>
+              <span class="text-sm text-tinta-suave">Tocá para elegir fotos</span>
+              <span class="text-xs text-tinta-tenue">
+                JPG o PNG. Se suben junto con la solicitud.
+              </span>
+            </label>
+            <input
+              class="sr-only"
+              id="fotos"
+              name="fotos"
+              type="file"
+              accept="image/*"
+              multiple
+            />
+            <ul id="lista-fotos" class="mt-3 flex flex-wrap gap-2"></ul>
+          </div>
+
+          <div>
+            <label class="campo-label" for="descripcion">
+              ¿Qué le pasa? ¿Qué querés que quede?
+            </label>
+            <textarea
+              class="campo"
+              id="descripcion"
+              name="descripcion"
+              rows="4"
+              placeholder="Ej: se le cayó una pata y el barniz está rajado. Busco dejarlo como nuevo."></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Paso 4 -->
+      <fieldset data-paso="4" hidden>
+        <legend class="rotulo mb-4">Paso 4 de 4 · Tus datos</legend>
+
+        <div class="space-y-5">
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label class="campo-label" for="nombre">Nombre</label>
+              <input class="campo" id="nombre" name="nombre" type="text" autocomplete="name" />
+              <p class="mt-1 hidden text-xs text-[#9a2f2f]" data-error="nombre"></p>
+            </div>
+            <div>
+              <label class="campo-label" for="telefono">Teléfono / WhatsApp</label>
+              <input class="campo" id="telefono" name="telefono" type="tel" autocomplete="tel" placeholder="09X XXX XXX" />
+              <p class="mt-1 hidden text-xs text-[#9a2f2f]" data-error="telefono"></p>
+            </div>
+          </div>
+
+          <div>
+            <label class="campo-label" for="comuna">
+              Comuna o barrio <span class="font-normal text-tinta-tenue">(para retiro)</span>
+            </label>
+            <input class="campo" id="comuna" name="comuna" type="text" placeholder="Ej: Montevideo, Pocitos" />
+          </div>
+
+          <p class="text-xs leading-relaxed text-tinta-tenue">
+            Escribimos con tu número para pasarte el presupuesto. No compartimos
+            tus datos con nadie.
+          </p>
+        </div>
+      </fieldset>
+
+      <!-- Navegación -->
+      <div class="flex items-center justify-between border-t border-linea pt-6">
+        <button type="button" id="btn-atras" class="btn-secundario" hidden>
+          Atrás
+        </button>
+        <div class="ml-auto flex items-center gap-4">
+          <span class="text-sm text-tinta-tenue" id="contador">1 / 4</span>
+          <button type="button" id="btn-siguiente" class="btn-principal">
+            Continuar
+          </button>
+          <button type="submit" id="btn-enviar" class="btn-principal" hidden>
+            Enviar solicitud
+          </button>
+        </div>
+      </div>
+
+      <p
+        id="aviso"
+        class="hidden rounded border border-linea bg-papel px-4 py-3 text-sm"
+        role="status"
+        aria-live="polite"
+      >
+      </p>
+    </form>
+
+    <div id="gracias" class="mt-10 hidden" aria-live="polite">
+      <div class="rounded border border-linea bg-papel p-8 text-center sombra-vintage">
+        <p class="rotulo">Solicitud enviada</p>
+        <h2 class="mt-3 text-3xl text-tinta">Gracias, ya la tenemos</h2>
+        <p class="mx-auto mt-3 max-w-md text-tinta-suave">
+          Te escribimos al teléfono que dejaste con el presupuesto. Si es urgente,
+          escribinos directo por WhatsApp.
+        </p>
+        <div class="mt-6 flex flex-wrap justify-center gap-3">
+          {
+            waAyuda && (
+              <a href={waAyuda} target="_blank" rel="noopener noreferrer" class="btn-wa">
+                Escribir por WhatsApp
+              </a>
+            )
+          }
+          <a href="/piezas" class="btn-secundario">Ver piezas en venta</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { getSupabase } from '../lib/supabase/browser';
+
+  const form = document.getElementById('form-cotizacion') as HTMLFormElement | null;
+  const aviso = document.getElementById('aviso');
+  const gracias = document.getElementById('gracias');
+  const contador = document.getElementById('contador');
+  const btnAtras = document.getElementById('btn-atras') as HTMLButtonElement;
+  const btnSiguiente = document.getElementById('btn-siguiente') as HTMLButtonElement;
+  const btnEnviar = document.getElementById('btn-enviar') as HTMLButtonElement;
+  const inputFotos = document.getElementById('fotos') as HTMLInputElement;
+  const listaFotos = document.getElementById('lista-fotos') as HTMLUListElement;
+
+  const TOTAL = 4;
+  let paso = 1;
+
+  const campos = (n: number) =>
+    form?.querySelectorAll<HTMLFieldSetElement>(`[data-paso="${n}"]`) ?? [];
+
+  function pintar() {
+    for (let n = 1; n <= TOTAL; n++) {
+      campos(n).forEach((el) => (el.hidden = n !== paso));
+    }
+    btnAtras.hidden = paso === 1;
+    btnSiguiente.hidden = paso === TOTAL;
+    btnEnviar.hidden = paso !== TOTAL;
+    if (contador) contador.textContent = `${paso} / ${TOTAL}`;
+    form?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function mostrarAviso(texto: string, ok: boolean) {
+    if (!aviso) return;
+    aviso.textContent = texto;
+    aviso.className = `rounded border px-4 py-3 text-sm ${
+      ok
+        ? 'border-[#4f6b46] bg-[#4f6b46]/10 text-[#33472e]'
+        : 'border-[#9a2f2f] bg-[#9a2f2f]/10 text-[#7a2626]'
+    }`;
+  }
+
+  function limpiarErrores() {
+    form
+      ?.querySelectorAll<HTMLElement>('[data-error]')
+      .forEach((el) => (el.textContent = ''));
+  }
+
+  function mostrarErrores(errores: Record<string, string> = {}) {
+    limpiarErrores();
+    for (const [campo, texto] of Object.entries(errores)) {
+      const el = form?.querySelector<HTMLElement>(`[data-error="${campo}"]`);
+      if (el) {
+        el.textContent = texto;
+        el.classList.remove('hidden');
+      }
+    }
+  }
+
+  btnAtras.addEventListener('click', () => {
+    if (paso > 1) {
+      paso -= 1;
+      pintar();
+    }
+  });
+
+  btnSiguiente.addEventListener('click', () => {
+    // El paso 4 exige nombre y teléfono antes de mandar
+    if (paso === 4) return;
+    paso += 1;
+    pintar();
+  });
+
+  // Vista previa de las fotos (solo nombres; la subida ocurre al enviar)
+  inputFotos?.addEventListener('change', () => {
+    if (!listaFotos) return;
+    listaFotos.innerHTML = '';
+
+    const archivos = Array.from(inputFotos.files ?? []).slice(0, 5);
+    for (const archivo of archivos) {
+      const item = document.createElement('li');
+      item.className =
+        'rounded border border-linea bg-papel px-3 py-1 text-xs text-tinta-suave';
+      item.textContent = archivo.name;
+      listaFotos.append(item);
+    }
+
+    if (inputFotos.files && inputFotos.files.length > 5) {
+      mostrarAviso('Solo se toman las primeras 5 fotos.', false);
+    }
+  });
+
+  async function subirFotos(): Promise<string[]> {
+    const archivos = Array.from(inputFotos?.files ?? []).slice(0, 5);
+    if (archivos.length === 0) return [];
+
+    const supabase = getSupabase();
+    const rutas: string[] = [];
+
+    for (const archivo of archivos) {
+      const nombreLimpio = archivo.name.replace(/[^\w.-]/g, '_');
+      const ruta = `pendientes/${crypto.randomUUID()}-${nombreLimpio}`;
+
+      const { error } = await supabase.storage
+        .from('cotizaciones')
+        .upload(ruta, archivo, { cacheControl: '3600', upsert: false });
+
+      // El bucket es privado: guardamos la ruta, no una URL pública inútil.
+      // El panel las abre con enlaces firmados.
+      if (!error) rutas.push(ruta);
+    }
+
+    return rutas;
+  }
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    limpiarErrores();
+
+    const datos = new FormData(form);
+    btnEnviar.disabled = true;
+    btnEnviar.textContent = 'Enviando…';
+    mostrarAviso('Subiendo fotos y enviando…', true);
+
+    try {
+      const fotos = await subirFotos();
+
+      const respuesta = await fetch('/api/cotizaciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: datos.get('nombre'),
+          telefono: datos.get('telefono'),
+          comuna: datos.get('comuna'),
+          tipoMueble: datos.get('tipoMueble'),
+          servicio: datos.get('servicio'),
+          medidas: datos.get('medidas'),
+          descripcion: datos.get('descripcion'),
+          fotos,
+        }),
+      });
+
+      const resultado = await respuesta.json();
+
+      if (!respuesta.ok || !resultado.ok) {
+        mostrarErrores(resultado.errores ?? {});
+        mostrarAviso(resultado.error ?? 'No pudimos enviar la solicitud.', false);
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = 'Enviar solicitud';
+        return;
+      }
+
+      form.hidden = true;
+      gracias?.classList.remove('hidden');
+      gracias?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch {
+      mostrarAviso(
+        'Falló la conexión. Probá de nuevo o escribinos por WhatsApp.',
+        false,
+      );
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = 'Enviar solicitud';
+    }
+  });
+
+  pintar();
+</script>

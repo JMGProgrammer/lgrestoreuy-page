@@ -1,0 +1,145 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSiteSettings } from '../lib/content';
+import { whatsappLink, generalInquiryMessage } from '../lib/whatsapp';
+
+const settings = await getSiteSettings();
+const wa = whatsappLink(settings.whatsapp, generalInquiryMessage(settings.nombre_taller));
+const mapa = settings.mapa_url?.includes('google.com/maps')
+  ? settings.mapa_url
+  : null;
+---
+
+<BaseLayout
+  title="Contacto"
+  description="Escribinos por WhatsApp, visitanos en el taller o pedí una cotización online."
+>
+  <section class="mx-auto max-w-4xl px-4 py-14">
+    <p class="rotulo">Hablemos</p>
+    <h1 class="mt-2 text-4xl text-tinta sm:text-5xl">Contacto</h1>
+    <p class="mt-4 max-w-xl leading-relaxed text-tinta-suave">
+      La vía más rápida es WhatsApp: mandanos la foto de la pieza y te respondemos
+      con una idea de precio y plazo.
+    </p>
+
+    <div class="mt-10 grid gap-6 sm:grid-cols-2">
+      {
+        wa ? (
+          <a
+            href={wa}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-wa h-auto flex-col items-start gap-1 py-5"
+          >
+            <span class="text-base">Escribir por WhatsApp</span>
+            <span class="text-xs font-normal opacity-90">
+              {settings.whatsapp}
+            </span>
+          </a>
+        ) : (
+          <div class="rounded border border-dashed border-linea px-5 py-5 text-sm text-tinta-suave">
+            El número de WhatsApp se carga desde
+            <span class="font-medium text-tinta">/admin → Contenido</span>.
+          </div>
+        )
+      }
+
+      <a href="/cotizar" class="btn-principal h-auto flex-col items-start gap-1 py-5">
+        <span class="text-base">Pedir cotización online</span>
+        <span class="text-xs font-normal opacity-80">4 pasos, sin compromiso</span>
+      </a>
+    </div>
+
+    <div class="mt-14 grid gap-10 sm:grid-cols-2">
+      <div>
+        <p class="rotulo mb-3">Datos</p>
+        <ul class="space-y-2 text-tinta-suave">
+          {
+            settings.direccion && (
+              <li class="flex gap-3">
+                <span class="w-20 shrink-0 text-tinta-tenue">Taller</span>
+                <span>{settings.direccion}</span>
+              </li>
+            )
+          }
+          {
+            settings.horarios && (
+              <li class="flex gap-3">
+                <span class="w-20 shrink-0 text-tinta-tenue">Horario</span>
+                <span>{settings.horarios}</span>
+              </li>
+            )
+          }
+          {
+            settings.email && (
+              <li class="flex gap-3">
+                <span class="w-20 shrink-0 text-tinta-tenue">Email</span>
+                <a
+                  href={`mailto:${settings.email}`}
+                  class="underline decoration-latón underline-offset-4 hover:text-tinta"
+                >
+                  {settings.email}
+                </a>
+              </li>
+            )
+          }
+          {
+            (!settings.direccion || !settings.horarios) && (
+              <li class="text-tinta-tenue">
+                Datos del taller a cargar desde el panel.
+              </li>
+            )
+          }
+        </ul>
+      </div>
+
+      {
+        (settings.instagram || settings.facebook) && (
+          <div>
+            <p class="rotulo mb-3">Redes</p>
+            <ul class="space-y-2 text-tinta-suave">
+              {settings.instagram && (
+                <li>
+                  <a
+                    href={settings.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="underline decoration-latón underline-offset-4 hover:text-tinta"
+                  >
+                    Instagram
+                  </a>
+                </li>
+              )}
+              {settings.facebook && (
+                <li>
+                  <a
+                    href={settings.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="underline decoration-latón underline-offset-4 hover:text-tinta"
+                  >
+                    Facebook
+                  </a>
+                </li>
+              )}
+            </ul>
+          </div>
+        )
+      }
+    </div>
+
+    {
+      mapa && (
+        <div class="mt-12 overflow-hidden rounded border border-linea">
+          <iframe
+            src={mapa}
+            class="h-80 w-full"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Ubicación del taller"
+          />
+        </div>
+      )
+    }
+  </section>
+</BaseLayout>

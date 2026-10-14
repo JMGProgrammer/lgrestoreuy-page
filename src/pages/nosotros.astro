@@ -1,0 +1,92 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSiteSettings } from '../lib/content';
+import { whatsappLink, generalInquiryMessage } from '../lib/whatsapp';
+
+const settings = await getSiteSettings();
+const wa = whatsappLink(settings.whatsapp, generalInquiryMessage(settings.nombre_taller));
+
+const pasos = [
+  {
+    titulo: 'Nos contás',
+    texto: 'Fotos, medidas y qué te gustaría que quedara. Por WhatsApp o con el formulario de cotización.',
+  },
+  {
+    titulo: 'Te evaluamos',
+    texto: 'Miramos la pieza y te decimos qué se puede hacer, en cuánto tiempo y con qué riesgo.',
+  },
+  {
+    titulo: 'Acordamos el trabajo',
+    texto: 'Precio cerrado y plazo. Sin anticipos surprises: primero vemos y después acordamos.',
+  },
+  {
+    titulo: 'Restauramos',
+    texto: 'Te mandamos fotos del avance y avisamos cuando está lista.',
+  },
+  {
+    titulo: 'Entregamos',
+    texto: 'Retiro en el taller o vamos a tu casa. Revisás y, si algo no está como acordamos, lo corregimos.',
+  },
+];
+---
+
+<BaseLayout
+  title="Nosotros"
+  description="Cómo trabajamos: evaluación honesta, precio acordado y garantía por escrito."
+>
+  <section class="mx-auto max-w-4xl px-4 py-14">
+    <p class="rotulo">El taller</p>
+    <h1 class="mt-2 text-4xl text-tinta sm:text-5xl">Nosotros</h1>
+
+    {
+      settings.texto_nosotros ? (
+        <div class="mt-6 space-y-4 leading-relaxed text-tinta-suave">
+          {settings.texto_nosotros.split('\n').filter(Boolean).map((linea) => (
+            <p>{linea}</p>
+          ))}
+        </div>
+      ) : (
+        <div class="mt-6 rounded border border-dashed border-linea bg-papel-oscuro/30 p-6">
+          <p class="text-sm leading-relaxed text-tinta-suave">
+            La historia del taller se edita desde
+            <span class="font-medium text-tinta">/admin → Contenido</span>. Escribinos
+            por WhatsApp y te contamos en persona.
+          </p>
+        </div>
+      )
+    }
+
+    <div class="rule-dorada my-12"></div>
+
+    <h2 class="text-3xl text-tinta">Cómo es trabajar con nosotros</h2>
+    <ol class="mt-8 space-y-6">
+      {
+        pasos.map((paso, index) => (
+          <li class="flex gap-5">
+            <span class="font-display text-2xl text-latón-tenue">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <div>
+              <h3 class="text-lg text-tinta">{paso.titulo}</h3>
+              <p class="mt-1 leading-relaxed text-tinta-suave">{paso.texto}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+
+    {
+      settings.texto_garantia && (
+        <div class="mt-12 rounded border border-linea bg-papel p-6">
+          <p class="rotulo mb-2">Garantía</p>
+          <p class="leading-relaxed text-tinta-suave">{settings.texto_garantia}</p>
+        </div>
+      )
+    }
+
+    <div class="mt-12 flex flex-wrap gap-3">
+      <a href="/cotizar" class="btn-principal">Pedir cotización</a>
+      {wa && <a href={wa} target="_blank" rel="noopener noreferrer" class="btn-wa">Escribir por WhatsApp</a>}
+    </div>
+  </section>
+</BaseLayout>

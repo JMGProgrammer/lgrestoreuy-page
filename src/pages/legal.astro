@@ -1,0 +1,82 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSiteSettings } from '../lib/content';
+
+const settings = await getSiteSettings();
+
+const porDefecto = [
+  {
+    titulo: 'Presupuestos',
+    texto:
+      'Los precios que publicamos son referenciales. El presupuesto final se confirma después de evaluar la pieza, y es siempre por escrito antes de empezar.',
+  },
+  {
+    titulo: 'Plazos',
+    texto:
+      'El plazo se acuerda al momento de aceptar el trabajo y depende del estado de la pieza y de la cola del taller.',
+  },
+  {
+    titulo: 'Pagos',
+    texto:
+      'No aceptamos pagos online en este sitio. Se coordinan por WhatsApp o transferencia, y te Emitimos la factura correspondiente.',
+  },
+  {
+    titulo: 'Retiros y entregas',
+    texto:
+      'La coordinación de retiro a domicilio y su costo se acuerda por separado, según distancia y tamaño del mueble.',
+  },
+  {
+    titulo: 'Garantía',
+    texto:
+      'La garantía cubre fallas atribuibles al trabajo realizado. No cubre daños por humedad, golpes, uso indebido o desgaste normal de la pieza.',
+  },
+  {
+    titulo: 'Piezas en venta',
+    texto:
+      'Las piezas publicadas son únicas. Si aparece como disponible, puede estar reservada: te lo confirmamos por WhatsApp.',
+  },
+];
+---
+
+<BaseLayout
+  title="Términos y garantía"
+  description="Términos, presupuestos, plazos, pagos y garantía del taller."
+>
+  <section class="mx-auto max-w-3xl px-4 py-14">
+    <p class="rotulo">Legal</p>
+    <h1 class="mt-2 text-4xl text-tinta sm:text-5xl">
+      Términos, devoluciones y garantía
+    </h1>
+    <p class="mt-4 text-sm text-tinta-suave">
+      Última actualización: {new Date().toLocaleDateString('es-UY')}
+    </p>
+
+    <div class="rule-dorada my-10"></div>
+
+    {
+      settings.texto_legal ? (
+        <div class="space-y-4 leading-relaxed text-tinta-suave">
+          {settings.texto_legal.split('\n').filter(Boolean).map((linea) => (
+            <p>{linea}</p>
+          ))}
+        </div>
+      ) : (
+        <>
+          <p class="leading-relaxed text-tinta-suave">
+            Texto editable desde
+            <span class="font-medium text-tinta">/admin → Contenido</span>. Mientras
+            el taller no cargue el suyo, rigen las condiciones generales del taller:
+          </p>
+          <dl class="mt-8 space-y-8">
+            {porDefecto.map((item) => (
+              <div>
+                <dt class="text-lg text-tinta">{item.titulo}</dt>
+                <dd class="mt-2 leading-relaxed text-tinta-suave">{item.texto}</dd>
+              </div>
+            ))}
+          </dl>
+        </>
+      )
+    }
+  </section>
+</BaseLayout>
