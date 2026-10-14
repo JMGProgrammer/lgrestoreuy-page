@@ -852,4 +852,133 @@ select.ui-campo {
   .ui-sin-guardar::before {
     animation: none;
   }
+
+  .ui-olas {
+    animation: none;
+  }
+
+  .ui-tarjeta:hover {
+    transform: none;
+  }
+}
+
+/* =====================================================================
+   Fondo de ondas del panel
+
+   Tres capas de latón muy tenues que se desplazan en direcciones y a
+   velocidades distintas. El efecto tiene que estar por debajo del umbral de
+   atención: es lo que se percibe al entrar y se deja de ver enseguida, como
+   un papel de fondo con relieve.
+
+   Cada capa se mueve con una variable de custom property propia en vez de
+   con background-position directo, porque background-position solo puede
+   animarse con una única duración para todas las capas. El recorrido de
+   cada una equivale a un ancho de baldosa, que es lo que hace que el ciclo
+   no se vea: la onda que sale por la derecha es la misma que entra por la
+   izquierda.
+
+   La capa div es un único elemento detrás de todo (z-index: -1). Va en el
+   body y no en cada pantalla para que no haya que acordarse de ponerlo.
+   ===================================================================== */
+
+@property --ui-ola-a {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+@property --ui-ola-b {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+@property --ui-ola-c {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+@keyframes ui-ola-a {
+  to {
+    --ui-ola-a: 1600px;
+  }
+}
+
+@keyframes ui-ola-b {
+  to {
+    --ui-ola-b: 980px;
+  }
+}
+
+@keyframes ui-ola-c {
+  to {
+    --ui-ola-c: 2400px;
+  }
+}
+
+.ui-olas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+
+  /* Cada SVG es una media onda de latón con la misma altura de arranque y
+     de llegada, así que al repetirse no se nota dónde está el empalme. */
+  background-image:
+    radial-gradient(
+      1200px 620px at 76% -12%,
+      rgb(168 118 62 / 9%),
+      transparent 70%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 180' preserveAspectRatio='none'%3E%3Cpath d='M0 90 Q200 34 400 90 T800 90 T1200 90 T1600 90 V180 H0 Z' fill='%23a8763e' fill-opacity='0.05'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 980 220' preserveAspectRatio='none'%3E%3Cpath d='M0 110 Q122 48 245 110 T490 110 T735 110 T980 110 V220 H0 Z' fill='%23a8763e' fill-opacity='0.045'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2400 300' preserveAspectRatio='none'%3E%3Cpath d='M0 150 Q300 72 600 150 T1200 150 T1800 150 T2400 150 V300 H0 Z' fill='%23a8763e' fill-opacity='0.035'/%3E%3C/svg%3E");
+
+  background-repeat: no-repeat, repeat-x, repeat-x, repeat-x;
+  background-size:
+    auto,
+    1600px 180px,
+    980px 220px,
+    2400px 300px;
+  background-position:
+    0 0,
+    var(--ui-ola-a, 0px) -30px,
+    var(--ui-ola-b, 0px) 38%,
+    var(--ui-ola-c, 0px) 74%;
+
+  animation:
+    ui-ola-a 52s linear infinite,
+    ui-ola-b 34s linear infinite reverse,
+    ui-ola-c 78s linear infinite;
+}
+
+/* =====================================================================
+   Tarjeta de dato del resumen
+
+   Es un link: el hover tiene que llevar a algún lado o es un efecto
+   mentiroso. Levanta apenas y se tiñe de latón, sin más.
+   ===================================================================== */
+
+.ui-tarjeta {
+  display: block;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.ui-tarjeta:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-latón);
+  background-color: color-mix(in srgb, var(--color-papel) 93%, var(--color-latón-claro));
+  box-shadow:
+    0 1px 2px rgb(59 49 34 / 8%),
+    0 14px 28px -18px rgb(59 49 34 / 45%);
+}
+
+.ui-tarjeta:hover .ui-tarjeta-valor {
+  color: var(--color-caoba);
 }

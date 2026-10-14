@@ -9,11 +9,29 @@ const [datos, cotizaciones] = await Promise.all([
   listarCotizaciones(ctx, 5),
 ]);
 
+// Cada tarjeta lleva a la sección donde ese número se trabaja. Sin destino,
+// el hover sería un efecto mentiroso.
 const tarjetas = [
-  { etiqueta: 'Piezas disponibles', valor: String(datos.piezasDisponibles) },
-  { etiqueta: 'En proceso', valor: String(datos.piezasEnProceso) },
-  { etiqueta: 'Valor en stock', valor: formatUYU(datos.valorStock) ?? '$0' },
-  { etiqueta: 'Cotizaciones nuevas', valor: String(datos.cotizacionesNuevas) },
+  {
+    etiqueta: 'Piezas disponibles',
+    valor: String(datos.piezasDisponibles),
+    href: '/admin/piezas',
+  },
+  {
+    etiqueta: 'En proceso',
+    valor: String(datos.piezasEnProceso),
+    href: '/admin/piezas',
+  },
+  {
+    etiqueta: 'Valor en stock',
+    valor: formatUYU(datos.valorStock) ?? '$0',
+    href: '/admin/piezas',
+  },
+  {
+    etiqueta: 'Cotizaciones nuevas',
+    valor: String(datos.cotizacionesNuevas),
+    href: '/admin/cotizaciones',
+  },
 ];
 ---
 
@@ -21,10 +39,15 @@ const tarjetas = [
   <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     {
       tarjetas.map((tarjeta) => (
-        <div class="textura-papel rounded border border-linea p-5">
-          <p class="font-display text-3xl text-tinta">{tarjeta.valor}</p>
+        <a
+          href={tarjeta.href}
+          class="ui-tarjeta textura-papel rounded border border-linea p-5"
+        >
+          <p class="ui-tarjeta-valor font-display text-3xl text-tinta transition-colors duration-[180ms]">
+            {tarjeta.valor}
+          </p>
           <p class="rotulo mt-1">{tarjeta.etiqueta}</p>
-        </div>
+        </a>
       ))
     }
   </div>

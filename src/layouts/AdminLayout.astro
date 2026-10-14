@@ -73,6 +73,12 @@ const iconoNav: Record<string, string> = {
   </head>
 
   <body class="admin">
+    <!--
+      Fondo de ondas. Va primero y detrás de todo (z-index: -1), así que
+      nunca tapa un control ni roba un click.
+    -->
+    <div class="ui-olas" aria-hidden="true"></div>
+
     <!-- Barra superior: siempre visible, incluso al hacer scroll -->
     <header class="sticky top-0 z-30 border-b border-ui-borde bg-ui-panel">
       <div class="mx-auto flex h-14 max-w-[1400px] items-center gap-3 px-3 sm:px-5">
