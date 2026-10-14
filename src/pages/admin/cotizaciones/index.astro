@@ -1,0 +1,118 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { adminContext, ESTADOS_QUOTE, listarCotizaciones } from '../../../lib/admin';
+import type { EstadoQuote } from '../../../lib/types';
+
+const ctx = adminContext(Astro.request, Astro.cookies);
+const cotizaciones = await listarCotizaciones(ctx, 100);
+
+const filtro = Astro.url.searchParams.get('estado');
+const visibles = filtro
+  ? cotizaciones.filter((c) => c.estado === filtro)
+  : cotizaciones;
+
+const color: Record<EstadoQuote, string> = {
+  nueva: 'bg-[#3f5a8a]/15 text-[#2c3f60]',
+  cotizada: 'bg-[#9a6b2f]/15 text-caoba',
+  aceptada: 'bg-[#4f6b46]/15 text-[#33472e]',
+  en_taller: 'bg-[#4f6b46]/15 text-[#33472e]',
+  lista: 'bg-[#4f6b46]/15 text-[#33472e]',
+  entregada: 'bg-tinta/10 text-tinta-suave',
+  rechazada: 'bg-tinta/10 text-tinta-tenue',
+};
+
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleString('es-UY', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+---
+
+<AdminLayout titulo="Cotizaciones">
+  <p class="mt-2 text-sm text-tinta-suave">
+    Requests que llegan desde el formulario de la web. Nadie fuera del panel las
+    puede ver.
+  </p>
+
+  <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtrar por estado">
+    <a
+      href="/admin/cotizaciones"
+      class:list={[
+        'rounded border px-3 py-1.5 text-sm',
+        !filtro
+          ? 'border-nogal bg-nogal text-papel'
+          : 'border-linea text-tinta-suave hover:border-latón',
+      ]}
+    >
+      Todas ({cotizaciones.length})
+    </a>
+    {
+      ESTADOS_QUOTE.map((estado) => {
+        const total = cotizaciones.filter((c) => c.estado === estado.valor).length;
+        if (total === 0 && estado.valor !== 'nueva') return null;
+        return (
+          <a
+            href={`/admin/cotizaciones?estado=${estado.valor}`}
+            class:list={[
+              'rounded border px-3 py-1.5 text-sm',
+              filtro === estado.valor
+                ? 'border-nogal bg-nogal text-papel'
+                : 'border-linea text-tinta-suave hover:border-latón',
+            ]}
+          >
+            {estado.etiqueta} ({total})
+          </a>
+        );
+      })
+    }
+  </nav>
+
+  <ul class="mt-6 divide-y divide-linea rounded border border-linea bg-papel">
+    {
+      visibles.map((cotizacion) => (
+        <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div class="min-w-0">
+            <p class="text-sm text-tinta">
+              {cotizacion.nombre}
+              <span class="text-tinta-tenue">
+                {' '}
+                · {cotizacion.tipo_mueble ?? 'pieza sin especificar'}
+              </span>
+            </p>
+            <p class="mt-0.5 text-xs text-tinta-tenue">
+              {cotizacion.telefono}
+              {cotizacion.comuna ? ` · ${cotizacion.comuna}` : ''}
+              {' · '}
+              {fecha(cotizacion.created_at)}
+              {cotizacion.fotos.length > 0 && ` · ${cotizacion.fotos.length} foto(s)`}
+            </p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class:list={['rounded px-2 py-0.5 text-xs', color[cotizacion.estado]]}>
+              {ESTADOS_QUOTE.find((e) => e.valor === cotizacion.estado)?.etiqueta ??
+                cotizacion.estado}
+            </span>
+            <a
+              href={`/admin/cotizaciones/${cotizacion.id}`}
+              class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+            >
+              Abrir
+            </a>
+          </div>
+        </li>
+      ))
+    }
+
+    {
+      visibles.length === 0 && (
+        <li class="px-4 py-10 text-center text-sm text-tinta-suave">
+          {cotizaciones.length === 0
+            ? 'Todavía no llegó ninguna cotización.'
+            : 'Ninguna con ese estado.'}
+        </li>
+      )
+    }
+  </ul>
+</AdminLayout>

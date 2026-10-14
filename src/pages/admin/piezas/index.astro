@@ -1,0 +1,126 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { adminContext, ESTADOS_PIEZA, listarPiezas } from '../../../lib/admin';
+import { formatUYU } from '../../../lib/whatsapp';
+import type { EstadoPieza } from '../../../lib/types';
+
+const ctx = adminContext(Astro.request, Astro.cookies);
+const piezas = await listarPiezas(ctx);
+
+const filtro = Astro.url.searchParams.get('estado');
+const visibles = filtro ? piezas.filter((p) => p.estado === filtro) : piezas;
+
+const colorEstado: Record<EstadoPieza, string> = {
+  disponible: 'bg-[#4f6b46]/15 text-[#33472e]',
+  reservada: 'bg-[#9a6b2f]/15 text-caoba',
+  por_restaurar: 'bg-papel-oscuro text-tinta-suave',
+  en_restauracion: 'bg-[#3f5a8a]/15 text-[#2c3f60]',
+  vendida: 'bg-tinta/10 text-tinta-suave',
+  pausada: 'bg-tinta/10 text-tinta-suave',
+  borrador: 'bg-tinta/10 text-tinta-tenue',
+};
+---
+
+<AdminLayout titulo="Piezas">
+  <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+    <p class="text-sm text-tinta-suave">
+      Solo las <strong class="font-medium text-tinta">disponibles</strong> se ven
+      en la web.
+    </p>
+    <a href="/admin/piezas/nueva" class="btn-principal">Nueva pieza</a>
+  </div>
+
+  <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtrar por estado">
+    <a
+      href="/admin/piezas"
+      class:list={[
+        'rounded border px-3 py-1.5 text-sm',
+        !filtro
+          ? 'border-nogal bg-nogal text-papel'
+          : 'border-linea text-tinta-suave hover:border-latón',
+      ]}
+    >
+      Todas ({piezas.length})
+    </a>
+    {
+      ESTADOS_PIEZA.map((estado) => {
+        const total = piezas.filter((p) => p.estado === estado.valor).length;
+        return (
+          <a
+            href={`/admin/piezas?estado=${estado.valor}`}
+            class:list={[
+              'rounded border px-3 py-1.5 text-sm',
+              filtro === estado.valor
+                ? 'border-nogal bg-nogal text-papel'
+                : 'border-linea text-tinta-suave hover:border-latón',
+            ]}
+          >
+            {estado.etiqueta} ({total})
+          </a>
+        );
+      })
+    }
+  </nav>
+
+  <ul class="mt-6 divide-y divide-linea rounded border border-linea bg-papel">
+    {
+      visibles.map((pieza) => (
+        <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div class="min-w-0">
+            <p class="text-sm text-tinta">{pieza.titulo}</p>
+            <p class="mt-0.5 flex items-center gap-2 text-xs text-tinta-tenue">
+              <span
+                class:list={[
+                  'rounded px-2 py-0.5',
+                  colorEstado[pieza.estado],
+                ]}
+              >
+                {ESTADOS_PIEZA.find((e) => e.valor === pieza.estado)?.etiqueta ??
+                  pieza.estado}
+              </span>
+              {formatUYU(pieza.precio) ?? 'sin precio'}
+              {pieza.categoria ? ` · ${pieza.categoria}` : ''}
+              {pieza.destacada ? ' · destacada' : ''}
+            </p>
+          </div>
+          <div class="flex shrink-0 gap-3">
+            {pieza.estado === 'disponible' && (
+              <a
+                href={`/piezas/${pieza.slug}`}
+                target="_blank"
+                class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+              >
+                Ver
+              </a>
+            )}
+            <a
+              href={`/admin/piezas/${pieza.id}`}
+              class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+            >
+              Editar
+            </a>
+          </div>
+        </li>
+      ))
+    }
+
+    {
+      visibles.length === 0 && (
+        <li class="px-4 py-10 text-center">
+          <p class="text-sm text-tinta-suave">
+            {piezas.length === 0
+              ? 'Todavía no publicaste ninguna pieza.'
+              : 'Ninguna pieza con ese estado.'}
+          </p>
+          {
+            piezas.length === 0 && (
+              <a href="/admin/piezas/nueva" class="btn-principal mt-4">
+                Cargar la primera
+              </a>
+            )
+          }
+        </li>
+      )
+    }
+  </ul>
+</AdminLayout>

@@ -46,5 +46,49 @@ export const onRequest = defineMiddleware(async (context, next) => {
       : 'public, s-maxage=60, stale-while-revalidate=600',
   );
 
+  // Cabeceras de seguridad. apply: false en CSP porque se define abajo.
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+
+  // Política de contenido: el sitio solo carga scripts del mismo origen,
+  // estilos de Google Fonts (tipografías) e imágenes de Supabase.
+  const imagenes = [
+    "'self'",
+    'data:',
+    'blob:',
+    'https://*.supabase.co',
+    'https://*.supabase.in',
+  ].join(' ');
+
+  const connect = ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'].join(
+    ' ',
+  );
+
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      `script-src 'self'${esAdmin ? '' : " 'unsafe-inline'"}`,
+      // Tailwind inyecta estilos; los de Google Fonts necesitan su dominio.
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      'font-src https://fonts.gstatic.com',
+      `img-src ${imagenes}`,
+      `connect-src ${connect}`,
+      "frame-src https://www.google.com https://maps.google.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+    ].join('; '),
+  );
+
+  // El panel nunca debe quedar cacheado ni indexado.
+  if (esAdmin) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+
   return response;
 });

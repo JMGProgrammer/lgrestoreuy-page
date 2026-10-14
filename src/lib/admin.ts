@@ -11,6 +11,8 @@ import type {
   Quote,
   Service,
   SiteSettings,
+  EstadoPieza,
+  EstadoQuote,
 } from './types';
 
 export interface AdminContext {
@@ -252,3 +254,129 @@ export async function listarGaleria(ctx: AdminContext): Promise<GalleryItem[]> {
   if (error) throw new Error(`galería: ${error.message}`);
   return (data ?? []) as GalleryItem[];
 }
+
+// ------------------------------------------------------------------- imágenes
+
+/** Solo formatos de imagen. Nada de .php, .html ni executables. */
+const TIPOS_PERMITIDOS = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+
+const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+
+export interface SubidaImagen {
+  storage_path: string;
+  url: string;
+}
+
+/**
+ * Sube una imagen al bucket indicado. Valida tipo y tamaño en el servidor:
+ * el bucket es público, así que no queremos que pase nada raro.
+ */
+export async function subirImagen(
+  ctx: AdminContext,
+  bucket: string,
+  archivo: File,
+  prefijo: string,
+): Promise<SubidaImagen> {
+  if (!TIPOS_PERMITIDOS.has(archivo.type)) {
+    throw new Error('Solo se aceptan imágenes JPG, PNG, WebP o GIF.');
+  }
+
+  if (archivo.size > MAX_BYTES) {
+    throw new Error('La imagen supera los 8 MB.');
+  }
+
+  const extension = archivo.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const storagePath = `${prefijo}/${crypto.randomUUID()}.${extension}`;
+
+  const { error } = await ctx.supabase.storage
+    .from(bucket)
+    .upload(storagePath, archivo, {
+      cacheControl: '31536000',
+      contentType: archivo.type,
+      upsert: false,
+    });
+
+  if (error) throw new Error(`subida: ${error.message}`);
+
+  const { data } = ctx.supabase.storage.from(bucket).getPublicUrl(storagePath);
+  return { storage_path: storagePath, url: data.publicUrl };
+}
+
+/**
+ * Link firmado para ver una foto de cotización (bucket privado).
+ * Expira en una hora: alcanza para mirarla, no sirve para compartirla.
+ */
+export async function urlFirmada(
+  ctx: AdminContext,
+  storagePath: string,
+  segundos = 3600,
+): Promise<string | null> {
+  const { data, error } = await ctx.supabase.storage
+    .from('cotizaciones')
+    .createSignedUrl(storagePath, segundos);
+
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
+
+export async function listarFotosPieza(
+  ctx: AdminContext,
+  pieceId: string,
+) {
+  const { data, error } = await ctx.supabase
+    .from('piece_photos')
+    .select('*')
+    .eq('piece_id', pieceId)
+    .order('orden', { ascending: true });
+
+  if (error) throw new Error(`fotos: ${error.message}`);
+  return data ?? [];
+}
+
+export async function agregarFotoPieza(
+  ctx: AdminContext,
+  pieceId: string,
+  subida: SubidaImagen,
+  rol: 'general' | 'antes' | 'despues',
+  orden: number,
+) {
+  const { error } = await ctx.supabase.from('piece_photos').insert({
+    piece_id: pieceId,
+    storage_path: subida.storage_path,
+    url: subida.url,
+    rol,
+    orden,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+export async function borrarFotoPieza(ctx: AdminContext, id: string) {
+  const { error } = await ctx.supabase.from('piece_photos').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export const ESTADOS_PIEZA: { valor: EstadoPieza; etiqueta: string }[] = [
+  { valor: 'por_restaurar', etiqueta: 'Por restaurar' },
+  { valor: 'en_restauracion', etiqueta: 'En restauración' },
+  { valor: 'disponible', etiqueta: 'Disponible (se ve en la web)' },
+  { valor: 'reservada', etiqueta: 'Reservada' },
+  { valor: 'vendida', etiqueta: 'Vendida' },
+  { valor: 'pausada', etiqueta: 'Pausada' },
+  { valor: 'borrador', etiqueta: 'Borrador' },
+];
+
+export const ESTADOS_QUOTE: { valor: EstadoQuote; etiqueta: string }[] = [
+  { valor: 'nueva', etiqueta: 'Nueva' },
+  { valor: 'cotizada', etiqueta: 'Ya la cotizamos' },
+  { valor: 'aceptada', etiqueta: 'Aceptada' },
+  { valor: 'en_taller', etiqueta: 'En el taller' },
+  { valor: 'lista', etiqueta: 'Lista' },
+  { valor: 'entregada', etiqueta: 'Entregada' },
+  { valor: 'rechazada', etiqueta: 'Rechazada' },
+];

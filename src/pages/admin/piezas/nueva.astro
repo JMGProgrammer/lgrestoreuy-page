@@ -1,0 +1,100 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+const error = Astro.url.searchParams.get('error');
+
+const categorias = [
+  'Silla',
+  'Mesa',
+  'Cómoda',
+  'Armario',
+  'Sofá / sillón',
+  'Reloj',
+  'Cuadro',
+  'Lámpara',
+  'Otro',
+];
+---
+
+<AdminLayout titulo="Nueva pieza">
+  <a
+    href="/admin/piezas"
+    class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+  >
+    ← Volver a piezas
+  </a>
+
+  {
+    error && (
+      <p class="mt-4 rounded border border-[#9a2f2f] bg-[#9a2f2f]/10 px-4 py-3 text-sm text-[#7a2626]">
+        {error}
+      </p>
+    )
+  }
+
+  <form method="post" action="/api/admin/piezas/nueva" enctype="multipart/form-data" class="mt-6 max-w-2xl space-y-5">
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="campo-label" for="titulo">Título</label>
+        <input class="campo" id="titulo" name="titulo" required placeholder="Ej: Cómoda de nogal años 40" />
+      </div>
+      <div>
+        <label class="campo-label" for="categoria">Categoría</label>
+        <select class="campo" id="categoria" name="categoria">
+          <option value="">Sin categoría</option>
+          {categorias.map((c) => <option value={c}>{c}</option>)}
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label class="campo-label" for="descripcion">Descripción</label>
+      <textarea class="campo" id="descripcion" name="descripcion" rows="4"></textarea>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="campo-label" for="precio">Precio de venta (UYU)</label>
+        <input class="campo" id="precio" name="precio" inputmode="numeric" required />
+      </div>
+      <div>
+        <label class="campo-label" for="costo_compra">Costo de compra (UYU)</label>
+        <input class="campo" id="costo_compra" name="costo_compra" inputmode="numeric" />
+        <p class="mt-1 text-xs text-tinta-tenue">No se muestra en la web. Es para tu margen.</p>
+      </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="campo-label" for="medidas">Medidas</label>
+        <input class="campo" id="medidas" name="medidas" placeholder="120 × 80 × 45 cm" />
+      </div>
+      <div>
+        <label class="campo-label" for="ubicacion">Ubicación</label>
+        <input class="campo" id="ubicacion" name="ubicacion" placeholder="Ej:MONTEVIDEO" />
+      </div>
+    </div>
+
+    <div>
+      <span class="campo-label">Fotos</span>
+      <input
+        class="campo"
+        id="fotos"
+        name="fotos"
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        multiple
+      />
+      <p class="mt-1 text-xs text-tinta-tenue">
+        JPG, PNG, WebP o GIF. Hasta 8 MB cada una. La primera es la portada.
+      </p>
+    </div>
+
+    <p class="text-xs text-tinta-tenue">
+      Se guarda como borrador. Recién cuando la marcás como disponible aparece en
+      la web.
+    </p>
+
+    <button type="submit" class="btn-principal">Crear pieza</button>
+  </form>
+</AdminLayout>

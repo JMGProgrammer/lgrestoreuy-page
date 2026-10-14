@@ -1,0 +1,243 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import {
+  adminContext,
+  ESTADOS_QUOTE,
+  leerContenido,
+  numeroONull,
+  urlFirmada,
+} from '../../../lib/admin';
+import { getCurrentUser } from '../../../lib/supabase/server';
+import { formatUYU, whatsappLink } from '../../../lib/whatsapp';
+import type { EstadoQuote } from '../../../lib/types';
+
+const ctx = adminContext(Astro.request, Astro.cookies);
+const id = Astro.params.id ?? '';
+const usuario = await getCurrentUser(Astro.request, Astro.cookies);
+
+const ESTADOS_VALIDOS = ESTADOS_QUOTE.map((e) => e.valor);
+let error = '';
+let aviso = '';
+
+if (Astro.request.method === 'POST' && usuario) {
+  const form = await Astro.request.formData();
+  const estadoPedido = String(form.get('estado') ?? 'nueva');
+
+  if (!ESTADOS_VALIDOS.includes(estadoPedido as EstadoQuote)) {
+    error = 'Estado inválido.';
+  } else {
+    const { error: err } = await ctx.supabase
+      .from('quotes')
+      .update({
+        estado: estadoPedido,
+        monto_cotizado: numeroONull(form.get('monto_cotizado')),
+        monto_abono: numeroONull(form.get('monto_abono')),
+      })
+      .eq('id', id);
+
+    if (err) error = err.message;
+    else aviso = 'Guardado.';
+  }
+}
+
+const { data: cotizacion } = await ctx.supabase
+  .from('quotes')
+  .select('*')
+  .eq('id', id)
+  .maybeSingle();
+
+if (!cotizacion) return Astro.redirect('/admin/cotizaciones');
+
+// Las fotos viven en un bucket privado: se abren con links firmados de 1 hora.
+const fotos = await Promise.all(
+  (cotizacion.fotos ?? []).map((ruta: string) => urlFirmada(ctx, ruta)),
+);
+
+const contenido = await leerContenido(ctx);
+const resumen = [
+  cotizacion.tipo_mueble && `Pieza: ${cotizacion.tipo_mueble}`,
+  cotizacion.servicio && `Servicio: ${cotizacion.servicio}`,
+  cotizacion.medidas && `Medidas: ${cotizacion.medidas}`,
+  cotizacion.comuna && `Comuna: ${cotizacion.comuna}`,
+].filter(Boolean) as string[];
+
+const mensaje = [
+  `Hola ${cotizacion.nombre}, somos de ${contenido.nombre_taller}.`,
+  cotizacion.tipo_mueble ? `Sobre tu ${cotizacion.tipo_mueble.toLowerCase()}:` : '',
+  cotizacion.monto_cotizado ? `El presupuesto es de ${formatUYU(cotizacion.monto_cotizado)} UYU.` : '',
+  '¿Lo talkmos?',
+]
+  .filter(Boolean)
+  .join('\n');
+
+const wa = whatsappLink(
+  cotizacion.telefono.replace(/\D/g, '').length > 7
+    ? cotizacion.telefono.replace(/\D/g, '')
+    : contenido.whatsapp,
+  mensaje,
+);
+---
+
+<AdminLayout titulo={`Cotización de ${cotizacion.nombre}`}>
+  <a
+    href="/admin/cotizaciones"
+    class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+  >
+    ← Volver a cotizaciones
+  </a>
+
+  {
+    error && (
+      <p class="mt-4 rounded border border-[#9a2f2f] bg-[#9a2f2f]/10 px-4 py-3 text-sm text-[#7a2626]">
+        {error}
+      </p>
+    )
+  }
+
+  {
+    aviso && (
+      <p class="mt-4 rounded border border-[#4f6b46] bg-[#4f6b46]/10 px-4 py-3 text-sm text-[#33472e]">
+        {aviso}
+      </p>
+    )
+  }
+
+  <div class="mt-6 grid gap-8 lg:grid-cols-[1.2fr_1fr]">
+    <div>
+      <dl class="space-y-3 text-sm">
+        {
+          resumen.map((linea) => (
+            <div class="flex gap-2">
+              <dt class="text-tinta-suave">{linea.split(':')[0]}:</dt>
+              <dd class="text-tinta">{linea.split(':').slice(1).join(':').trim()}</dd>
+            </div>
+          ))
+        }
+        <div class="flex gap-2">
+          <dt class="w-24 shrink-0 text-tinta-tenue">Teléfono</dt>
+          <dd class="text-tinta">{cotizacion.telefono}</dd>
+        </div>
+        <div class="flex gap-2">
+          <dt class="w-24 shrink-0 text-tinta-tenue">Recibida</dt>
+          <dd class="text-tinta">
+            {new Date(cotizacion.created_at).toLocaleString('es-UY')}
+          </dd>
+        </div>
+      </dl>
+
+      {
+        cotizacion.descripcion && (
+          <div class="mt-6">
+            <p class="rotulo mb-2">Qué pidió</p>
+            <p class="rounded border border-linea bg-papel p-4 text-sm leading-relaxed text-tinta-suave">
+              {cotizacion.descripcion}
+            </p>
+          </div>
+        )
+      }
+
+      {
+        fotos.filter(Boolean).length > 0 && (
+          <div class="mt-6">
+            <p class="rotulo mb-2">Fotos que mandó</p>
+            <ul class="grid grid-cols-3 gap-3 sm:grid-cols-5">
+              {fotos.map((url) =>
+                url ? (
+                  <li>
+                    <img
+                      src={url}
+                      alt="Foto de la cotización"
+                      class="aspect-square w-full rounded border border-linea object-cover"
+                      loading="lazy"
+                    />
+                  </li>
+                ) : null,
+              )}
+            </ul>
+            <p class="mt-2 text-xs text-tinta-tenue">
+              Links válidos por una hora. No son públicas: si alguien tiene la URL
+              no puede verla después.
+            </p>
+          </div>
+        )
+      }
+    </div>
+
+    <div>
+      <form method="post" class="space-y-4 rounded border border-linea bg-papel p-5">
+        <div>
+          <label class="campo-label" for="estado">Estado</label>
+          <select class="campo" id="estado" name="estado">
+            {
+              ESTADOS_QUOTE.map((estado) => (
+                <option
+                  value={estado.valor}
+                  selected={cotizacion.estado === estado.valor}
+                >
+                  {estado.etiqueta}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="campo-label" for="monto_cotizado">Presupuesto (UYU)</label>
+            <input
+              class="campo"
+              id="monto_cotizado"
+              name="monto_cotizado"
+              inputmode="numeric"
+              value={cotizacion.monto_cotizado ?? ''}
+            />
+          </div>
+          <div>
+            <label class="campo-label" for="monto_abono">Abono (UYU)</label>
+            <input
+              class="campo"
+              id="monto_abono"
+              name="monto_abono"
+              inputmode="numeric"
+              value={cotizacion.monto_abono ?? ''}
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-principal w-full">Guardar</button>
+      </form>
+
+      <div class="mt-6 rounded border border-linea bg-papel p-5">
+        <p class="rotulo mb-3">Responderle</p>
+        {
+          wa ? (
+            <>
+              <a
+                href={wa}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-wa w-full"
+              >
+                Escribir por WhatsApp
+              </a>
+              <p class="mt-2 text-xs text-tinta-tenue">
+                Abre el chat con el mensaje ya escrito.
+              </p>
+            </>
+          ) : (
+            <p class="text-sm text-tinta-suave">
+              Cargá tu WhatsApp en{' '}
+              <a
+                href="/admin/contenido"
+                class="underline decoration-latón underline-offset-4"
+              >
+                /admin/contenido
+              </a>{' '}
+              para responder con un clic.
+            </p>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</AdminLayout>

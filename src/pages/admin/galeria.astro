@@ -1,0 +1,205 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import {
+  adminContext,
+  listarGaleria,
+  numeroONull,
+  subirImagen,
+  textoONull,
+} from '../../lib/admin';
+import { getCurrentUser } from '../../lib/supabase/server';
+import type { GalleryItem } from '../../lib/types';
+
+const ctx = adminContext(Astro.request, Astro.cookies);
+const usuario = await getCurrentUser(Astro.request, Astro.cookies);
+let error = '';
+
+if (Astro.request.method === 'POST' && usuario) {
+  const form = await Astro.request.formData();
+  const accion = String(form.get('_accion') ?? '');
+
+  if (accion === 'subir') {
+    const antes = form.get('antes');
+    const despues = form.get('despues');
+
+    if (!(antes instanceof File) || antes.size === 0) {
+      error = 'Falta la foto "antes".';
+    } else if (!(despues instanceof File) || despues.size === 0) {
+      error = 'Falta la foto "después".';
+    } else {
+      try {
+        const galeria = await listarGaleria(ctx);
+        const folder = `item-${Date.now()}`;
+
+        const antesSubida = await subirImagen(ctx, 'galeria', antes, folder);
+        const despuesSubida = await subirImagen(ctx, 'galeria', despues, folder);
+
+        await ctx.supabase.from('gallery_items').insert({
+          titulo: textoONull(form.get('titulo')),
+          antes_url: antesSubida.url,
+          despues_url: despuesSubida.url,
+          tag_servicio: textoONull(form.get('tag_servicio')),
+          destacada_home: form.get('destacada_home') === 'on',
+          orden: numeroONull(form.get('orden')) ?? galeria.length,
+          created_by: usuario.id,
+        });
+      } catch (e) {
+        error = e instanceof Error ? e.message : 'No se pudo subir.';
+      }
+    }
+
+    return Astro.redirect('/admin/galeria');
+  }
+
+  if (accion === 'borrar') {
+    await ctx.supabase
+      .from('gallery_items')
+      .delete()
+      .eq('id', String(form.get('id') ?? ''));
+    return Astro.redirect('/admin/galeria');
+  }
+
+  if (accion === 'destacar') {
+    await ctx.supabase
+      .from('gallery_items')
+      .update({ destacada_home: form.get('valor') === 'on' })
+      .eq('id', String(form.get('id') ?? ''));
+    return Astro.redirect('/admin/galeria');
+  }
+}
+
+const galeria = await listarGaleria(ctx);
+---
+
+<AdminLayout titulo="Galería antes/después">
+  <p class="mt-2 max-w-2xl text-sm text-tinta-suave">
+    Estas fotos alimentan el bloque principal de la home. Marcá{' '}
+    <strong class="font-medium text-tinta">destacada</strong> solo en las
+    mejores: la web muestra hasta 3.
+  </p>
+
+  {
+    error && (
+      <p class="mt-4 rounded border border-[#9a2f2f] bg-[#9a2f2f]/10 px-4 py-3 text-sm text-[#7a2626]">
+        {error}
+      </p>
+    )
+  }
+
+  <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {
+      galeria.map((item: GalleryItem) => (
+        <li class="overflow-hidden rounded border border-linea bg-papel">
+          <div class="grid grid-cols-2">
+            <img
+              src={item.antes_url}
+              alt={`${item.titulo ?? 'Pieza'} antes`}
+              class="aspect-square w-full object-cover"
+              loading="lazy"
+            />
+            <img
+              src={item.despues_url}
+              alt={`${item.titulo ?? 'Pieza'} después`}
+              class="aspect-square w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+          <div class="p-3">
+            <p class="text-sm text-tinta">{item.titulo ?? 'Sin título'}</p>
+            <p class="text-xs text-tinta-tenue">{item.tag_servicio ?? 'Sin etiqueta'}</p>
+            <div class="mt-3 flex items-center justify-between">
+              <form method="post">
+                <input type="hidden" name="_accion" value="destacar" />
+                <input type="hidden" name="id" value={item.id} />
+                <input
+                  type="hidden"
+                  name="valor"
+                  value={item.destacada_home ? 'off' : 'on'}
+                />
+                <button type="submit" class="text-xs underline decoration-latón underline-offset-4">
+                  {item.destacada_home ? 'Quitar de la home' : 'Destacar en la home'}
+                </button>
+              </form>
+              <form method="post">
+                <input type="hidden" name="_accion" value="borrar" />
+                <input type="hidden" name="id" value={item.id} />
+                <button
+                  type="submit"
+                  class="text-xs text-[#9a2f2f] underline underline-offset-4"
+                  onclick="return confirm('¿Borrar esta entrada de la galería?')"
+                >
+                  Borrar
+                </button>
+              </form>
+            </div>
+          </div>
+        </li>
+      ))
+    }
+
+    {
+      galeria.length === 0 && (
+        <li class="rounded border border-dashed border-linea px-4 py-10 text-center text-sm text-tinta-suave sm:col-span-2 lg:col-span-3">
+          Sin pares antes/después todavía.
+        </li>
+      )
+    }
+  </ul>
+
+  <h2 class="mt-12 text-lg text-tinta">Agregar un par</h2>
+  <form
+    method="post"
+    enctype="multipart/form-data"
+    class="mt-4 max-w-2xl space-y-4"
+  >
+    <input type="hidden" name="_accion" value="subir" />
+
+    <div>
+      <label class="campo-label" for="titulo">Título</label>
+      <input class="campo" id="titulo" name="titulo" placeholder="Ej: Cómoda de nogal" />
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="campo-label" for="antes">Foto antes</label>
+        <input
+          class="campo"
+          id="antes"
+          name="antes"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          required
+        />
+      </div>
+      <div>
+        <label class="campo-label" for="despues">Foto después</label>
+        <input
+          class="campo"
+          id="despues"
+          name="despues"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          required
+        />
+      </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="campo-label" for="tag_servicio">Servicio</label>
+        <input class="campo" id="tag_servicio" name="tag_servicio" placeholder="Ej: Lustre" />
+      </div>
+      <div>
+        <label class="campo-label" for="orden">Orden</label>
+        <input class="campo" id="orden" name="orden" type="number" min="0" />
+      </div>
+    </div>
+
+    <label class="flex items-center gap-2 text-sm text-tinta-suave">
+      <input type="checkbox" name="destacada_home" class="accent-[#a8763e]" />
+      Mostrar en la home
+    </label>
+
+    <button type="submit" class="btn-principal">Subir par</button>
+  </form>
+</AdminLayout>
