@@ -16,6 +16,7 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
     "@tailwindcss/vite": "^4.3.3",
+    "alpinejs": "^3.17.4",
     "astro": "^7.3.8",
     "tailwindcss": "^4.3.3"
   },

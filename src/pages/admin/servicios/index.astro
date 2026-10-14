@@ -1,140 +1,496 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import {
-  adminContext,
-  listarServicios,
-  numeroONull,
-  textoONull,
-  slugify,
-  crearServicio,
-} from '../../../lib/admin';
-import { formatPriceRange } from '../../../lib/whatsapp';
+import { adminContext, listarServicios } from '../../../lib/admin';
+import Icon from '../../../components/admin/Icon.astro';
 
 const ctx = adminContext(Astro.request, Astro.cookies);
-
-let error = '';
-if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
-  const nombre = String(form.get('nombre') ?? '').trim();
-
-  if (!nombre) {
-    error = 'El servicio necesita un nombre.';
-  } else {
-    try {
-      await crearServicio(ctx, {
-        nombre,
-        slug: slugify(nombre),
-        descripcion: textoONull(form.get('descripcion')),
-        precio_min: numeroONull(form.get('precio_min')),
-        precio_max: numeroONull(form.get('precio_max')),
-        icono: textoONull(form.get('icono')),
-        orden: numeroONull(form.get('orden')) ?? 0,
-        activo: true,
-      });
-      return Astro.redirect('/admin/servicios?ok=creado');
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'No se pudo crear.';
-    }
-  }
-}
-
 const servicios = await listarServicios(ctx);
-const ok = Astro.url.searchParams.get('ok');
+
+// Se pasa al cliente como JSON, no como script inline: el panel no permite
+// scripts inline (CSP). El "<" escapado evita que un texto rompa el HTML.
+const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 ---
 
-<AdminLayout titulo="Servicios">
-  <p class="mt-2 max-w-2xl text-sm text-tinta-suave">
-    Lo que aparece en <a href="/servicios" class="underline decoration-latón underline-offset-4">la página de servicios</a>.
-    Si un servicio está inactivo, no se ve en la web.
-  </p>
+<AdminLayout
+  titulo="Servicios"
+  subtitulo="Lo que el cliente ve en la página de servicios. Arrastrá para cambiar el orden."
+>
+  <script type="application/json" id="datos-servicios" set:html={datosJson} />
 
-  {
-    error && (
-      <p class="mt-4 rounded border border-[#9a2f2f] bg-[#9a2f2f]/10 px-4 py-3 text-sm text-[#7a2626]">
-        {error}
-      </p>
-    )
-  }
-
-  {
-    ok && (
-      <p class="mt-4 rounded border border-[#4f6b46] bg-[#4f6b46]/10 px-4 py-3 text-sm text-[#33472e]">
-        Servicio creado. Ya está en la web.
-      </p>
-    )
-  }
-
-  <ul class="mt-6 divide-y divide-linea rounded border border-linea bg-papel">
-    {
-      servicios.map((servicio) => (
-        <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div class="min-w-0">
-            <p class="flex items-center gap-2 text-sm text-tinta">
-              {servicio.nombre}
-              {!servicio.activo && (
-                <span class="rotulo rounded bg-papel-oscuro px-2 py-0.5">
-                  oculto
-                </span>
-              )}
-              {servicio.activo &&
-                (servicio.precio_min === null || servicio.precio_max === null) && (
-                  <span class="rotulo rounded bg-[#9a6b2f]/15 px-2 py-0.5 text-caoba">
-                    sin precio
-                  </span>
-                )}
-            </p>
-            <p class="mt-0.5 truncate text-xs text-tinta-tenue">
-              {formatPriceRange(servicio.precio_min, servicio.precio_max)}
-            </p>
-          </div>
-          <a
-            href={`/admin/servicios/${servicio.id}`}
-            class="shrink-0 text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+  <div x-data="servicios()" x-cloak class="space-y-4">
+    <!-- ============ Alta ============ -->
+    <template x-if="creando">
+      <form
+        class="ui-panel space-y-3 p-4"
+        @submit.prevent="crear()"
+      >
+        <div class="flex items-center justify-between">
+          <p class="ui-seccion-titulo">Nuevo servicio</p>
+          <button
+            type="button"
+            class="ui-btn ui-btn-fantasma ui-btn-sm ui-btn-icono"
+            @click="creando = false"
+            aria-label="Cancelar"
           >
-            Editar
-          </a>
-        </li>
-      ))
-    }
+            <Icon nombre="cruz" />
+          </button>
+        </div>
 
-    {
-      servicios.length === 0 && (
-        <li class="px-4 py-8 text-center text-sm text-tinta-suave">
-          Todavía no hay servicios.
-        </li>
-      )
-    }
-  </ul>
+        <input
+          class="ui-campo"
+          x-model="form.nombre"
+          placeholder="Nombre del servicio"
+          aria-label="Nombre del servicio"
+          required
+        />
 
-  <h2 class="mt-10 text-lg text-tinta">Agregar un servicio</h2>
-  <form method="post" class="mt-4 max-w-2xl space-y-4">
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div>
-        <label class="campo-label" for="nombre">Nombre</label>
-        <input class="campo" id="nombre" name="nombre" required placeholder="Ej: Tapicería" />
+        <textarea
+          class="ui-campo"
+          x-model="form.descripcion"
+          placeholder="Qué incluye y para quién es. Se muestra debajo del nombre."
+          rows="3"
+        ></textarea>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="ui-label" for="nuevo-min">Precio desde</label>
+            <input
+              id="nuevo-min"
+              class="ui-campo ui-num"
+              x-model="form.precio_min"
+              placeholder="$ 0"
+              inputmode="numeric"
+            />
+          </div>
+          <div>
+            <label class="ui-label" for="nuevo-max">Precio hasta</label>
+            <input
+              id="nuevo-max"
+              class="ui-campo ui-num"
+              x-model="form.precio_max"
+              placeholder="$ 0"
+              inputmode="numeric"
+            />
+          </div>
+        </div>
+
+        <p class="ui-ayuda">
+          Si lo dejás vacío se publica como “A consultar”.
+        </p>
+
+        <p x-show="error" x-text="error" class="ui-error"></p>
+
+        <div class="flex gap-2">
+          <button type="submit" class="ui-btn ui-btn-acento" :disabled="guardando">
+            Agregar
+          </button>
+          <button type="button" class="ui-btn ui-btn-neutro" @click="creando = false">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </template>
+
+    <!-- ============ Lista ============ -->
+    <div class="ui-panel overflow-hidden">
+      <div
+        class="flex items-center justify-between gap-3 border-b border-ui-borde bg-ui-panel-2 px-3 py-2"
+      >
+        <p class="ui-seccion-titulo">
+          <span x-text="lista.length"></span> servicios ·
+          <span x-text="activos()"></span> visibles
+        </p>
+
+        <button
+          type="button"
+          class="ui-btn ui-btn-primario ui-btn-sm"
+          @click="abrirNuevo()"
+          x-show="!creando"
+        >
+          <Icon nombre="mas" clase="size-4" />
+          Nuevo
+        </button>
       </div>
-      <div>
-        <label class="campo-label" for="orden">Orden en la web</label>
-        <input class="campo" id="orden" name="orden" type="number" min="0" placeholder="0" />
+
+      <ul class="min-h-16">
+        <template x-for="(s, indice) in lista" :key="s.id">
+          <li
+            class="ui-fila"
+            :class="{
+              'ui-fila-arrastrando': arrastrando === s.id,
+              'ui-fila-soltada': idSoltado === s.id,
+              'guardando': guardandoId === s.id,
+            }"
+            draggable="true"
+            @dragstart="arrastrar($event, s.id)"
+            @dragover.prevent
+            @drop.prevent="soltar($event, indice)"
+            @dragend="terminarArrastre()"
+          >
+            <!-- asa + orden -->
+            <span class="ui-asa shrink-0 select-none" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+                <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+                <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
+              </svg>
+            </span>
+
+            <!-- Modo lectura -->
+            <div class="min-w-0 flex-1" x-show="editando !== s.id">
+              <p class="flex items-center gap-2 text-sm font-medium text-ui-texto">
+                <span class="ui-truncate" x-text="s.nombre"></span>
+                <span
+                  x-show="!s.activo"
+                  class="ui-chip ui-chip-neutro"
+                >oculto</span>
+                <span
+                  x-show="s.activo && (s.precio_min === null || s.precio_max === null)"
+                  class="ui-chip ui-chip-alerta"
+                >sin precio</span>
+              </p>
+              <p class="ui-num mt-0.5 text-ui-texto-2" x-text="precio(s)"></p>
+            </div>
+
+            <!-- Modo edición -->
+            <div class="min-w-0 flex-1 space-y-2" x-show="editando === s.id" x-cloak>
+              <input class="ui-campo" x-model="s.nombre" aria-label="Nombre" />
+              <textarea
+                class="ui-campo"
+                x-model="s.descripcion"
+                rows="2"
+                placeholder="Descripción"
+                aria-label="Descripción"
+              ></textarea>
+              <div class="grid grid-cols-2 gap-2">
+                <input
+                  class="ui-campo ui-num"
+                  x-model="s.precio_min"
+                  placeholder="Precio desde"
+                  inputmode="numeric"
+                  aria-label="Precio desde"
+                />
+                <input
+                  class="ui-campo ui-num"
+                  x-model="s.precio_max"
+                  placeholder="Precio hasta"
+                  inputmode="numeric"
+                  aria-label="Precio hasta"
+                />
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="flex shrink-0 items-center gap-1">
+              <!-- Visible -->
+              <button
+                type="button"
+                class="relative h-6 w-10 shrink-0 rounded-full transition-colors"
+                :class="s.activo ? 'bg-ui-acento' : 'bg-ui-borde-fuerte'"
+                @click="alternar(s)"
+                :aria-label="s.activo ? 'Ocultar de la web' : 'Mostrar en la web'"
+                :aria-pressed="s.activo"
+              >
+                <span
+                  class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform"
+                  :class="s.activo ? 'translate-x-4' : 'translate-x-0'"
+                ></span>
+              </button>
+
+              <template x-if="editando !== s.id">
+                <button
+                  type="button"
+                  class="ui-btn ui-btn-fantasma ui-btn-sm ui-btn-icono"
+                  @click="empezarEdicion(s)"
+                  aria-label="Editar"
+                >
+                  <Icon nombre="lapiz" />
+                </button>
+              </template>
+
+              <template x-if="editando === s.id">
+                <button
+                  type="button"
+                  class="ui-btn ui-btn-primario ui-btn-sm"
+                  @click="guardar(s)"
+                  :disabled="guardandoId === s.id"
+                >
+                  Guardar
+                </button>
+              </template>
+
+              <template x-if="editando === s.id">
+                <button
+                  type="button"
+                  class="ui-btn ui-btn-fantasma ui-btn-sm"
+                  @click="cancelarEdicion()"
+                >
+                  Cancelar
+                </button>
+              </template>
+
+              <button
+                type="button"
+                class="ui-btn ui-btn-peligro ui-btn-sm ui-btn-icono"
+                @click="eliminar(s, indice)"
+                aria-label="Eliminar"
+                x-show="editando !== s.id"
+              >
+                <Icon nombre="tacho" />
+              </button>
+            </div>
+          </li>
+        </template>
+      </ul>
+
+      <!-- Estado vacío -->
+      <div x-show="lista.length === 0" class="ui-vacio" x-cloak>
+        <p class="ui-vacio-titulo">Todavía no hay servicios</p>
+        <p class="ui-vacio-texto">
+          Agregá los trabajos que hacés. Es lo primero que ve el cliente.
+        </p>
+        <button type="button" class="ui-btn ui-btn-acento" @click="abrirNuevo()">
+          <Icon nombre="mas" clase="size-4" />
+          Crear el primero
+        </button>
       </div>
     </div>
 
-    <div>
-      <label class="campo-label" for="descripcion">Descripción</label>
-      <textarea class="campo" id="descripcion" name="descripcion" rows="3"></textarea>
-    </div>
-
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div>
-        <label class="campo-label" for="precio_min">Precio desde (UYU)</label>
-        <input class="campo" id="precio_min" name="precio_min" inputmode="numeric" placeholder="A consultar" />
-      </div>
-      <div>
-        <label class="campo-label" for="precio_max">Precio hasta (UYU)</label>
-        <input class="campo" id="precio_max" name="precio_max" inputmode="numeric" placeholder="A consultar" />
-      </div>
-    </div>
-
-    <button type="submit" class="btn-principal">Agregar servicio</button>
-  </form>
+    <p class="text-xs text-ui-texto-3">
+      La web muestra los servicios visibles en este orden. Los cambios se ven en
+      menos de un minuto.
+    </p>
+  </div>
 </AdminLayout>
+
+<script>
+  import { Alpine, api, avisarError, avisos, leerDatos } from '../../../scripts/admin';
+
+  interface Servicio {
+    id: string;
+    nombre: string;
+    descripcion: string | null;
+    precio_min: number | null;
+    precio_max: number | null;
+    icono: string | null;
+    orden: number;
+    activo: boolean;
+  }
+
+  const formato = new Intl.NumberFormat('es-UY');
+
+  /**
+   * Función nombrada a propósito: así TypeScript infiere el tipo de `this`
+   * dentro de los métodos. Con una flecha anónima el tipado se pierde.
+   */
+  function serviciosEstado() {
+    return {
+    lista: leerDatos<Servicio[]>('datos-servicios'),
+    editando: null as string | null,
+    original: null as Servicio | null,
+    guardando: false,
+    guardandoId: null as string | null,
+    creando: false,
+    arrastrando: null as string | null,
+    idSoltado: null as string | null,
+    error: '',
+
+    form: { nombre: '', descripcion: '', precio_min: '', precio_max: '' },
+
+    activos() {
+      return this.lista.filter((s) => s.activo).length;
+    },
+
+    precio(s: Servicio) {
+      const min = s.precio_min;
+      const max = s.precio_max;
+      if (min === null && max === null) return 'A consultar';
+      if (min !== null && max !== null)
+        return `$${formato.format(min)} – $${formato.format(max)} UYU`;
+      if (min !== null) return `Desde $${formato.format(min)} UYU`;
+      return `Hasta $${formato.format(max ?? 0)} UYU`;
+    },
+
+    abrirNuevo() {
+      this.error = '';
+      this.form = { nombre: '', descripcion: '', precio_min: '', precio_max: '' };
+      this.creando = true;
+    },
+
+    async crear() {
+      this.error = '';
+      if (!this.form.nombre.trim()) {
+        this.error = 'Poné un nombre.';
+        return;
+      }
+
+      this.guardando = true;
+      try {
+        const { servicio } = await api<{ servicio: Servicio }>(
+          '/api/admin/servicios',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              nombre: this.form.nombre.trim(),
+              descripcion: this.form.descripcion.trim() || null,
+              precio_min: this.form.precio_min || null,
+              precio_max: this.form.precio_max || null,
+              orden: this.lista.length,
+            }),
+          },
+        );
+
+        this.lista.push(servicio);
+        this.creando = false;
+        avisos.exito('Servicio agregado');
+      } catch (e) {
+        this.error = e instanceof Error ? e.message : 'No se pudo crear.';
+      } finally {
+        this.guardando = false;
+      }
+    },
+
+    empezarEdicion(s: Servicio) {
+      this.original = JSON.parse(JSON.stringify(s));
+      this.editando = s.id;
+    },
+
+    cancelarEdicion() {
+      if (this.original && this.editando) {
+        const indice = this.lista.findIndex((x) => x.id === this.editando);
+        if (indice >= 0) this.lista[indice] = this.original;
+      }
+      this.editando = null;
+      this.original = null;
+    },
+
+    async guardar(s: Servicio) {
+      if (!s.nombre.trim()) {
+        avisarError(new Error('El nombre no puede quedar vacío.'));
+        return;
+      }
+
+      this.guardandoId = s.id;
+      try {
+        const { servicio } = await api<{ servicio: Servicio }>(
+          `/api/admin/servicios/${s.id}`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({
+              nombre: s.nombre.trim(),
+              descripcion: s.descripcion?.trim() || null,
+              precio_min: s.precio_min || null,
+              precio_max: s.precio_max || null,
+            }),
+          },
+        );
+
+        Object.assign(s, servicio);
+        this.editando = null;
+        this.original = null;
+        avisos.exito('Guardado');
+      } catch (e) {
+        avisarError(e);
+      } finally {
+        this.guardandoId = null;
+      }
+    },
+
+    async alternar(s: Servicio) {
+      const anterior = s.activo;
+      s.activo = !s.activo; // optimista: responde al instante
+
+      try {
+        await api(`/api/admin/servicios/${s.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ activo: s.activo }),
+        });
+      } catch (e) {
+        s.activo = anterior; // si falla, vuelve atrás
+        avisarError(e);
+      }
+    },
+
+    async eliminar(s: Servicio, indice: number) {
+      const copia = JSON.parse(JSON.stringify(s));
+      this.lista.splice(indice, 1);
+
+      try {
+        await api(`/api/admin/servicios/${s.id}`, { method: 'DELETE' });
+
+        avisos.mostrar(`Se eliminó “${copia.nombre}”`, 'ok', {
+          texto: 'Deshacer',
+          fn: () => this.restaurar(copia, indice),
+        });
+      } catch (e) {
+        this.lista.splice(indice, 0, copia);
+        avisarError(e);
+      }
+    },
+
+    async restaurar(s: Servicio, indice: number) {
+      try {
+        const { servicio } = await api<{ servicio: Servicio }>(
+          '/api/admin/servicios',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              nombre: s.nombre,
+              descripcion: s.descripcion,
+              precio_min: s.precio_min,
+              precio_max: s.precio_max,
+              icono: s.icono,
+              orden: s.orden,
+              activo: s.activo,
+            }),
+          },
+        );
+
+        this.lista.splice(indice, 0, servicio);
+        avisos.exito('Servicio restaurado');
+      } catch (e) {
+        avisarError(e);
+      }
+    },
+
+    arrastrar(evento: DragEvent, id: string) {
+      this.arrastrando = id;
+      evento.dataTransfer?.setData('text/plain', id);
+      if (evento.dataTransfer) evento.dataTransfer.effectAllowed = 'move';
+    },
+
+    async soltar(evento: DragEvent, indice: number) {
+      evento.preventDefault();
+      const idArrastrado =
+        this.arrastrando ??
+        evento.dataTransfer?.getData('text/plain') ??
+        null;
+
+      const desde = this.lista.findIndex((s) => s.id === idArrastrado);
+      this.terminarArrastre();
+
+      if (desde < 0 || desde === indice) return;
+
+      const [movido] = this.lista.splice(desde, 1);
+      this.lista.splice(indice, 0, movido);
+      this.idSoltado = movido.id;
+
+      try {
+        await api('/api/admin/servicios', {
+          method: 'PATCH',
+          body: JSON.stringify({ ordenes: this.lista.map((s) => s.id) }),
+        });
+        setTimeout(() => (this.idSoltado = null), 600);
+      } catch (e) {
+        avisarError(e);
+      }
+    },
+
+    terminarArrastre() {
+      this.arrastrando = null;
+    },
+  };
+  }
+
+  Alpine.data('servicios', serviciosEstado);
+</script>

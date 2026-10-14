@@ -37,18 +37,19 @@ export function slugify(texto: string): string {
     .slice(0, 60);
 }
 
-export function numeroONull(valor: FormDataEntryValue | null): number | null {
-  if (typeof valor !== 'string') return null;
-  const limpio = valor.replace(/[^\d]/g, '');
+/** Acepta cualquier valor: llega de FormData o de un JSON del panel. */
+export function numeroONull(valor: unknown): number | null {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const limpio = String(valor).replace(/[^\d]/g, '');
   if (!limpio) return null;
   const n = Number.parseInt(limpio, 10);
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
-export function textoONull(valor: FormDataEntryValue | null): string | null {
+export function textoONull(valor: unknown, max = 2000): string | null {
   if (typeof valor !== 'string') return null;
   const limpio = valor.trim();
-  return limpio.length > 0 ? limpio.slice(0, 2000) : null;
+  return limpio.length > 0 ? limpio.slice(0, max) : null;
 }
 
 // ---------------------------------------------------------------- servicios
@@ -379,4 +380,15 @@ export const ESTADOS_QUOTE: { valor: EstadoQuote; etiqueta: string }[] = [
   { valor: 'lista', etiqueta: 'Lista' },
   { valor: 'entregada', etiqueta: 'Entregada' },
   { valor: 'rechazada', etiqueta: 'Rechazada' },
+];
+
+/** Estados de pieza que el formulario del panel puede enviar. */
+export const ESTADOS_VALIDOS_PIEZA: EstadoPieza[] = [
+  'por_restaurar',
+  'en_restauracion',
+  'disponible',
+  'reservada',
+  'vendida',
+  'pausada',
+  'borrador',
 ];

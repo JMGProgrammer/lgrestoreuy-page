@@ -1,0 +1,38 @@
+---
+/**
+ * Contenedor de avisos (toasts). Vive siempre montado; Alpine lo controla.
+ */
+---
+
+<div
+  class="ui-toasts"
+  role="status"
+  aria-live="polite"
+  x-data
+  x-init="$store.avisos.limpiar()"
+>
+  <template x-for="aviso in $store.avisos.lista" :key="aviso.id">
+    <div
+      class="ui-toast"
+      :class="aviso.tipo === 'ok' ? 'ui-toast-ok' : 'ui-toast-error'"
+      x-transition:enter="transition ease-out duration-150"
+      x-transition:enter-start="opacity-0 translate-y-2"
+      x-transition:enter-end="opacity-100 translate-y-0"
+      x-transition:leave="transition ease-in duration-100"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+    >
+      <span class="flex-1" x-text="aviso.texto"></span>
+
+      <template x-if="aviso.accion">
+        <button
+          type="button"
+          class="ui-toast-accion"
+          @click="aviso.accion.fn(); $store.avisos.cerrar(aviso.id)"
+          x-text="aviso.accion.texto"
+        >
+        </button>
+      </template>
+    </div>
+  </template>
+</div>
