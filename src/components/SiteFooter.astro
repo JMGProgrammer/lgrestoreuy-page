@@ -1,0 +1,111 @@
+---
+import type { SiteSettings } from '../lib/types';
+
+interface Props {
+  settings: SiteSettings;
+}
+
+const { settings } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-20 border-t border-linea bg-papel">
+  <div class="mx-auto max-w-6xl px-4 py-12">
+    <div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <p class="font-display text-lg font-semibold text-tinta">
+          {settings.nombre_taller}
+        </p>
+        <p class="mt-2 max-w-xs text-sm text-tinta-suave">
+          Restauración de muebles y antigüedades. Trabajo artesanal, presupuesto
+          sin compromiso.
+        </p>
+      </div>
+
+      {
+        settings.texto_proceso && (
+          <div>
+            <p class="rotulo mb-3">Cómo trabajamos</p>
+            <p class="text-sm leading-relaxed text-tinta-suave">
+              {settings.texto_proceso}
+            </p>
+          </div>
+        )
+      }
+
+      <div>
+        <p class="rotulo mb-3">Contacto</p>
+        <ul class="space-y-1.5 text-sm text-tinta-suave">
+          {settings.direccion && <li>{settings.direccion}</li>}
+          {settings.horarios && <li>{settings.horarios}</li>}
+          {
+            settings.email && (
+              <li>
+                <a
+                  href={`mailto:${settings.email}`}
+                  class="underline decoration-latón underline-offset-4 hover:text-tinta"
+                >
+                  {settings.email}
+                </a>
+              </li>
+            )
+          }
+          {!settings.direccion && !settings.horarios && !settings.email && (
+            <li class="text-tinta-tenue">
+              Datos a cargar desde el panel.
+            </li>
+          )}
+        </ul>
+      </div>
+
+      <div>
+        <p class="rotulo mb-3">Seguinos</p>
+        <ul class="space-y-1.5 text-sm">
+          {
+            settings.instagram && (
+              <li>
+                <a
+                  href={settings.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+                >
+                  Instagram
+                </a>
+              </li>
+            )
+          }
+          {
+            settings.facebook && (
+              <li>
+                <a
+                  href={settings.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+                >
+                  Facebook
+                </a>
+              </li>
+            )
+          }
+          {!settings.instagram && !settings.facebook && (
+            <li class="text-tinta-tenue">Redes a cargar desde el panel.</li>
+          )}
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-10 flex flex-col gap-2 border-t border-linea pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-xs text-tinta-tenue">
+        © {year} {settings.nombre_taller}. Todos los derechos reservados.
+      </p>
+      <a
+        href="/legal"
+        class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+      >
+        Términos, devoluciones y garantía
+      </a>
+    </div>
+  </div>
+</footer>

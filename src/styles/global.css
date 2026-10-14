@@ -1,0 +1,226 @@
+@import 'tailwindcss';
+
+/* =====================================================================
+   Tema vintage retro — marrón, dorado envejecido, papel viejo.
+   Los tokens se definen acá y se usan como clases: bg-lino, text-tinta,
+   font-display, etc.
+   ===================================================================== */
+@theme {
+  /* Lienzo y superficies */
+  --color-lino: #f5efe4;
+  --color-papel: #fbf7ef;
+  --color-papel-oscuro: #ebe1cf;
+
+  /* Tinta */
+  --color-tinta: #2e2419;
+  --color-tinta-suave: #6b5a46;
+  --color-tinta-tenue: #9a8975;
+
+  /* Dorado envejecido */
+  --color-latón: #a8763e;
+  --color-latón-claro: #c79a5e;
+  --color-latón-tenue: #e4cfae;
+
+  /* Madera oscura */
+  --color-nogal: #3f3122;
+  --color-caoba: #5a4632;
+
+  /* Línea de lápiz */
+  --color-linea: #d9cbb3;
+
+  /* Semánticos */
+  --color-exito: #4f6b46;
+  --color-alerta: #9a6b2f;
+
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', monospace;
+
+  --radius-card: 0.25rem;
+}
+
+/* =====================================================================
+   Base
+   ===================================================================== */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-lino);
+    color: var(--color-tinta);
+    font-family: var(--font-sans);
+    /* Textura de papel: dos gradientes sutiles, sin imágenes externas */
+    background-image:
+      radial-gradient(
+        ellipse at 20% 0%,
+        rgb(200 154 94 / 8%) 0%,
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse at 100% 100%,
+        rgb(59 49 38 / 6%) 0%,
+        transparent 50%
+      );
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* Foco visible y con onda */
+  :focus-visible {
+    outline: 2px solid var(--color-latón);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-latón-tenue);
+    color: var(--color-tinta);
+  }
+}
+
+/* =====================================================================
+   Utilidades de marca
+   ===================================================================== */
+
+/* Filete fino como deBlake: línea dorada con desvanecido en los bordes */
+.rule-dorada {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-latón) 20%,
+    var(--color-latón) 80%,
+    transparent
+  );
+}
+
+/* Etiqueta pequeña en versalitas, estilo rótulo de taller */
+.rotulo {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-tinta-suave);
+}
+
+/* Textura sutil de papel para tarjetas */
+.textura-papel {
+  background-color: var(--color-papel);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgb(46 36 25 / 2%) 0px,
+      rgb(46 36 25 / 2%) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+/* Sombra cálida en vez de gris (evita el look genérico de Tailwind) */
+.sombra-vintage {
+  box-shadow:
+    0 1px 2px rgb(59 49 34 / 8%),
+    0 8px 24px -12px rgb(59 49 34 / 18%);
+}
+
+/* Botón principal: nogal con brillo dorado al hover */
+.btn-principal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-card);
+  background-color: var(--color-nogal);
+  color: var(--color-papel);
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.btn-principal:hover {
+  background-color: var(--color-caoba);
+  transform: translateY(-1px);
+}
+
+.btn-principal:active {
+  transform: translateY(0);
+}
+
+/* Botón secundario: solo borde de latón */
+.btn-secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-latón);
+  color: var(--color-caoba);
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background-color 150ms ease;
+}
+
+.btn-secundario:hover {
+  background-color: rgb(168 118 62 / 10%);
+}
+
+/* Botón de WhatsApp: verde de marca, plano, sin redondeo excesivo */
+.btn-wa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-card);
+  background-color: #1f7a4d;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background-color 150ms ease;
+}
+
+.btn-wa:hover {
+  background-color: #196140;
+}
+
+/* Campos de formulario */
+.campo {
+  width: 100%;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-linea);
+  background-color: var(--color-papel);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  color: var(--color-tinta);
+}
+
+.campo::placeholder {
+  color: var(--color-tinta-tenue);
+}
+
+.campo:focus {
+  border-color: var(--color-latón);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(168 118 62 / 15%);
+}
+
+.campo-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-tinta-suave);
+}

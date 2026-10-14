@@ -1,0 +1,73 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getServices } from '../lib/content';
+import { formatPriceRange } from '../lib/whatsapp';
+
+const servicios = await getServices();
+---
+
+<BaseLayout
+  title="Servicios"
+  description="Reparación de estructura, lustre y barnizado, pintura y laqueado, y restauración de antigüedades."
+>
+  <section class="mx-auto max-w-5xl px-4 py-14">
+    <p class="rotulo">Qué hacemos</p>
+    <h1 class="mt-2 text-4xl text-tinta sm:text-5xl">Servicios</h1>
+    <p class="mt-4 max-w-2xl leading-relaxed text-tinta-suave">
+      Cada pieza se evalúa antes de cotizar. Estos son los trabajos que hacemos
+      habitualmente; si tu caso es distinto, contanos y te decimos si lo podemos
+      resolver.
+    </p>
+
+    <div class="rule-dorada my-10"></div>
+
+    <ol class="space-y-8">
+      {
+        servicios.map((servicio, index) => (
+          <li class="grid gap-4 border-b border-linea pb-8 last:border-0 sm:grid-cols-[auto_1fr_auto] sm:gap-8">
+            <span class="font-display text-3xl text-latón-tenue">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <div>
+              <h2 class="text-2xl text-tinta">{servicio.nombre}</h2>
+              {servicio.descripcion && (
+                <p class="mt-3 max-w-2xl leading-relaxed text-tinta-suave">
+                  {servicio.descripcion}
+                </p>
+              )}
+              <a
+                href={`/cotizar?servicio=${encodeURIComponent(servicio.nombre)}`}
+                class="mt-4 inline-block text-sm text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+              >
+                Cotizar este servicio
+              </a>
+            </div>
+            <p class="font-display text-lg whitespace-nowrap text-latón sm:text-right">
+              {formatPriceRange(servicio.precio_min, servicio.precio_max)}
+            </p>
+          </li>
+        ))
+      }
+
+      {
+        servicios.length === 0 && (
+          <li class="rounded border border-dashed border-linea p-8 text-center text-sm text-tinta-suave">
+            Los servicios se cargan desde el panel, en
+            <span class="font-medium text-tinta">/admin → Servicios</span>.
+          </li>
+        )
+      }
+    </ol>
+  </section>
+
+  <section class="border-t border-linea bg-papel">
+    <div class="mx-auto max-w-5xl px-4 py-14 text-center">
+      <h2 class="text-3xl text-tinta">¿No sabés qué necesita tu mueble?</h2>
+      <p class="mx-auto mt-3 max-w-lg text-tinta-suave">
+        Mandanos fotos y una medida aproximada. Con eso te decimos qué se puede
+        hacer y cuánto costaría, sin compromiso.
+      </p>
+      <a href="/cotizar" class="btn-principal mt-8">Pedir cotización</a>
+    </div>
+  </section>
+</BaseLayout>

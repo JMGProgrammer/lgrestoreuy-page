@@ -1,0 +1,90 @@
+---
+/**
+ * Layout base del sitio público.
+ * Todo lo que sale de /admin (nombre del taller, WhatsApp, redes) se lee de
+ * site_settings; si la fila no existe, se usan los valores por defecto.
+ */
+import { getSiteSettings } from '../lib/content';
+import { whatsappLink, generalInquiryMessage } from '../lib/whatsapp';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import WhatsappFloat from '../components/WhatsappFloat.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+}
+
+const settings = await getSiteSettings();
+const {
+  title = settings.nombre_taller,
+  description =
+    'Restauración de muebles y antigüedades. Reparación de estructura, lustre, pintura y restauración de piezas de época. Cotizá sin compromiso.',
+  image,
+} = Astro.props;
+
+const siteName = settings.nombre_taller;
+const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
+const waGeneral = whatsappLink(settings.whatsapp, generalInquiryMessage(siteName));
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site ?? Astro.url)} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    {image && <meta property="og:image" content={image} />}
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap"
+    />
+  </head>
+
+  <body class="flex min-h-screen flex-col">
+    <a
+      href="#contenido"
+      class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-nogal focus:px-4 focus:py-2 focus:text-papel"
+    >
+      Saltar al contenido
+    </a>
+
+    <SiteHeader siteName={siteName} />
+
+    <main id="contenido" class="flex-1">
+      <slot />
+    </main>
+
+    <SiteFooter settings={settings} />
+
+    {
+      waGeneral && (
+        <WhatsappFloat href={waGeneral} />
+      )
+    }
+
+    {
+      !waGeneral && !import.meta.env.PROD && (
+        <p class="border-t border-linea bg-papel px-4 py-2 text-center text-xs text-tinta-tenue">
+          Hint: cargá el número de WhatsApp en /admin/contenido para activar el
+          botón flotante.
+        </p>
+      )
+    }
+  </body>
+</html>

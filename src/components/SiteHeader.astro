@@ -1,0 +1,102 @@
+---
+interface Props {
+  siteName: string;
+}
+
+const { siteName } = Astro.props;
+
+const nav = [
+  { href: '/', label: 'Inicio' },
+  { href: '/servicios', label: 'Servicios' },
+  { href: '/piezas', label: 'Piezas' },
+  { href: '/nosotros', label: 'Nosotros' },
+  { href: '/contacto', label: 'Contacto' },
+];
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? path === '/' : path.startsWith(href);
+---
+
+<header class="sticky top-0 z-40 border-b border-linea bg-papel/95 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-4">
+    <a href="/" class="group flex items-baseline gap-2">
+      <span class="font-display text-xl font-semibold tracking-tight text-tinta">
+        {siteName}
+      </span>
+      <span
+        class="hidden text-[0.6rem] uppercase tracking-[0.25em] text-latón sm:inline"
+      >
+        Restauración
+      </span>
+    </a>
+
+    <nav class="hidden items-center gap-7 md:flex" aria-label="Principal">
+      {
+        nav.map((item) => (
+          <a
+            href={item.href}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+            class:list={[
+              'text-sm transition-colors',
+              isActive(item.href)
+                ? 'text-tinta'
+                : 'text-tinta-suave hover:text-tinta',
+            ]}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <a href="/cotizar" class="btn-principal hidden sm:inline-flex">
+        Cotizar
+      </a>
+
+      <!-- Menú móvil con <details>: sin JavaScript -->
+      <details class="relative md:hidden">
+        <summary
+          class="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded border border-linea text-tinta-suave"
+          aria-label="Abrir menú"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16"></path>
+          </svg>
+        </summary>
+        <nav
+          class="absolute right-0 top-11 w-52 rounded border border-linea bg-papel p-2 sombra-vintage"
+          aria-label="Móvil"
+        >
+          {
+            nav.map((item) => (
+              <a
+                href={item.href}
+                class="block rounded px-3 py-2 text-sm text-tinta-suave hover:bg-papel-oscuro hover:text-tinta"
+              >
+                {item.label}
+              </a>
+            ))
+          }
+          <a
+            href="/cotizar"
+            class="mt-1 block rounded bg-nogal px-3 py-2 text-center text-sm text-papel"
+          >
+            Cotizar
+          </a>
+        </nav>
+      </details>
+    </div>
+  </div>
+  <div class="rule-dorada"></div>
+</header>

@@ -1,0 +1,165 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPieceBySlug, getSiteSettings } from '../../lib/content';
+import { formatUYU, pieceInquiryMessage, whatsappLink } from '../../lib/whatsapp';
+
+const { slug = '' } = Astro.params;
+const [pieza, settings] = await Promise.all([
+  getPieceBySlug(slug),
+  getSiteSettings(),
+]);
+
+if (!pieza) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Pieza no encontrada',
+  });
+}
+
+const precio = formatUYU(pieza.precio);
+const principal = pieza.fotos.find((f) => f.rol === 'general') ?? pieza.fotos[0];
+const antes = pieza.fotos.find((f) => f.rol === 'antes');
+const despues = pieza.fotos.find((f) => f.rol === 'despues');
+
+const mensaje = pieceInquiryMessage({
+  titulo: pieza.titulo,
+  precio: pieza.precio,
+  url: new URL(`/piezas/${pieza.slug}`, Astro.url.origin).toString(),
+});
+const waConsulta = whatsappLink(settings.whatsapp, mensaje);
+---
+
+<BaseLayout
+  title={pieza.titulo}
+  description={pieza.descripcion ?? `Pieza restaurada disponible en ${settings.nombre_taller}.`}
+  image={principal?.url}
+>
+  <section class="mx-auto max-w-6xl px-4 py-10">
+    <nav class="text-sm text-tinta-suave" aria-label="Migas de pan">
+      <a href="/piezas" class="underline decoration-latón underline-offset-4 hover:text-tinta">
+        Piezas
+      </a>
+      <span class="mx-2 text-tinta-tenue">/</span>
+      <span class="text-tinta">{pieza.titulo}</span>
+    </nav>
+
+    <div class="mt-8 grid gap-10 lg:grid-cols-[1.15fr_1fr]">
+      <!-- Fotos -->
+      <div>
+        {
+          principal && (
+            <figure class="overflow-hidden rounded border border-linea bg-papel">
+              <img
+                src={principal.url}
+                alt={pieza.titulo}
+                class="aspect-[4/5] w-full object-cover"
+                loading="eager"
+              />
+            </figure>
+          )
+        }
+
+        {
+          (antes || despues) && (
+            <div class="mt-4 grid grid-cols-2 gap-4">
+              {[
+                { foto: antes, etiqueta: 'Antes' },
+                { foto: despues, etiqueta: 'Después' },
+              ].map(({ foto, etiqueta }) =>
+                foto ? (
+                  <figure class="overflow-hidden rounded border border-linea bg-papel">
+                    <img
+                      src={foto.url}
+                      alt={`${pieza.titulo} — ${etiqueta.toLowerCase()}`}
+                      class="aspect-square w-full object-cover"
+                      loading="lazy"
+                    />
+                    <figcaption class="bg-papel-oscuro py-1 text-center text-[0.65rem] uppercase tracking-[0.2em] text-tinta-suave">
+                      {etiqueta}
+                    </figcaption>
+                  </figure>
+                ) : null,
+              )}
+            </div>
+          )
+        }
+
+        {
+          pieza.fotos.length > 1 && (
+            <ul class="mt-4 grid grid-cols-4 gap-3">
+              {pieza.fotos.map((foto) => (
+                <li>
+                  <img
+                    src={foto.url}
+                    alt=""
+                    class="aspect-square w-full rounded border border-linea object-cover"
+                    loading="lazy"
+                  />
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </div>
+
+      <!-- Datos + consulta -->
+      <div class="self-start">
+        {pieza.categoria && <p class="rotulo">{pieza.categoria}</p>}
+        <h1 class="mt-2 text-4xl leading-tight text-tinta">{pieza.titulo}</h1>
+
+        <p class="mt-4 font-display text-3xl text-latón">
+          {precio ?? 'Consultar'}
+        </p>
+
+        <div class="rule-dorada my-6"></div>
+
+        {pieza.descripcion && (
+          <p class="leading-relaxed text-tinta-suave">{pieza.descripcion}</p>
+        )}
+
+        <dl class="mt-6 space-y-2 text-sm">
+          {pieza.medidas && (
+            <div class="flex gap-2">
+              <dt class="w-28 shrink-0 text-tinta-tenue">Medidas</dt>
+              <dd class="text-tinta-suave">{pieza.medidas}</dd>
+            </div>
+          )}
+          {pieza.ubicacion && (
+            <div class="flex gap-2">
+              <dt class="w-28 shrink-0 text-tinta-tenue">Ubicación</dt>
+              <dd class="text-tinta-suave">{pieza.ubicacion}</dd>
+            </div>
+          )}
+          <div class="flex gap-2">
+            <dt class="w-28 shrink-0 text-tinta-tenue">Entrega</dt>
+            <dd class="text-tinta-suave">
+              A coordinar. Retiro en taller o entrega a domicilio.
+            </dd>
+          </div>
+        </dl>
+
+        <div class="mt-8 space-y-3">
+          {
+            waConsulta ? (
+              <a href={waConsulta} target="_blank" rel="noopener noreferrer" class="btn-wa w-full">
+                Consultar por WhatsApp
+              </a>
+            ) : (
+              <a href="/contacto" class="btn-principal w-full">
+                Consultar disponibilidad
+              </a>
+            )
+          }
+          <a href="/piezas" class="btn-secundario w-full">
+            Ver otras piezas
+          </a>
+        </div>
+
+        <p class="mt-4 text-xs leading-relaxed text-tinta-tenue">
+          El precio publicado es referencial. La pieza es única y el estado final
+          se confirma por WhatsApp.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
