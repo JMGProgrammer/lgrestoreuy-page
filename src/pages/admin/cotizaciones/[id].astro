@@ -3,6 +3,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 import {
   adminContext,
   DIAS_EN_PAPELERA,
+  errorLegible,
   ESTADOS_QUOTE,
   leerContenido,
   moverAPapelera,
@@ -23,34 +24,43 @@ let aviso = '';
 
 if (Astro.request.method === 'POST' && usuario) {
   const form = await Astro.request.formData();
+  const eliminar = form.get('_accion') === 'eliminar';
 
-  // Borrar. Va antes del guardado porque redirige: no tiene sentido seguir
-  // procesando el resto del formulario si la fila ya no existe.
-  if (form.get('_accion') === 'eliminar') {
+  // Si el borrado falló se corta acá. Sin el return, el bloque de guardado
+  // seguía adelante y la pantalla terminaba mostrando el error del borrado y
+  // un "Guardado." juntos, como si las dos cosas hubieran pasado.
+  if (eliminar) {
     try {
       await moverAPapelera(ctx, id);
       return Astro.redirect('/admin/cotizaciones?ok=eliminada');
     } catch (e) {
-      error = e instanceof Error ? e.message : 'No se pudo eliminar.';
+      error =
+        e instanceof Error
+          ? (errorLegible({ message: e.message }) ??
+            'No se pudo eliminar.')
+          : 'No se pudo eliminar.';
     }
-  }
-
-  const estadoPedido = String(form.get('estado') ?? 'nueva');
-
-  if (!ESTADOS_VALIDOS.includes(estadoPedido as EstadoQuote)) {
-    error = 'Estado inválido.';
   } else {
-    const { error: err } = await ctx.supabase
-      .from('quotes')
-      .update({
-        estado: estadoPedido,
-        monto_cotizado: numeroONull(form.get('monto_cotizado')),
-        monto_abono: numeroONull(form.get('monto_abono')),
-      })
-      .eq('id', id);
+    const estadoPedido = String(form.get('estado') ?? 'nueva');
 
-    if (err) error = err.message;
-    else aviso = 'Guardado.';
+    if (!ESTADOS_VALIDOS.includes(estadoPedido as EstadoQuote)) {
+      error = 'Estado inválido.';
+    } else {
+      const { error: err } = await ctx.supabase
+        .from('quotes')
+        .update({
+          estado: estadoPedido,
+          monto_cotizado: numeroONull(form.get('monto_cotizado')),
+          monto_abono: numeroONull(form.get('monto_abono')),
+        })
+        .eq('id', id);
+
+      if (err) {
+        error = errorLegible({ message: err.message }) ?? 'No se pudo guardar.';
+      } else {
+        aviso = 'Guardado.';
+      }
+    }
   }
 }
 
