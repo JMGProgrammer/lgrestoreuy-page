@@ -3,6 +3,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import {
   adminContext,
   agregarFotoPieza,
+  errorLegible,
   listarGaleria,
   listarPiezasConFotos,
   numeroONull,
@@ -112,7 +113,7 @@ if (Astro.request.method === 'POST' && usuario) {
         });
 
         if (err) {
-          error = err.message;
+          error = errorLegible(err) || 'No se pudo guardar el par.';
         } else {
           return Astro.redirect('/admin/galeria?ok=agregado');
         }
@@ -273,6 +274,16 @@ function etiquetaDe(foto: { rol: string }): string {
               botón de arriba, sin salir de esta pantalla.
             </p>
           </div>
+
+          <!-- Con la misma foto en los dos lados el comparador no muestra
+               diferencia. Se avisa, pero no se bloquea. -->
+          <p
+            class="ui-aviso ui-aviso-info"
+            x-show="mismaFoto()"
+            x-cloak
+            x-text="mismaFoto()"
+          >
+          </p>
 
           <!-- 2. Que foto es cada una. Cada lado tiene su select con las
                fotos de la pieza y un boton de subida al costado: desde el
@@ -633,6 +644,23 @@ function etiquetaDe(foto: { rol: string }): string {
         if (this.archivoAntes || this.archivoDespues) return false;
         const fotos = this.piezaActual()?.fotos.length ?? 0;
         return fotos > 0 && fotos < 2;
+      },
+
+      /**
+       * Con la misma foto de los dos lados el comparador no muestra nada.
+       * No se bloquea, pero conviene avisarlo.
+       */
+      mismaFoto(this: {
+        fotoAntes: string;
+        fotoDespues: string;
+        archivoAntes: File | null;
+        archivoDespues: File | null;
+      }): string {
+        if (this.archivoAntes || this.archivoDespues) return '';
+        if (!this.fotoAntes || !this.fotoDespues) return '';
+        if (this.fotoAntes !== this.fotoDespues) return '';
+
+        return 'Elegiste la misma foto en los dos lados: el comparador no va a mostrar diferencia. Si querés ver el cambio, subí la foto buena con el botón de arriba.';
       },
 
       /**

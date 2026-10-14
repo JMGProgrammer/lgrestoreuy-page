@@ -53,6 +53,46 @@ export function textoONull(valor: unknown, max = 2000): string | null {
   return limpio.length > 0 ? limpio.slice(0, max) : null;
 }
 
+/**
+ * Traduce el error crudo de PostgREST/Supabase a algo que el cliente pueda
+ * entender y, sobre todo, actuar.
+ *
+ * El caso que más aparece: `Could not find the 'x' column ... in the schema
+ * cache`. No es un error del usuario ni un problema del formulario — es una
+ * migración sin correr, y el mensaje original manda a cualquier persona a
+ * revisar el código en vez de a aplicar el SQL.
+ */
+export function errorLegible(err: { message: string } | null): string | null {
+  if (!err) return null;
+
+  const msg = err.message;
+
+  if (/could not find the .* column|schema cache/i.test(msg)) {
+    const col = msg.match(/'([^']+)' column/)?.[1];
+    return `La base de datos todavía no tiene la columna "${
+      col ?? 'nueva'
+    }". Es una migración pendiente, no un problema con lo que cargaste: avisame y la aplico.`;
+  }
+
+  if (/row-level security|violates row-level security policy/i.test(msg)) {
+    return 'Tu sesión no tiene permiso para guardar esto. Volvé a iniciar sesión en el panel.';
+  }
+
+  if (/duplicate key|already exists/i.test(msg)) {
+    return 'Ya existe un registro con esos datos.';
+  }
+
+  if (/invalid input syntax|invalid uuid/i.test(msg)) {
+    return 'Alguno de los datos tiene un formato inválido.';
+  }
+
+  if (/connection|fetch failed|network|timeout/i.test(msg)) {
+    return 'No se pudo conectar con la base de datos. Revisá la conexión y probá de nuevo.';
+  }
+
+  return msg;
+}
+
 // ---------------------------------------------------------------- servicios
 
 export async function listarServicios({ supabase }: AdminContext) {
