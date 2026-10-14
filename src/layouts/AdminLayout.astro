@@ -12,9 +12,11 @@ import '../styles/admin.css';
 interface Props {
   titulo: string;
   subtitulo?: string;
+  /** Muestra el saludo arriba. Para el resumen. */
+  saludo?: boolean;
 }
 
-const { titulo, subtitulo } = Astro.props;
+const { titulo, subtitulo, saludo: conSaludo = false } = Astro.props;
 const usuario = await getCurrentUser(Astro.request, Astro.cookies);
 
 const secciones = [
@@ -25,6 +27,14 @@ const secciones = [
   { href: '/admin/galeria', label: 'Galería', icono: 'galeria', movil: false },
   { href: '/admin/contenido', label: 'Contenido', icono: 'contenido', movil: false },
 ];
+
+/** Saludo con la hora: el taller trabaja de día, el panel se usa de día. */
+function saludo() {
+  const hora = new Date().getHours();
+  if (hora < 13) return 'Buen día';
+  if (hora < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+}
 
 const actual = Astro.url.pathname;
 const esActiva = (href: string) =>
@@ -140,9 +150,14 @@ const iconoNav: Record<string, string> = {
       </nav>
 
       <main class="min-w-0 flex-1 pb-20 md:pb-0">
-        <div class="mb-4">
+        <div class="mb-5">
+          {
+            conSaludo && (
+              <p class="ui-seccion-titulo mb-1">{saludo()}</p>
+            )
+          }
           <h1 class="text-xl font-semibold tracking-tight text-ui-texto">{titulo}</h1>
-          {subtitulo && <p class="mt-0.5 text-sm text-ui-texto-2">{subtitulo}</p>}
+          {subtitulo && <p class="mt-1 text-sm text-ui-texto-2">{subtitulo}</p>}
         </div>
 
         <slot />

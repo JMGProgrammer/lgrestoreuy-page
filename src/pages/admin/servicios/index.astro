@@ -18,78 +18,92 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
   <script type="application/json" id="datos-servicios" set:html={datosJson} />
 
   <div x-data="servicios()" x-cloak class="space-y-4">
-    <!-- ============ Alta ============ -->
-    <template x-if="creando">
-      <form
-        class="ui-panel space-y-3 p-4"
-        @submit.prevent="crear()"
-      >
-        <div class="flex items-center justify-between">
-          <p class="ui-seccion-titulo">Nuevo servicio</p>
-          <button
-            type="button"
-            class="ui-btn ui-btn-fantasma ui-btn-sm ui-btn-icono"
-            @click="creando = false"
-            aria-label="Cancelar"
-          >
-            <Icon nombre="cruz" />
-          </button>
-        </div>
+    <!-- ============ Alta: se despliega, no aparece de golpe ============ -->
+    <div class="ui-despliegue" :data-abierto="creando">
+      <div>
+        <form
+          class="ui-panel space-y-3.5 p-4"
+          x-show="creando"
+          x-transition:enter="transition ease-out duration-200"
+          x-transition:enter-start="opacity-0"
+          x-transition:enter-end="opacity-100"
+          @submit.prevent="crear()"
+        >
+          <div class="flex items-center justify-between">
+            <p class="ui-seccion-titulo">Nuevo servicio</p>
+            <button
+              type="button"
+              class="ui-btn ui-btn-fantasma ui-btn-sm ui-btn-icono"
+              @click="creando = false"
+              aria-label="Cerrar"
+            >
+              <Icon nombre="cruz" />
+            </button>
+          </div>
 
-        <input
-          class="ui-campo"
-          x-model="form.nombre"
-          placeholder="Nombre del servicio"
-          aria-label="Nombre del servicio"
-          required
-        />
-
-        <textarea
-          class="ui-campo"
-          x-model="form.descripcion"
-          placeholder="Qué incluye y para quién es. Se muestra debajo del nombre."
-          rows="3"
-        ></textarea>
-
-        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="ui-label" for="nuevo-min">Precio desde</label>
+            <label class="ui-label" for="nuevo-nombre">Nombre</label>
             <input
-              id="nuevo-min"
-              class="ui-campo ui-num"
-              x-model="form.precio_min"
-              placeholder="$ 0"
-              inputmode="numeric"
+              id="nuevo-nombre"
+              class="ui-campo"
+              x-model="form.nombre"
+              placeholder="Ej: Tapicería de sillones"
+              required
             />
           </div>
+
           <div>
-            <label class="ui-label" for="nuevo-max">Precio hasta</label>
-            <input
-              id="nuevo-max"
-              class="ui-campo ui-num"
-              x-model="form.precio_max"
-              placeholder="$ 0"
-              inputmode="numeric"
-            />
+            <label class="ui-label" for="nuevo-descripcion">Descripción</label>
+            <textarea
+              id="nuevo-descripcion"
+              class="ui-campo"
+              x-model="form.descripcion"
+              placeholder="Qué incluye y para quién es. Se muestra debajo del nombre."
+              rows="3"
+            ></textarea>
           </div>
-        </div>
 
-        <p class="ui-ayuda">
-          Si lo dejás vacío se publica como “A consultar”.
-        </p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="ui-label" for="nuevo-min">Precio desde</label>
+              <input
+                id="nuevo-min"
+                class="ui-campo ui-num"
+                x-model="form.precio_min"
+                placeholder="$ 0"
+                inputmode="numeric"
+              />
+            </div>
+            <div>
+              <label class="ui-label" for="nuevo-max">Precio hasta</label>
+              <input
+                id="nuevo-max"
+                class="ui-campo ui-num"
+                x-model="form.precio_max"
+                placeholder="$ 0"
+                inputmode="numeric"
+              />
+            </div>
+          </div>
 
-        <p x-show="error" x-text="error" class="ui-error"></p>
+          <p class="ui-ayuda">
+            Si lo dejás vacío se publica como “A consultar”.
+          </p>
 
-        <div class="flex gap-2">
-          <button type="submit" class="ui-btn ui-btn-acento" :disabled="guardando">
-            Agregar
-          </button>
-          <button type="button" class="ui-btn ui-btn-neutro" @click="creando = false">
-            Cancelar
-          </button>
-        </div>
-      </form>
-    </template>
+          <p x-show="error" x-text="error" class="ui-error"></p>
+
+          <div class="flex gap-2">
+            <button type="submit" class="ui-btn ui-btn-acento" :disabled="guardando">
+              <span x-show="!guardando">Agregar</span>
+              <span x-show="guardando">Guardando…</span>
+            </button>
+            <button type="button" class="ui-btn ui-btn-neutro" @click="creando = false">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- ============ Lista ============ -->
     <div class="ui-panel overflow-hidden">
@@ -120,6 +134,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
               'ui-fila-arrastrando': arrastrando === s.id,
               'ui-fila-soltada': idSoltado === s.id,
               'guardando': guardandoId === s.id,
+              'ui-pulso': recienGuardado === s.id,
             }"
             draggable="true"
             @dragstart="arrastrar($event, s.id)"
@@ -127,7 +142,14 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
             @drop.prevent="soltar($event, indice)"
             @dragend="terminarArrastre()"
           >
-            <!-- asa + orden -->
+            <div
+              class="ui-progreso"
+              x-show="guardandoId === s.id"
+              aria-hidden="true"
+            >
+            </div>
+
+            <!-- asa de arrastre -->
             <span class="ui-asa shrink-0 select-none" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
@@ -138,106 +160,112 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 
             <!-- Modo lectura -->
             <div class="min-w-0 flex-1" x-show="editando !== s.id">
-              <p class="flex items-center gap-2 text-sm font-medium text-ui-texto">
+              <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-ui-texto">
                 <span class="ui-truncate" x-text="s.nombre"></span>
-                <span
-                  x-show="!s.activo"
-                  class="ui-chip ui-chip-neutro"
-                >oculto</span>
+                <span x-show="!s.activo" class="ui-chip ui-chip-neutro">oculto</span>
                 <span
                   x-show="s.activo && (s.precio_min === null || s.precio_max === null)"
                   class="ui-chip ui-chip-alerta"
                 >sin precio</span>
               </p>
-              <p class="ui-num mt-0.5 text-ui-texto-2" x-text="precio(s)"></p>
+              <p
+                class="ui-num mt-1"
+                :class="s.precio_min === null && s.precio_max === null ? 'text-ui-texto-3 italic' : 'text-ui-texto-2'"
+                x-text="precio(s)"
+              >
+              </p>
             </div>
 
-            <!-- Modo edición -->
-            <div class="min-w-0 flex-1 space-y-2" x-show="editando === s.id" x-cloak>
-              <input class="ui-campo" x-model="s.nombre" aria-label="Nombre" />
-              <textarea
-                class="ui-campo"
-                x-model="s.descripcion"
-                rows="2"
-                placeholder="Descripción"
-                aria-label="Descripción"
-              ></textarea>
-              <div class="grid grid-cols-2 gap-2">
-                <input
-                  class="ui-campo ui-num"
-                  x-model="s.precio_min"
-                  placeholder="Precio desde"
-                  inputmode="numeric"
-                  aria-label="Precio desde"
-                />
-                <input
-                  class="ui-campo ui-num"
-                  x-model="s.precio_max"
-                  placeholder="Precio hasta"
-                  inputmode="numeric"
-                  aria-label="Precio hasta"
-                />
+            <!-- Modo edición: se despliega en alto real -->
+            <div
+              class="ui-despliegue w-full"
+              :data-abierto="editando === s.id"
+            >
+              <div>
+                <div class="space-y-2.5 pb-1" x-show="editando === s.id" x-cloak>
+                  <input class="ui-campo" x-model="s.nombre" aria-label="Nombre" />
+                  <textarea
+                    class="ui-campo"
+                    x-model="s.descripcion"
+                    rows="2"
+                    placeholder="Descripción"
+                    aria-label="Descripción"
+                  ></textarea>
+                  <div class="grid grid-cols-2 gap-2">
+                    <input
+                      class="ui-campo ui-num"
+                      x-model="s.precio_min"
+                      placeholder="Precio desde"
+                      inputmode="numeric"
+                      aria-label="Precio desde"
+                    />
+                    <input
+                      class="ui-campo ui-num"
+                      x-model="s.precio_max"
+                      placeholder="Precio hasta"
+                      inputmode="numeric"
+                      aria-label="Precio hasta"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Acciones -->
             <div class="flex shrink-0 items-center gap-1">
-              <!-- Visible -->
               <button
                 type="button"
-                class="relative h-6 w-10 shrink-0 rounded-full transition-colors"
-                :class="s.activo ? 'bg-ui-acento' : 'bg-ui-borde-fuerte'"
+                class="ui-switch"
                 @click="alternar(s)"
                 :aria-label="s.activo ? 'Ocultar de la web' : 'Mostrar en la web'"
                 :aria-pressed="s.activo"
               >
-                <span
-                  class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform"
-                  :class="s.activo ? 'translate-x-4' : 'translate-x-0'"
-                ></span>
+                <span class="ui-switch-mando"></span>
               </button>
 
-              <template x-if="editando !== s.id">
+              <div class="flex items-center gap-1">
+                <template x-if="editando !== s.id">
+                  <button
+                    type="button"
+                    class="ui-btn ui-btn-fantasma ui-btn-sm ui-btn-icono ui-accion"
+                    @click="empezarEdicion(s)"
+                    aria-label="Editar"
+                  >
+                    <Icon nombre="lapiz" />
+                  </button>
+                </template>
+
+                <template x-if="editando === s.id">
+                  <button
+                    type="button"
+                    class="ui-btn ui-btn-primario ui-btn-sm"
+                    @click="guardar(s)"
+                    :disabled="guardandoId === s.id"
+                  >
+                    Guardar
+                  </button>
+                </template>
+
+                <template x-if="editando === s.id">
+                  <button
+                    type="button"
+                    class="ui-btn ui-btn-fantasma ui-btn-sm"
+                    @click="cancelarEdicion()"
+                  >
+                    Cancelar
+                  </button>
+                </template>
+
                 <button
                   type="button"
-                  class="ui-btn ui-btn-fantasma ui-btn-sm ui-btn-icono"
-                  @click="empezarEdicion(s)"
-                  aria-label="Editar"
+                  class="ui-btn ui-btn-peligro ui-btn-sm ui-btn-icono ui-accion"
+                  @click="eliminar(s, indice)"
+                  aria-label="Eliminar"
+                  x-show="editando !== s.id"
                 >
-                  <Icon nombre="lapiz" />
+                  <Icon nombre="tacho" />
                 </button>
-              </template>
-
-              <template x-if="editando === s.id">
-                <button
-                  type="button"
-                  class="ui-btn ui-btn-primario ui-btn-sm"
-                  @click="guardar(s)"
-                  :disabled="guardandoId === s.id"
-                >
-                  Guardar
-                </button>
-              </template>
-
-              <template x-if="editando === s.id">
-                <button
-                  type="button"
-                  class="ui-btn ui-btn-fantasma ui-btn-sm"
-                  @click="cancelarEdicion()"
-                >
-                  Cancelar
-                </button>
-              </template>
-
-              <button
-                type="button"
-                class="ui-btn ui-btn-peligro ui-btn-sm ui-btn-icono"
-                @click="eliminar(s, indice)"
-                aria-label="Eliminar"
-                x-show="editando !== s.id"
-              >
-                <Icon nombre="tacho" />
-              </button>
+              </div>
             </div>
           </li>
         </template>
@@ -293,6 +321,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
     creando: false,
     arrastrando: null as string | null,
     idSoltado: null as string | null,
+    recienGuardado: null as string | null,
     error: '',
 
     form: { nombre: '', descripcion: '', precio_min: '', precio_max: '' },
@@ -388,6 +417,13 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
         Object.assign(s, servicio);
         this.editando = null;
         this.original = null;
+
+        // Resalte breve: confirma que el cambio se guardó sin recargar.
+        this.recienGuardado = s.id;
+        setTimeout(() => {
+          if (this.recienGuardado === s.id) this.recienGuardado = null;
+        }, 900);
+
         avisos.exito('Guardado');
       } catch (e) {
         avisarError(e);
