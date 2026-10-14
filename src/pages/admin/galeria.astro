@@ -2,9 +2,11 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import {
   adminContext,
+  agregarFotoPieza,
   listarGaleria,
   listarPiezasConFotos,
   numeroONull,
+  subirImagen,
   textoONull,
 } from '../../lib/admin';
 import { getCurrentUser } from '../../lib/supabase/server';
@@ -46,11 +48,53 @@ if (Astro.request.method === 'POST' && usuario) {
     if (!pieza) {
       error = 'Elegí una pieza.';
     } else {
-      const antes = pieza.fotos.find((f) => f.id === antesId);
-      const despues = pieza.fotos.find((f) => f.id === despuesId);
+      // Cada lado puede venir de una foto ya subida a la pieza, o de un
+      // archivo nuevo subido desde el dispositivo en este mismo formulario.
+      const archivoAntes = form.get('foto_antes_archivo');
+      const archivoDespues = form.get('foto_despues_archivo');
+
+      const nuevaAntes =
+        archivoAntes instanceof File && archivoAntes.size > 0
+          ? await subirImagen(ctx, 'piezas', archivoAntes, pieza.id).catch(
+              (e: unknown) => {
+                error = e instanceof Error ? e.message : 'No se pudo subir la foto.';
+                return null;
+              },
+            )
+          : null;
+
+      const nuevaDespues =
+        archivoDespues instanceof File && archivoDespues.size > 0
+          ? await subirImagen(ctx, 'piezas', archivoDespues, pieza.id).catch(
+              (e: unknown) => {
+                error = e instanceof Error ? e.message : 'No se pudo subir la foto.';
+                return null;
+              },
+            )
+          : null;
+
+      // Si vino una foto nueva se registra como parte de la pieza: no puede
+      // quedar huérfana en Storage, y el cliente la ve al editar la pieza.
+      const fotoAntesGuardada = nuevaAntes
+        ? await agregarFotoPieza(ctx, pieza.id, nuevaAntes, 'antes', pieza.fotos.length)
+        : null;
+
+      const fotoDespuesGuardada = nuevaDespues
+        ? await agregarFotoPieza(
+            ctx,
+            pieza.id,
+            nuevaDespues,
+            'despues',
+            pieza.fotos.length + (nuevaAntes ? 1 : 0),
+          )
+        : null;
+
+      const antes = fotoAntesGuardada ?? pieza.fotos.find((f) => f.id === antesId);
+      const despues =
+        fotoDespuesGuardada ?? pieza.fotos.find((f) => f.id === despuesId);
 
       if (!antes || !despues) {
-        error = 'Elegí la foto de antes y la de después de esa pieza.';
+        error = error || 'Elegí la foto de antes y la de después de esa pieza.';
       } else {
         const galeria = await listarGaleria(ctx);
         const { error: err } = await ctx.supabase.from('gallery_items').insert({
@@ -200,7 +244,11 @@ function etiquetaDe(foto: { rol: string }): string {
           <span class="font-medium text-ui-texto">/admin → Piezas</span> y volvé acá.
         </p>
       ) : (
-        <form method="post" class="ui-panel max-w-3xl space-y-5 p-5">
+        <form
+          method="post"
+          enctype="multipart/form-data"
+          class="ui-panel max-w-3xl space-y-5 p-5"
+        >
           <input type="hidden" name="_accion" value="agregar" />
 
           <!-- 1. Que pieza -->
@@ -226,50 +274,138 @@ function etiquetaDe(foto: { rol: string }): string {
             </p>
           </div>
 
-          <!-- 2. Que foto -->
+          <!-- 2. Que foto es cada una. Cada lado tiene su select con las
+               fotos de la pieza y un boton de subida al costado: desde el
+               celular se adjunta la foto ahi mismo, sin pasar por Piezas. -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label class="ui-label" for="antes_photo_id">2. Foto "antes"</label>
-              <select
-                class="ui-campo"
-                id="antes_photo_id"
-                name="antes_photo_id"
-                x-model="fotoAntes"
-                x-disabled="!piezaActual"
-              >
-                <option value="">Sin elegir</option>
-                {
-                  piezas.flatMap((pieza) =>
-                    pieza.fotos.map((foto) => (
-                      <option value={foto.id} data-pieza={pieza.id} x-show="$el.dataset.pieza === pieceId">
-                        {etiquetaDe(foto)} · {pieza.titulo}
-                      </option>
-                    )),
-                  )
-                }
-              </select>
+              <span class="ui-label">2. Foto "antes"</span>
+              <div class="flex items-center gap-2">
+                <select
+                  class="ui-campo"
+                  id="antes_photo_id"
+                  name="antes_photo_id"
+                  x-model="fotoAntes"
+                  x-bind:disabled="!piezaActual || archivoAntes"
+                >
+                  <option value="">Sin elegir</option>
+                  {
+                    piezas.flatMap((pieza) =>
+                      pieza.fotos.map((foto) => (
+                        <option
+                          value={foto.id}
+                          data-pieza={pieza.id}
+                          x-show="$el.dataset.pieza === pieceId"
+                        >
+                          {etiquetaDe(foto)} · {pieza.titulo}
+                        </option>
+                      )),
+                    )
+                  }
+                </select>
+
+                <button
+                  type="button"
+                  class="ui-btn ui-btn-icono shrink-0"
+                  x-bind:class="archivoAntes ? 'ui-btn-acento' : 'ui-btn-neutro'"
+                  x-on:click="$refs.inputAntes.click()"
+                  x-bind:disabled="!piezaActual"
+                  title="Subir una foto desde el dispositivo"
+                  aria-label="Subir una foto desde el dispositivo para el antes"
+                >
+                  <Icon nombre="subir" clase="size-4" />
+                </button>
+              </div>
+
+              <input
+                class="sr-only"
+                type="file"
+                name="foto_antes_archivo"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                x-ref="inputAntes"
+                x-on:change="elegirArchivo($event, 'antes')"
+              />
+
+              <div class="mt-2 flex items-center gap-2" x-show="archivoAntes" x-cloak>
+                <img
+                  x-bind:src="vistaPreviaAntes"
+                  alt="Vista previa"
+                  class="h-12 w-12 rounded border border-ui-borde object-cover"
+                />
+                <span class="truncate text-xs text-ui-texto-2" x-text="nombreAntes"></span>
+                <button
+                  type="button"
+                  class="ml-auto text-xs text-[#a03328] underline underline-offset-4"
+                  x-on:click="quitarArchivo('antes')"
+                >
+                  Quitar
+                </button>
+              </div>
             </div>
 
             <div>
-              <label class="ui-label" for="despues_photo_id">3. Foto "después"</label>
-              <select
-                class="ui-campo"
-                id="despues_photo_id"
-                name="despues_photo_id"
-                x-model="fotoDespues"
-                x-disabled="!piezaActual"
-              >
-                <option value="">Sin elegir</option>
-                {
-                  piezas.flatMap((pieza) =>
-                    pieza.fotos.map((foto) => (
-                      <option value={foto.id} data-pieza={pieza.id} x-show="$el.dataset.pieza === pieceId">
-                        {etiquetaDe(foto)} · {pieza.titulo}
-                      </option>
-                    )),
-                  )
-                }
-              </select>
+              <span class="ui-label">3. Foto "después"</span>
+              <div class="flex items-center gap-2">
+                <select
+                  class="ui-campo"
+                  id="despues_photo_id"
+                  name="despues_photo_id"
+                  x-model="fotoDespues"
+                  x-bind:disabled="!piezaActual || archivoDespues"
+                >
+                  <option value="">Sin elegir</option>
+                  {
+                    piezas.flatMap((pieza) =>
+                      pieza.fotos.map((foto) => (
+                        <option
+                          value={foto.id}
+                          data-pieza={pieza.id}
+                          x-show="$el.dataset.pieza === pieceId"
+                        >
+                          {etiquetaDe(foto)} · {pieza.titulo}
+                        </option>
+                      )),
+                    )
+                  }
+                </select>
+
+                <button
+                  type="button"
+                  class="ui-btn ui-btn-icono shrink-0"
+                  x-bind:class="archivoDespues ? 'ui-btn-acento' : 'ui-btn-neutro'"
+                  x-on:click="$refs.inputDespues.click()"
+                  x-bind:disabled="!piezaActual"
+                  title="Subir una foto desde el dispositivo"
+                  aria-label="Subir una foto desde el dispositivo para el despues"
+                >
+                  <Icon nombre="subir" clase="size-4" />
+                </button>
+              </div>
+
+              <input
+                class="sr-only"
+                type="file"
+                name="foto_despues_archivo"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                x-ref="inputDespues"
+                x-on:change="elegirArchivo($event, 'despues')"
+              />
+
+              <div class="mt-2 flex items-center gap-2" x-show="archivoDespues" x-cloak>
+                <img
+                  x-bind:src="vistaPreviaDespues"
+                  alt="Vista previa"
+                  class="h-12 w-12 rounded border border-ui-borde object-cover"
+                />
+                <span class="truncate text-xs text-ui-texto-2" x-text="nombreDespues"></span>
+                <button
+                  type="button"
+                  class="ml-auto text-xs text-[#a03328] underline underline-offset-4"
+                  x-on:click="quitarArchivo('despues')"
+                >
+                  Quitar
+                </button>
+              </div>
             </div>
           </div>
 
@@ -356,8 +492,15 @@ function etiquetaDe(foto: { rol: string }): string {
       tag: '',
       orden: '0',
 
+      /** Fotos elegidas desde el dispositivo, por lado. */
+      archivoAntes: null as File | null,
+      archivoDespues: null as File | null,
+      vistaPreviaAntes: '',
+      vistaPreviaDespues: '',
+      nombreAntes: '',
+      nombreDespues: '',
+
       init(this: { orden: string; piezas: Pieza[] }) {
-        // El orden por defecto es seguir al último par agregado.
         this.orden = String(this.piezas.length);
       },
 
@@ -371,28 +514,91 @@ function etiquetaDe(foto: { rol: string }): string {
         return this.piezas.find((p) => p.id === this.pieceId) ?? null;
       },
 
-      urlAntes(this: { piezaActual: () => Pieza | null; fotoAntes: string }): string {
+      urlAntes(this: {
+        piezaActual: () => Pieza | null;
+        fotoAntes: string;
+        vistaPreviaAntes: string;
+      }): string {
+        if (this.vistaPreviaAntes) return this.vistaPreviaAntes;
         return this.piezaActual()?.fotos.find((f) => f.id === this.fotoAntes)?.url ?? '';
       },
 
-      urlDespues(this: { piezaActual: () => Pieza | null; fotoDespues: string }): string {
+      urlDespues(this: {
+        piezaActual: () => Pieza | null;
+        fotoDespues: string;
+        vistaPreviaDespues: string;
+      }): string {
+        if (this.vistaPreviaDespues) return this.vistaPreviaDespues;
         return this.piezaActual()?.fotos.find((f) => f.id === this.fotoDespues)?.url ?? '';
       },
 
-      /** Al elegir otra pieza, se limpian las fotos elegidas. */
-      alCambiarPieza(this: { pieceId: string; fotoAntes: string; fotoDespues: string }) {
+      /** Al cambiar de pieza se limpian las dos fotos. */
+      alCambiarPieza(this: {
+        fotoAntes: string;
+        fotoDespues: string;
+        limpiarArchivo: (lado: 'antes' | 'despues') => void;
+      }) {
         this.fotoAntes = '';
         this.fotoDespues = '';
+        this.limpiarArchivo('antes');
+        this.limpiarArchivo('despues');
+      },
+
+      /** Foto nueva desde el dispositivo. */
+      elegirArchivo(evento: Event, lado: 'antes' | 'despues') {
+        const input = evento.target as HTMLInputElement;
+        const archivo = input.files?.[0];
+        if (!archivo) return;
+
+        this.limpiarArchivo(lado);
+
+        if (lado === 'antes') {
+          this.archivoAntes = archivo;
+          this.vistaPreviaAntes = URL.createObjectURL(archivo);
+          this.nombreAntes = archivo.name;
+          this.fotoAntes = '';
+        } else {
+          this.archivoDespues = archivo;
+          this.vistaPreviaDespues = URL.createObjectURL(archivo);
+          this.nombreDespues = archivo.name;
+          this.fotoDespues = '';
+        }
+      },
+
+      limpiarArchivo(lado: 'antes' | 'despues') {
+        if (lado === 'antes') {
+          if (this.vistaPreviaAntes) URL.revokeObjectURL(this.vistaPreviaAntes);
+          this.archivoAntes = null;
+          this.vistaPreviaAntes = '';
+          this.nombreAntes = '';
+        } else {
+          if (this.vistaPreviaDespues) URL.revokeObjectURL(this.vistaPreviaDespues);
+          this.archivoDespues = null;
+          this.vistaPreviaDespues = '';
+          this.nombreDespues = '';
+        }
       },
 
       /** La pieza elegida tiene menos de dos fotos: no alcanza para un par. */
-      faltanFotos(this: { piezaActual: () => Pieza | null }): boolean {
+      faltanFotos(this: {
+        piezaActual: () => Pieza | null;
+        archivoAntes: File | null;
+        archivoDespues: File | null;
+      }): boolean {
+        if (this.archivoAntes || this.archivoDespues) return false;
         const fotos = this.piezaActual()?.fotos.length ?? 0;
         return fotos > 0 && fotos < 2;
       },
 
-      puedeGuardar(this: { fotoAntes: string; fotoDespues: string }): boolean {
-        return Boolean(this.fotoAntes && this.fotoDespues);
+      puedeGuardar(this: {
+        fotoAntes: string;
+        fotoDespues: string;
+        archivoAntes: File | null;
+        archivoDespues: File | null;
+      }): boolean {
+        const antes = Boolean(this.archivoAntes || this.fotoAntes);
+        const despues = Boolean(this.archivoDespues || this.fotoDespues);
+        return antes && despues;
       },
     };
   }

@@ -365,6 +365,7 @@ export async function listarFotosPieza(
   return data ?? [];
 }
 
+/** Registra la foto en la pieza y devuelve la fila creada (con su id). */
 export async function agregarFotoPieza(
   ctx: AdminContext,
   pieceId: string,
@@ -372,15 +373,20 @@ export async function agregarFotoPieza(
   rol: 'general' | 'antes' | 'despues',
   orden: number,
 ) {
-  const { error } = await ctx.supabase.from('piece_photos').insert({
-    piece_id: pieceId,
-    storage_path: subida.storage_path,
-    url: subida.url,
-    rol,
-    orden,
-  });
+  const { data, error } = await ctx.supabase
+    .from('piece_photos')
+    .insert({
+      piece_id: pieceId,
+      storage_path: subida.storage_path,
+      url: subida.url,
+      rol,
+      orden,
+    })
+    .select('*')
+    .single();
 
   if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function borrarFotoPieza(ctx: AdminContext, id: string) {
