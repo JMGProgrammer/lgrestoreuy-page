@@ -177,6 +177,8 @@ export async function leerContenido({
     texto_proceso: null,
     texto_garantia: null,
     texto_legal: null,
+  portada_url: null,
+  portada_alt: null,
     updated_at: '',
   };
 }
@@ -194,6 +196,8 @@ const CAMPOS_CONTENIDO = [
   'texto_proceso',
   'texto_garantia',
   'texto_legal',
+  'portada_url',
+  'portada_alt',
 ] as const;
 
 export async function guardarContenido(

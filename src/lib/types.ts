@@ -60,6 +60,9 @@ export interface SiteSettings {
   texto_proceso: string | null;
   texto_garantia: string | null;
   texto_legal: string | null;
+  /** Foto de fondo del hero. Se muestra borrosa: es ambiente, no contenido. */
+  portada_url: string | null;
+  portada_alt: string | null;
   updated_at: string;
 }
 

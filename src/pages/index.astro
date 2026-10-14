@@ -2,19 +2,27 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Imagen from '../components/Imagen.astro';
 import Comparador from '../components/Comparador.astro';
+import FondoPortada from '../components/FondoPortada.astro';
 import {
   getServices,
   getPieces,
   getGalleryHighlights,
+  getSiteSettings,
   MODO_DEMO,
 } from '../lib/content';
 import { formatPriceRange, formatUYU } from '../lib/whatsapp';
 
-const [services, pieces, gallery] = await Promise.all([
+const [services, pieces, gallery, settings] = await Promise.all([
   getServices(),
   getPieces({ soloDestacadas: true, limit: 4 }),
   getGalleryHighlights(6),
+  getSiteSettings(),
 ]);
+
+// Si la base todavía no tiene las columnas de la 0004, la web sigue
+// entrando: salen undefined y el fondo cae a la textura de CSS.
+const portadaUrl = settings.portada_url ?? null;
+const portadaAlt = settings.portada_alt ?? null;
 
 /**
  * Pares antes/después para el comparador. Sin trabajos cargados queda vacío y
@@ -44,7 +52,12 @@ const precioPieza = (p: (typeof pieces)[number]) =>
   }
 
   <!-- ================= HERO ================= -->
-  <section class="border-b border-linea bg-papel">
+  <section class="relative overflow-hidden border-b border-linea bg-papel">
+    <FondoPortada
+      url={portadaUrl}
+      alt={portadaAlt}
+    />
+
     {/*
       El alto mínimo hace que el bloque entre entero en la pantalla al
       abrir. Con padding fijo el titular caía por debajo del pliegue y había
@@ -52,7 +65,7 @@ const precioPieza = (p: (typeof pieces)[number]) =>
       de direcciones y el alto se pasa cuando aparece.
     */}
     <div
-      class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:py-14 lg:min-h-[calc(100svh-var(--alto-header))] lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:py-16"
+      class="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:py-14 lg:min-h-[calc(100svh-var(--alto-header))] lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:py-16"
     >
       <div>
         <p class="rotulo">Restauración de muebles y antigüedades</p>

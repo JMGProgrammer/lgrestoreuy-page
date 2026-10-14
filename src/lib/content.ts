@@ -61,6 +61,8 @@ export const SETTINGS_FALLBACK: SiteSettings = {
   texto_proceso: null,
   texto_garantia: null,
   texto_legal: null,
+  portada_url: null,
+  portada_alt: null,
   updated_at: '',
 };
 

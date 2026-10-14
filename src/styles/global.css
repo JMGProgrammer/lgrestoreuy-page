@@ -32,8 +32,21 @@
   --color-exito: #4f6b46;
   --color-alerta: #9a6b2f;
 
-  --font-display: 'Fraunces', 'Georgia', serif;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /*
+    Bodoni Moda y Archivo en lugar de Fraunces e Inter.
+
+    Esa pareja es exactamente a la que todo generador de páginas converge:
+    una serif de contraste medio muy visible y una sans neutra de manual.
+    Se cambia por una Didone de alto contraste, que es la tipografía de los
+    catálogos de subastas y de la letra de imprenta fina, y una humanista
+    con algo de carácter en vez de una neutra.
+
+    Bodoni tiene el pelo fino: en cuerpo de texto grande y chico se ve
+    (un display que se lee de una sola pasada a la distancia es otro problema), así
+    que acá se reserva para títulos.
+  */
+  --font-display: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, serif;
+  --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', monospace;
 
   --radius-card: 0.25rem;
@@ -168,8 +181,22 @@
   h2,
   h3 {
     font-family: var(--font-display);
+    /* Bodoni Moda no tiene un 600 que aguante en 20px: el pelo se come la
+       contraforma. A partir de h3 el peso sube para que el título se lea
+       de lejos y no parezca una línea fina. */
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
+    font-optical-sizing: auto;
+    /* Balancear las lineas es lo que mas cambia la Macintosh de un
+       titular: sin esto la ultima linea queda sola con dos palabras. */
+    text-wrap: balance;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
   }
 
   /* Foco visible y con onda */

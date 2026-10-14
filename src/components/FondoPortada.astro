@@ -1,0 +1,114 @@
+---
+/**
+ * Fondo del hero: una foto propia del taller, muy difusa y con poca luz.
+ *
+ * Va al primer plano en la carga pero con `fetchpriority="low"` y
+ * `decoding="async"`: es ambiente, no contenido. Si nadie sube una foto se
+ * cae a una textura de papel y madera generada con CSS, para que el bloque
+ * nunca se vea vacío.
+ *
+ * La foto no se guarda suelta en /public/ a propósito. Todo el contenido
+ * del sitio lo carga el cliente desde /admin, y una foto de relleno en el
+ * repositorio sería lo único que el cliente no puede cambiar.
+ */
+interface Props {
+  url?: string | null;
+  alt?: string | null;
+}
+
+const { url, alt } = Astro.props;
+---
+
+<div
+  class:list={['fondo-portada', !url && 'fondo-portada--textura']}
+  aria-hidden={url ? 'true' : undefined}
+  role={url ? undefined : undefined}
+>
+  {
+    url && (
+      <img
+        src={url}
+        alt={alt ?? ''}
+        class="fondo-portada__foto"
+        loading="eager"
+        decoding="async"
+        fetchpriority="low"
+      />
+    )
+  }
+</div>
+
+<style>
+  .fondo-portada {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /*
+    El desenfoque se come los bordes, así que la foto va más grande que su
+    caja: 10% de margen en cada lado contra 1.5rem de radio. Sin ese
+    margen se ven los bordes transparentes del desenfoque.
+  */
+  .fondo-portada__foto {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    object-fit: cover;
+    filter: blur(1.5rem) saturate(0.8);
+    opacity: 0.42;
+    transform: translateZ(0);
+  }
+
+  /*
+    Velo por encima: sin esto el texto queda sobre una foto y se lee mal.
+    Pesado a la izquierda, donde va el titular, y casi limpio a la derecha,
+    que es donde está la foto de antes/después.
+  */
+  .fondo-portada::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      var(--color-papel) 0%,
+      rgb(251 247 239 / 92%) 38%,
+      rgb(245 239 228 / 62%) 100%
+    );
+  }
+
+  /* Sin foto: papel viejo con veta de madera, con la paleta del sitio. */
+  .fondo-portada--textura {
+    background-color: var(--color-papel-oscuro);
+    background-image:
+      radial-gradient(
+        ellipse at 22% 12%,
+        rgb(199 154 94 / 30%),
+        transparent 58%
+      ),
+      radial-gradient(
+        ellipse at 88% 82%,
+        rgb(90 70 50 / 22%),
+        transparent 55%
+      ),
+      repeating-linear-gradient(
+        92deg,
+        rgb(90 70 50 / 4%) 0px,
+        rgb(90 70 50 / 4%) 2px,
+        transparent 2px,
+        transparent 9px
+      );
+  }
+
+  .fondo-portada--textura::after {
+    background: linear-gradient(
+      100deg,
+      rgb(251 247 239 / 72%) 0%,
+      rgb(245 239 228 / 30%) 100%
+    );
+  }
+</style>

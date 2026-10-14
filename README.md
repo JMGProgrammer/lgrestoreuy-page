@@ -45,8 +45,9 @@ En **SQL Editor → New query**, pegar y ejecutar en orden:
 1. `supabase/migrations/0001_init.sql` — tablas, índices, RLS y buckets de Storage
 2. `supabase/migrations/0002_seed.sql` — servicios de ejemplo y fila de `site_settings`
 3. `supabase/migrations/0003_galeria-desde-piezas.sql` — la galería pasa a armarse desde las piezas
+4. `supabase/migrations/0004_portada-fondo.sql` — foto de fondo del hero, subida desde `/admin → Contenido`
 
-> Correrlas en orden importa. Sin la `0003`, `/admin → Galería` falla al guardar un par: la base no tiene las columnas `piece_id`, `antes_photo_id` ni `despues_photo_id`.
+> Correrlas en orden importa. Sin la `0003`, `/admin → Galería` falla al guardar un par. Sin la `0004`, el hero cae a la textura de CSS en lugar de la foto: el sitio funciona igual, solo falta la foto.
 
 ### 4. Usuario admin
 
