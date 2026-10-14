@@ -44,6 +44,9 @@ En **SQL Editor → New query**, pegar y ejecutar en orden:
 
 1. `supabase/migrations/0001_init.sql` — tablas, índices, RLS y buckets de Storage
 2. `supabase/migrations/0002_seed.sql` — servicios de ejemplo y fila de `site_settings`
+3. `supabase/migrations/0003_galeria-desde-piezas.sql` — la galería pasa a armarse desde las piezas
+
+> Correrlas en orden importa. Sin la `0003`, `/admin → Galería` falla al guardar un par: la base no tiene las columnas `piece_id`, `antes_photo_id` ni `despues_photo_id`.
 
 ### 4. Usuario admin
 
@@ -57,6 +60,32 @@ El trigger `handle_new_user` crea la fila en `profiles` con rol `admin` automát
 npm install
 npm run dev
 ```
+
+Queda en <http://localhost:4321>.
+
+> `npm install` en esta máquina tarda bastante (la tarjeta SD está al 87%). Si se corta, dejalo correr en segundo plano antes de cortar al agente.
+
+#### El servidor de desarrollo
+
+```bash
+npx astro dev --background --host     # arranca en segundo plano y abre la red
+npx astro dev status                  # está corriendo? en qué URL
+npx astro dev logs                    # ver la salida (--follow para seguirla)
+npx astro dev stop                    # apagarlo
+```
+
+`--background` es lo cómodo: la terminal queda libre y el servidor sigue. Volver a arrancarlo con uno ya corriendo no duplica nada, solo avisa que ya está.
+
+**`--host` es lo que hace que funcione desde el celular.** Sin esa bandera el servidor solo escucha en la máquina, así que la dirección de red no responde y no se puede probar la subida de fotos desde el teléfono:
+
+```
+http://192.168.1.13:4321
+```
+
+Dos cosas que confunden la primera vez:
+
+- **Usá `localhost`, no `127.0.0.1`.** El servidor escucha en IPv6, así que `localhost` responde y `127.0.0.1` da error de conexión aunque el servidor esté arriba.
+- **El panel es `/admin`** y no hay ningún link a él desde la web pública. Hay que entrar por la URL directa.
 
 ## Scripts
 
@@ -74,4 +103,11 @@ npm run dev
 
 ## Estado
 
-Base del proyecto + capa de datos + migraciones. Pendiente: tema vintage, páginas públicas y panel admin (ver `Docs/06-roadmap-next-steps.md`).
+MVP completo: sitio público (inicio, servicios, piezas, galería antes/después, cotización, nosotros, contacto, legal), panel admin con borradores, foco de edición, reordenamiento y deshacer, y migración de galería desde piezas.
+
+Pendiente:
+
+- Correr `0003_galeria-desde-piezas.sql` en Supabase (ver arriba).
+- Probar el circuito de fotos de punta a punta: subir → Storage → `piece_photos` → `/piezas`.
+- Quitar la cotización de prueba que quedó en la base.
+- Deploy a Vercel + dominio `.uy`, y después el video de capacitación para el cliente.
