@@ -139,9 +139,14 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
         </div>
       </div>
 
-      <ul class="min-h-16">
+      <ul
+        class="min-h-16"
+        x-ref="lista"
+        @dragover.prevent="alMover($event)"
+      >
         <template x-for="(s, indice) in lista" :key="s.id">
           <li
+            :data-id="s.id"
             class="ui-item border-b border-ui-borde last:border-b-0"
             :class="{
               'ui-item-enfocado': editando === s.id,
@@ -157,11 +162,14 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
               :class="{
                 'guardando': guardandoId === s.id,
                 'ui-fila-senalada': senalada === s.id,
+                'ui-fila-lugar': lugar === s.id,
               }"
+              :style="desplazamiento(indice)"
               draggable="true"
               @dragstart="arrastrar($event, s.id)"
+              @dragenter.prevent="alEntrar(indice)"
               @dragover.prevent
-              @drop.prevent="soltar($event, indice)"
+              @drop.prevent="soltar()"
               @dragend="terminarArrastre()"
             >
               <div class="ui-progreso" x-show="guardandoId === s.id" aria-hidden="true">
@@ -691,36 +699,162 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 
       // -------------------------------------------------- arrastre
 
+      /**
+       * Ordenamiento en vivo. Mientras se arrastra no se toca la lista: las
+       * filas vecinas se desplazan con un transform para mostrar de antemano
+       * cuál sube y cuál baja. Al soltar, la lista se reordena de una vez y
+       * las filas se animan desde su posición anterior hasta la nueva.
+       */
+
+      /**
+       * Alpine inyecta $refs y $nextTick en tiempo de ejecución; el tipo del
+       * objeto literal no los conoce, así que se llega a ellos por acá.
+       */
+      magics(): {
+        $refs: Record<string, HTMLElement | undefined>;
+        $nextTick: () => Promise<void>;
+      } {
+        return this as unknown as {
+          $refs: Record<string, HTMLElement | undefined>;
+          $nextTick: () => Promise<void>;
+        };
+      },
+
+      listaEl(): HTMLElement | undefined {
+        return this.magics().$refs.lista;
+      },
+
+      /** Índice que tenía la fila cuando empezó el arrastre. */
+      indiceOrigen: -1,
+      /** Índice de la fila sobre la que está el cursor. */
+      hoverIndice: -1,
+      /** Fila donde caería el servicio si se suelta ahora. */
+      lugar: null as string | null,
+      /** Alto de una fila, medido al empezar. */
+      altoFila: 56,
+
+      /** Transform que corresponde a cada fila según hacia dónde se arrastra. */
+      desplazamiento(indice: number): string {
+        if (this.arrastrando === null || this.hoverIndice < 0) return '';
+
+        const origen = this.indiceOrigen;
+        const destino = this.hoverIndice;
+        if (indice === origen) return '';
+
+        // Bajando: las filas entre origen y destino se corren una posición arriba.
+        if (origen < destino && indice > origen && indice <= destino) {
+          return 'transform: translateY(calc(-1 * var(--alto-fila)))';
+        }
+
+        // Subiendo: se corren una posición abajo.
+        if (origen > destino && indice >= destino && indice < origen) {
+          return 'transform: translateY(var(--alto-fila))';
+        }
+
+        return '';
+      },
+
+      alEntrar(indice: number) {
+        if (this.arrastrando === null) return;
+        this.hoverIndice = indice;
+        this.lugar = this.lista[indice]?.id ?? null;
+      },
+
+      alMover(evento: DragEvent) {
+        if (this.arrastrando === null) return;
+
+        const fila = (evento.target as HTMLElement | null)?.closest('.ui-fila');
+        if (!fila) return;
+
+        const contenedor = fila.parentElement;
+        if (!contenedor) return;
+
+        const indice = Array.from(contenedor.children).indexOf(fila);
+        if (indice < 0) return;
+
+        this.alEntrar(indice);
+      },
+
       arrastrar(evento: DragEvent, id: string) {
         if (this.editando !== null) return;
+
+        this.arrastrando = id;
+        this.indiceOrigen = this.lista.findIndex((s) => s.id === id);
+        this.hoverIndice = this.indiceOrigen;
+        this.lugar = null;
+
         // El foco pasa a ser la lista entera: se atenúa el resto de la página
         // mientras se organiza.
         this.ordenando = true;
-        this.arrastrando = id;
+
+        // Se mide una fila real para que el desplazamiento sea exacto.
+        const lista = this.listaEl();
+        const primeraFila = lista?.querySelector('.ui-fila');
+        if (primeraFila) {
+          this.altoFila = primeraFila.getBoundingClientRect().height;
+          lista?.style.setProperty('--alto-fila', `${this.altoFila}px`);
+        }
+
         evento.dataTransfer?.setData('text/plain', id);
-        if (evento.dataTransfer) evento.dataTransfer.effectAllowed = 'move';
+        if (evento.dataTransfer && lista) {
+          evento.dataTransfer.effectAllowed = 'move';
+          evento.dataTransfer.setDragImage(primeraFila ?? document.body, 20, 20);
+        }
       },
 
-      async soltar(evento: DragEvent, indice: number) {
-        evento.preventDefault();
-        const idArrastrado =
-          this.arrastrando ?? evento.dataTransfer?.getData('text/plain') ?? null;
+      async soltar() {
+        const origen = this.indiceOrigen;
+        const destino = this.hoverIndice;
+        const id = this.arrastrando;
 
-        const desde = this.lista.findIndex((s) => s.id === idArrastrado);
         this.terminarArrastre();
 
-        if (desde < 0 || desde === indice) return;
+        if (id === null || origen < 0 || destino < 0 || origen === destino) return;
 
-        const [movido] = this.lista.splice(desde, 1);
-        this.lista.splice(indice, 0, movido);
-        this.idSoltado = movido.id;
+        const lista = this.listaEl();
+
+        // FLIP: se mide dónde está cada fila antes del cambio.
+        const antes = new Map<string, number>();
+        lista
+          ?.querySelectorAll<HTMLElement>('[data-id]')
+          .forEach((item) => {
+            antes.set(item.dataset.id ?? '', item.getBoundingClientRect().top);
+          });
+
+        const [movido] = this.lista.splice(origen, 1);
+        this.lista.splice(destino, 0, movido);
+
+        this.idSoltado = id;
 
         try {
           await api('/api/admin/servicios', {
             method: 'PATCH',
             body: JSON.stringify({ ordenes: this.lista.map((s) => s.id) }),
           });
-          this.senalar(movido.id);
+
+          // Ahora que el DOM ya se reordenó, cada fila viaja desde donde
+          // estaba hasta donde quedó.
+          await this.magics().$nextTick();
+
+          lista
+            ?.querySelectorAll<HTMLElement>('[data-id]')
+            .forEach((item) => {
+              const previo = antes.get(item.dataset.id ?? '');
+              if (previo === undefined) return;
+
+              const delta = previo - item.getBoundingClientRect().top;
+              if (Math.abs(delta) < 1) return;
+
+              item.animate(
+                [
+                  { transform: `translateY(${delta}px)` },
+                  { transform: 'translateY(0)' },
+                ],
+                { duration: 240, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
+              );
+            });
+
+          this.senalar(id);
           setTimeout(() => (this.idSoltado = null), 600);
         } catch (e) {
           avisarError(e);
@@ -730,6 +864,9 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
       terminarArrastre() {
         this.arrastrando = null;
         this.ordenando = false;
+        this.indiceOrigen = -1;
+        this.hoverIndice = -1;
+        this.lugar = null;
       },
     };
   }
