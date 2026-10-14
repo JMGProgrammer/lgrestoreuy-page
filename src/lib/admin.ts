@@ -86,6 +86,12 @@ export function errorLegible(err: { message: string } | null): string | null {
     return 'Alguno de los datos tiene un formato inválido.';
   }
 
+  if (/bucket not found/i.test(msg)) {
+    // Casi siempre es una migración sin correr, no un problema de la foto.
+    const b = msg.match(/bucket[:\s]+([a-z0-9_-]+)/i)?.[1] ?? 'desconocido';
+    return `La base todavía no tiene el lugar donde guardar esa imagen (el bucket "${b}"). Es una migración pendiente, no un problema con la foto: avisame y te digo cuál aplicar.`;
+  }
+
   if (/connection|fetch failed|network|timeout/i.test(msg)) {
     return 'No se pudo conectar con la base de datos. Revisá la conexión y probá de nuevo.';
   }

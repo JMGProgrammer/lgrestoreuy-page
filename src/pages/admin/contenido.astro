@@ -2,6 +2,7 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import {
   adminContext,
+  errorLegible,
   guardarContenido,
   leerContenido,
   limpiarTelefono,
@@ -54,7 +55,12 @@ if (Astro.request.method === 'POST') {
       });
       return Astro.redirect('/admin/contenido?ok=guardado');
     } catch (e) {
-      error = e instanceof Error ? e.message : 'No se pudo guardar.';
+      // Sin traducir, el panel muestra el mensaje crudo de Supabase y el
+      // que lo ve no tiene por dónde enterarse de qué hacer.
+      error =
+        e instanceof Error
+          ? (errorLegible({ message: e.message }) ?? 'No se pudo guardar.')
+          : 'No se pudo guardar.';
     }
   }
 }
