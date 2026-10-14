@@ -3,53 +3,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import {
   adminContext,
   listarGaleria,
+  listarPiezasConFotos,
   numeroONull,
-  subirImagen,
   textoONull,
 } from '../../lib/admin';
 import { getCurrentUser } from '../../lib/supabase/server';
-import type { GalleryItem } from '../../lib/types';
+import Icon from '../../components/admin/Icon.astro';
 
 const ctx = adminContext(Astro.request, Astro.cookies);
 const usuario = await getCurrentUser(Astro.request, Astro.cookies);
+
 let error = '';
 
 if (Astro.request.method === 'POST' && usuario) {
   const form = await Astro.request.formData();
   const accion = String(form.get('_accion') ?? '');
-
-  if (accion === 'subir') {
-    const antes = form.get('antes');
-    const despues = form.get('despues');
-
-    if (!(antes instanceof File) || antes.size === 0) {
-      error = 'Falta la foto "antes".';
-    } else if (!(despues instanceof File) || despues.size === 0) {
-      error = 'Falta la foto "después".';
-    } else {
-      try {
-        const galeria = await listarGaleria(ctx);
-        const folder = `item-${Date.now()}`;
-
-        const antesSubida = await subirImagen(ctx, 'galeria', antes, folder);
-        const despuesSubida = await subirImagen(ctx, 'galeria', despues, folder);
-
-        await ctx.supabase.from('gallery_items').insert({
-          titulo: textoONull(form.get('titulo')),
-          antes_url: antesSubida.url,
-          despues_url: despuesSubida.url,
-          tag_servicio: textoONull(form.get('tag_servicio')),
-          destacada_home: form.get('destacada_home') === 'on',
-          orden: numeroONull(form.get('orden')) ?? galeria.length,
-          created_by: usuario.id,
-        });
-      } catch (e) {
-        error = e instanceof Error ? e.message : 'No se pudo subir.';
-      }
-    }
-
-    return Astro.redirect('/admin/galeria');
-  }
 
   if (accion === 'borrar') {
     await ctx.supabase
@@ -66,140 +34,368 @@ if (Astro.request.method === 'POST' && usuario) {
       .eq('id', String(form.get('id') ?? ''));
     return Astro.redirect('/admin/galeria');
   }
+
+  if (accion === 'agregar') {
+    const pieceId = String(form.get('piece_id') ?? '');
+    const antesId = String(form.get('antes_photo_id') ?? '');
+    const despuesId = String(form.get('despues_photo_id') ?? '');
+
+    const piezas = await listarPiezasConFotos(ctx);
+    const pieza = piezas.find((p) => p.id === pieceId);
+
+    if (!pieza) {
+      error = 'Elegí una pieza.';
+    } else {
+      const antes = pieza.fotos.find((f) => f.id === antesId);
+      const despues = pieza.fotos.find((f) => f.id === despuesId);
+
+      if (!antes || !despues) {
+        error = 'Elegí la foto de antes y la de después de esa pieza.';
+      } else {
+        const galeria = await listarGaleria(ctx);
+        const { error: err } = await ctx.supabase.from('gallery_items').insert({
+          piece_id: pieza.id,
+          antes_photo_id: antes.id,
+          despues_photo_id: despues.id,
+          // Copia resuelta: la web lee estos campos directo, sin joins.
+          titulo: pieza.titulo,
+          antes_url: antes.url,
+          despues_url: despues.url,
+          tag_servicio: textoONull(form.get('tag_servicio')),
+          destacada_home: form.get('destacada_home') === 'on',
+          orden: numeroONull(form.get('orden')) ?? galeria.length,
+          created_by: usuario.id,
+        });
+
+        if (err) {
+          error = err.message;
+        } else {
+          return Astro.redirect('/admin/galeria?ok=agregado');
+        }
+      }
+    }
+  }
 }
 
 const galeria = await listarGaleria(ctx);
+const piezas = await listarPiezasConFotos(ctx);
+const ok = Astro.url.searchParams.get('ok');
+
+const jsonPiezas = JSON.stringify(
+  piezas.map((p) => ({
+    id: p.id,
+    titulo: p.titulo,
+    fotos: p.fotos.map((f) => ({ id: f.id, url: f.url, rol: f.rol })),
+  })),
+).replace(/</g, '\\u003c');
+
+/** Texto de la etiqueta de cada foto, para los <option>. */
+function etiquetaDe(foto: { rol: string }): string {
+  if (foto.rol === 'antes') return 'Antes';
+  if (foto.rol === 'despues') return 'Después';
+  return 'General';
+}
 ---
 
-<AdminLayout titulo="Galería antes/después">
-  <p class="mt-2 max-w-2xl text-sm text-tinta-suave">
-    Estas fotos alimentan el bloque principal de la home. Marcá{' '}
-    <strong class="font-medium text-tinta">destacada</strong> solo en las
-    mejores: la web muestra hasta 3.
-  </p>
+<AdminLayout
+  titulo="Galería antes/después"
+  subtitulo="Elegí una pieza y marcá qué foto es el antes y cuál el después. La web muestra hasta 3 pares."
+>
+  <script type="application/json" id="datos-piezas" set:html={jsonPiezas} />
 
-  {
-    error && (
-      <p class="mt-4 rounded border border-[#9a2f2f] bg-[#9a2f2f]/10 px-4 py-3 text-sm text-[#7a2626]">
-        {error}
-      </p>
-    )
-  }
-
-  <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  <div x-data="galeria()" x-cloak class="space-y-4">
     {
-      galeria.map((item: GalleryItem) => (
-        <li class="overflow-hidden rounded border border-linea bg-papel">
-          <div class="grid grid-cols-2">
-            <img
-              src={item.antes_url}
-              alt={`${item.titulo ?? 'Pieza'} antes`}
-              class="aspect-square w-full object-cover"
-              loading="lazy"
-            />
-            <img
-              src={item.despues_url}
-              alt={`${item.titulo ?? 'Pieza'} después`}
-              class="aspect-square w-full object-cover"
-              loading="lazy"
-            />
-          </div>
-          <div class="p-3">
-            <p class="text-sm text-tinta">{item.titulo ?? 'Sin título'}</p>
-            <p class="text-xs text-tinta-tenue">{item.tag_servicio ?? 'Sin etiqueta'}</p>
-            <div class="mt-3 flex items-center justify-between">
-              <form method="post">
-                <input type="hidden" name="_accion" value="destacar" />
-                <input type="hidden" name="id" value={item.id} />
-                <input
-                  type="hidden"
-                  name="valor"
-                  value={item.destacada_home ? 'off' : 'on'}
-                />
-                <button type="submit" class="text-xs underline decoration-latón underline-offset-4">
-                  {item.destacada_home ? 'Quitar de la home' : 'Destacar en la home'}
-                </button>
-              </form>
-              <form method="post">
-                <input type="hidden" name="_accion" value="borrar" />
-                <input type="hidden" name="id" value={item.id} />
-                <button
-                  type="submit"
-                  class="text-xs text-[#9a2f2f] underline underline-offset-4"
-                  onclick="return confirm('¿Borrar esta entrada de la galería?')"
-                >
-                  Borrar
-                </button>
-              </form>
-            </div>
-          </div>
-        </li>
-      ))
-    }
-
-    {
-      galeria.length === 0 && (
-        <li class="rounded border border-dashed border-linea px-4 py-10 text-center text-sm text-tinta-suave sm:col-span-2 lg:col-span-3">
-          Sin pares antes/después todavía.
-        </li>
+      error && (
+        <p class="rounded border border-[#a03328] bg-[#f9e5e2] px-4 py-3 text-sm text-[#7d2c23]">
+          {error}
+        </p>
       )
     }
-  </ul>
 
-  <h2 class="mt-12 text-lg text-tinta">Agregar un par</h2>
-  <form
-    method="post"
-    enctype="multipart/form-data"
-    class="mt-4 max-w-2xl space-y-4"
-  >
-    <input type="hidden" name="_accion" value="subir" />
+    {
+      ok && (
+        <p class="rounded border border-[#37603f] bg-[#e2efe3] px-4 py-3 text-sm text-[#2a4a30]">
+          Par agregado a la galería.
+        </p>
+      )
+    }
 
-    <div>
-      <label class="campo-label" for="titulo">Título</label>
-      <input class="campo" id="titulo" name="titulo" placeholder="Ej: Cómoda de nogal" />
-    </div>
+    <!-- ============ Pares actuales ============ -->
+    {
+      galeria.length === 0 ? (
+        <div class="ui-panel">
+          <div class="ui-vacio">
+            <p class="ui-vacio-titulo">Todavía no hay pares</p>
+            <p class="ui-vacio-texto">
+              {piezas.length === 0
+                ? 'Primero publicá una pieza con fotos en /admin/piezas. Después volvé acá a armar el par.'
+                : 'Armá el primero con el formulario de abajo.'}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {galeria.map((item) => (
+            <li class="ui-panel overflow-hidden">
+              <div class="grid grid-cols-2">
+                <img
+                  src={item.antes_url}
+                  alt={`${item.titulo ?? 'Pieza'} antes`}
+                  class="aspect-square w-full object-cover"
+                  loading="lazy"
+                />
+                <img
+                  src={item.despues_url}
+                  alt={`${item.titulo ?? 'Pieza'} después`}
+                  class="aspect-square w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <div class="p-3">
+                <p class="ui-truncate text-sm font-medium text-ui-texto">
+                  {item.titulo ?? 'Sin título'}
+                </p>
+                <p class="text-xs text-ui-texto-3">
+                  {item.tag_servicio ?? 'Sin etiqueta'}
+                </p>
+                <div class="mt-3 flex items-center justify-between gap-2">
+                  <form method="post">
+                    <input type="hidden" name="_accion" value="destacar" />
+                    <input type="hidden" name="id" value={item.id} />
+                    <input
+                      type="hidden"
+                      name="valor"
+                      value={item.destacada_home ? 'off' : 'on'}
+                    />
+                    <button type="submit" class="text-xs text-ui-acento underline underline-offset-4">
+                      {item.destacada_home ? 'Quitar de la home' : 'Destacar en la home'}
+                    </button>
+                  </form>
+                  <form method="post">
+                    <input type="hidden" name="_accion" value="borrar" />
+                    <input type="hidden" name="id" value={item.id} />
+                    <button
+                      type="submit"
+                      class="text-xs text-[#a03328] underline underline-offset-4"
+                      onclick="return confirm('¿Quitar este par de la galería?')"
+                    >
+                      Quitar
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )
+    }
 
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div>
-        <label class="campo-label" for="antes">Foto antes</label>
-        <input
-          class="campo"
-          id="antes"
-          name="antes"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          required
-        />
-      </div>
-      <div>
-        <label class="campo-label" for="despues">Foto después</label>
-        <input
-          class="campo"
-          id="despues"
-          name="despues"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          required
-        />
-      </div>
-    </div>
+    <!-- ============ Armar un par ============ -->
+    <h2 class="pt-2 text-lg font-semibold text-ui-texto">Armar un par</h2>
 
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div>
-        <label class="campo-label" for="tag_servicio">Servicio</label>
-        <input class="campo" id="tag_servicio" name="tag_servicio" placeholder="Ej: Lustre" />
-      </div>
-      <div>
-        <label class="campo-label" for="orden">Orden</label>
-        <input class="campo" id="orden" name="orden" type="number" min="0" />
-      </div>
-    </div>
+    {
+      piezas.length === 0 ? (
+        <p class="rounded border border-dashed border-ui-borde-fuerte px-4 py-8 text-center text-sm text-ui-texto-2">
+          No hay piezas con fotos todavía. Publicá una en
+          <span class="font-medium text-ui-texto">/admin → Piezas</span> y volvé acá.
+        </p>
+      ) : (
+        <form method="post" class="ui-panel max-w-3xl space-y-5 p-5">
+          <input type="hidden" name="_accion" value="agregar" />
 
-    <label class="flex items-center gap-2 text-sm text-tinta-suave">
-      <input type="checkbox" name="destacada_home" class="accent-[#a8763e]" />
-      Mostrar en la home
-    </label>
+          <!-- 1. Que pieza -->
+          <div>
+            <label class="ui-label" for="piece_id">1. ¿De qué pieza es el par?</label>
+            <select
+              class="ui-campo"
+              id="piece_id"
+              name="piece_id"
+              x-model="pieceId"
+              x-on:change="alCambiarPieza()"
+            >
+              <option value="">Elegí una pieza…</option>
+              {piezas.map((p) => (
+                <option value={p.id}>
+                  {p.titulo} ({p.fotos.length} {p.fotos.length === 1 ? 'foto' : 'fotos'})
+                </option>
+              ))}
+            </select>
+            <p class="ui-ayuda" x-show="faltanFotos">
+              Esta pieza tiene una sola foto. Subile al menos dos desde
+              /admin → Piezas para armar un antes y un después distintos.
+            </p>
+          </div>
 
-    <button type="submit" class="btn-principal">Subir par</button>
-  </form>
+          <!-- 2. Que foto -->
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="ui-label" for="antes_photo_id">2. Foto "antes"</label>
+              <select
+                class="ui-campo"
+                id="antes_photo_id"
+                name="antes_photo_id"
+                x-model="fotoAntes"
+                x-disabled="!piezaActual"
+              >
+                <option value="">Sin elegir</option>
+                {
+                  piezas.flatMap((pieza) =>
+                    pieza.fotos.map((foto) => (
+                      <option value={foto.id} data-pieza={pieza.id} x-show="$el.dataset.pieza === pieceId">
+                        {etiquetaDe(foto)} · {pieza.titulo}
+                      </option>
+                    )),
+                  )
+                }
+              </select>
+            </div>
+
+            <div>
+              <label class="ui-label" for="despues_photo_id">3. Foto "después"</label>
+              <select
+                class="ui-campo"
+                id="despues_photo_id"
+                name="despues_photo_id"
+                x-model="fotoDespues"
+                x-disabled="!piezaActual"
+              >
+                <option value="">Sin elegir</option>
+                {
+                  piezas.flatMap((pieza) =>
+                    pieza.fotos.map((foto) => (
+                      <option value={foto.id} data-pieza={pieza.id} x-show="$el.dataset.pieza === pieceId">
+                        {etiquetaDe(foto)} · {pieza.titulo}
+                      </option>
+                    )),
+                  )
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Vista previa -->
+          <div
+            class="overflow-hidden rounded border border-ui-borde"
+            x-show="urlAntes && urlDespues"
+            x-cloak
+          >
+            <div class="grid grid-cols-2">
+              <img
+                x-bind:src="urlAntes"
+                alt="Antes"
+                class="aspect-square w-full object-cover"
+              />
+              <img
+                x-bind:src="urlDespues"
+                alt="Después"
+                class="aspect-square w-full object-cover"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="ui-label" for="tag_servicio">Etiqueta (opcional)</label>
+              <input
+                class="ui-campo"
+                id="tag_servicio"
+                name="tag_servicio"
+                placeholder="Ej: Lustre"
+                x-model="tag"
+              />
+            </div>
+            <div>
+              <label class="ui-label" for="orden">Orden</label>
+              <input
+                class="ui-campo ui-num"
+                id="orden"
+                name="orden"
+                type="number"
+                min="0"
+                x-model="orden"
+              />
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm text-ui-texto-2">
+            <input type="checkbox" name="destacada_home" class="accent-[#96652a]" checked />
+            Mostrar en la home
+          </label>
+
+          <button type="submit" class="ui-btn ui-btn-acento" :disabled="!puedeGuardar()">
+            <Icon nombre="mas" clase="size-4" />
+            Agregar a la galería
+          </button>
+        </form>
+      )
+    }
+  </div>
 </AdminLayout>
+
+<script>
+  import { Alpine, leerDatos } from '../../scripts/admin';
+
+  interface Foto {
+    id: string;
+    url: string;
+    rol: string;
+  }
+
+  interface Pieza {
+    id: string;
+    titulo: string;
+    fotos: Foto[];
+  }
+
+  function galeriaEstado() {
+    return {
+      piezas: leerDatos<Pieza[]>('datos-piezas'),
+      pieceId: '',
+      fotoAntes: '',
+      fotoDespues: '',
+      tag: '',
+      orden: '0',
+
+      init(this: { orden: string; piezas: Pieza[] }) {
+        // El orden por defecto es seguir al último par agregado.
+        this.orden = String(this.piezas.length);
+      },
+
+      etiquetaDe(foto: Foto): string {
+        if (foto.rol === 'antes') return 'Antes';
+        if (foto.rol === 'despues') return 'Después';
+        return 'General';
+      },
+
+      piezaActual(this: { piezas: Pieza[]; pieceId: string }): Pieza | null {
+        return this.piezas.find((p) => p.id === this.pieceId) ?? null;
+      },
+
+      urlAntes(this: { piezaActual: () => Pieza | null; fotoAntes: string }): string {
+        return this.piezaActual()?.fotos.find((f) => f.id === this.fotoAntes)?.url ?? '';
+      },
+
+      urlDespues(this: { piezaActual: () => Pieza | null; fotoDespues: string }): string {
+        return this.piezaActual()?.fotos.find((f) => f.id === this.fotoDespues)?.url ?? '';
+      },
+
+      /** Al elegir otra pieza, se limpian las fotos elegidas. */
+      alCambiarPieza(this: { pieceId: string; fotoAntes: string; fotoDespues: string }) {
+        this.fotoAntes = '';
+        this.fotoDespues = '';
+      },
+
+      /** La pieza elegida tiene menos de dos fotos: no alcanza para un par. */
+      faltanFotos(this: { piezaActual: () => Pieza | null }): boolean {
+        const fotos = this.piezaActual()?.fotos.length ?? 0;
+        return fotos > 0 && fotos < 2;
+      },
+
+      puedeGuardar(this: { fotoAntes: string; fotoDespues: string }): boolean {
+        return Boolean(this.fotoAntes && this.fotoDespues);
+      },
+    };
+  }
+
+  Alpine.data('galeria', galeriaEstado);
+</script>

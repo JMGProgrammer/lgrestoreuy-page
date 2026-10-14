@@ -8,6 +8,7 @@ import { getSupabaseConSesion } from './supabase/server';
 import type {
   GalleryItem,
   Piece,
+  PiecePhoto,
   Quote,
   Service,
   SiteSettings,
@@ -254,6 +255,31 @@ export async function listarGaleria(ctx: AdminContext): Promise<GalleryItem[]> {
 
   if (error) throw new Error(`galería: ${error.message}`);
   return (data ?? []) as GalleryItem[];
+}
+
+export interface PiezaConFotos extends Piece {
+  fotos: PiecePhoto[];
+}
+
+/**
+ * Piezas con sus fotos, para armar un par en la galería.
+ * Solo las que tienen al menos una foto: un par no se puede armar sin fotos.
+ */
+export async function listarPiezasConFotos(
+  ctx: AdminContext,
+): Promise<PiezaConFotos[]> {
+  const { data, error } = await ctx.supabase
+    .from('pieces')
+    .select('*, fotos:piece_photos(*)')
+    .not('fotos', 'is', null)
+    .order('updated_at', { ascending: false });
+
+  if (error) throw new Error(`piezas: ${error.message}`);
+
+  return ((data ?? []) as unknown as PiezaConFotos[]).map((pieza) => ({
+    ...pieza,
+    fotos: [...(pieza.fotos ?? [])].sort((a, b) => a.orden - b.orden),
+  }));
 }
 
 // ------------------------------------------------------------------- imágenes

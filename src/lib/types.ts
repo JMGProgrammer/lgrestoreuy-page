@@ -100,6 +100,11 @@ export interface GalleryItem {
   orden: number;
   created_by: string | null;
   created_at: string;
+  /** 0003: de qué pieza sale el par */
+  piece_id?: string | null;
+  /** 0003: qué fotos de esa pieza se eligieron */
+  antes_photo_id?: string | null;
+  despues_photo_id?: string | null;
 }
 
 export interface Quote {
