@@ -570,6 +570,15 @@ select.ui-campo {
   animation: ui-velo-entra 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
+/*
+  Velo suave: se usa cuando el foco abarca una zona grande (reordenar toda la
+  lista). Menos contraste, para no tapar el contenido que hay que mirar.
+*/
+.ui-velo-suave {
+  background: rgb(31 25 16 / 14%);
+  backdrop-filter: blur(1px);
+}
+
 @keyframes ui-velo-entra {
   from {
     opacity: 0;
@@ -586,6 +595,16 @@ select.ui-campo {
   transition: box-shadow 200ms ease;
 }
 
+/*
+  Zona enfocada: el elemento que queda por encima del velo. Sirve para ampliar
+  el foco más allá de una fila: al reordenar, la zona enfocada es toda la
+  lista; al cambiar visibilidad, es la fila afectada.
+*/
+.ui-zona-foco {
+  position: relative;
+  z-index: 50;
+}
+
 .ui-item-enfocado {
   z-index: 50;
 }
@@ -595,15 +614,39 @@ select.ui-campo {
   box-shadow: 0 0 0 2px var(--color-ui-acento);
 }
 
-.ui-item-enfocado .ui-fila > :first-child {
-  border-radius: var(--radius-ui-sm) 0 0 var(--radius-ui-sm);
-}
-
 .ui-editor {
   padding: 0.875rem;
   background: var(--color-ui-panel);
   border-bottom: 1px solid var(--color-ui-borde);
   box-shadow: 0 0 0 2px var(--color-ui-acento);
+}
+
+/* Fila recién reordenada o toggled: el foco la señala un momento */
+.ui-fila-senalada {
+  background: var(--color-ui-acento-suave);
+  box-shadow: inset 3px 0 0 var(--color-ui-acento);
+}
+
+/* Campo tocado respecto de lo guardado: ámbar en el borde, no en el fondo */
+.ui-campo-cambiado {
+  border-color: var(--color-ui-acento);
+  background: color-mix(in oklab, var(--color-ui-acento-suave) 55%, white);
+}
+
+.ui-campo-cambiado:focus {
+  border-color: var(--color-ui-acento-hover);
+  background: white;
+}
+
+/* Etiqueta del campo cuando cambió */
+.ui-label-cambiada {
+  color: var(--color-ui-alerta);
+}
+
+.ui-label-cambiada::after {
+  content: ' · editado';
+  font-weight: 400;
+  font-size: 0.6875rem;
 }
 
 .ui-editor-barra {

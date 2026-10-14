@@ -28,6 +28,66 @@ interface StoreAvisos {
   limpiar: () => void;
 }
 
+type Accion = () => void | Promise<void>;
+
+/**
+ * Cambios sin guardar, a nivel de toda la aplicación.
+ * El layout lo consulta para bloquear la navegación y el recargo de página.
+ */
+interface StoreCambios {
+  tiene: boolean;
+  etiqueta: string;
+  destino: string | null;
+  dialogo: boolean;
+  alGuardar: Accion | null;
+  alDescartar: Accion | null;
+  registrar: (etiqueta: string, guardar: Accion, descartar: Accion) => void;
+  set: (tiene: boolean) => void;
+  limpiar: () => void;
+  cerrarDialogo: () => void;
+}
+
+// Función nombrada para que TypeScript tipifique `this` dentro de los métodos.
+function crearStoreCambios() {
+  return {
+    tiene: false,
+    etiqueta: '',
+    destino: null as string | null,
+    dialogo: false,
+    alGuardar: null as Accion | null,
+    alDescartar: null as Accion | null,
+
+    registrar(this: StoreCambios, etiqueta: string, guardar: Accion, descartar: Accion) {
+      this.etiqueta = etiqueta;
+      this.alGuardar = guardar;
+      this.alDescartar = descartar;
+      this.tiene = true;
+    },
+
+    set(this: StoreCambios, tiene: boolean) {
+      this.tiene = tiene;
+    },
+
+    limpiar(this: StoreCambios) {
+      this.tiene = false;
+      this.etiqueta = '';
+      this.alGuardar = null;
+      this.alDescartar = null;
+      this.destino = null;
+      this.dialogo = false;
+    },
+
+    cerrarDialogo(this: StoreCambios) {
+      this.dialogo = false;
+      this.destino = null;
+    },
+  };
+}
+
+Alpine.store('cambios', crearStoreCambios());
+
+Alpine.store('avisos', crearStoreAvisos());
+
 // Función nombrada para que TypeScript tipifique `this` dentro de los métodos.
 function crearStoreAvisos() {
   return {
@@ -131,6 +191,37 @@ declare global {
 window.Alpine = Alpine;
 
 /**
+ * Guard de navegación: si hay cambios sin guardar, se interrumpe el cambio de
+ * sección y se ofrece guardar o descartar. beforeunload cubre el recargo y el
+ * cierre de pestaña, que el click no puede interceptar.
+ */
+function instalarGuardNavegacion() {
+  const cambios = Alpine.store('cambios') as StoreCambios;
+
+  document.addEventListener('click', (evento) => {
+    if (!cambios.tiene) return;
+
+    const enlace = (evento.target as HTMLElement | null)?.closest('a[href]');
+    if (!enlace) return;
+
+    const href = enlace.getAttribute('href') ?? '';
+    if (!href.startsWith('/') || href.startsWith('//')) return;
+
+    evento.preventDefault();
+    cambios.destino = href;
+    cambios.dialogo = true;
+  });
+
+  window.addEventListener('beforeunload', (evento) => {
+    if (!cambios.tiene) return;
+    evento.preventDefault();
+    // El navegador muestra su propio aviso. returnValue quedó deprecado pero
+    // sigue siendo lo que dispara ese diálogo en la práctica.
+    (evento as BeforeUnloadEvent).returnValue = '';
+  });
+}
+
+/**
  * Alpine arranca recién en DOMContentLoaded. Los scripts de Astro son módulos
  * diferidos: se ejecutan todos antes de ese evento, así que cada página
  * registra sus componentes en el orden que quiera.
@@ -138,6 +229,7 @@ window.Alpine = Alpine;
 document.addEventListener(
   'DOMContentLoaded',
   () => {
+    instalarGuardNavegacion();
     Alpine.start();
   },
   { once: true },

@@ -106,7 +106,10 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
     </div>
 
     <!-- ============ Lista ============ -->
-    <div class="ui-panel">
+    <div
+      class="ui-panel"
+      :class="{ 'ui-zona-foco': ordenando }"
+    >
       <div
         class="flex items-center justify-between gap-3 border-b border-ui-borde bg-ui-panel-2 px-3 py-2"
       >
@@ -115,15 +118,25 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
           <span x-text="activos()"></span> visibles
         </p>
 
-        <button
-          type="button"
-          class="ui-btn ui-btn-primario ui-btn-sm"
-          @click="abrirNuevo()"
-          x-show="!creando"
-        >
-          <Icon nombre="mas" clase="size-4" />
-          Nuevo
-        </button>
+        <div class="flex items-center gap-2">
+          <span
+            class="ui-chip ui-chip-info"
+            x-show="ordenando"
+            x-transition.opacity.duration.150ms
+          >
+            Reordenando
+          </span>
+
+          <button
+            type="button"
+            class="ui-btn ui-btn-primario ui-btn-sm"
+            @click="abrirNuevo()"
+            x-show="!creando"
+          >
+            <Icon nombre="mas" clase="size-4" />
+            Nuevo
+          </button>
+        </div>
       </div>
 
       <ul class="min-h-16">
@@ -132,6 +145,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
             class="ui-item border-b border-ui-borde last:border-b-0"
             :class="{
               'ui-item-enfocado': editando === s.id,
+              'ui-item-enfocado': senalada === s.id,
               'ui-fila-arrastrando': arrastrando === s.id,
               'ui-fila-soltada': idSoltado === s.id,
               'ui-pulso': recienGuardado === s.id,
@@ -140,7 +154,10 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
             <!-- ============ Fila de lectura ============ -->
             <div
               class="ui-fila !border-b-0"
-              :class="{ 'guardando': guardandoId === s.id }"
+              :class="{
+                'guardando': guardandoId === s.id,
+                'ui-fila-senalada': senalada === s.id,
+              }"
               draggable="true"
               @dragstart="arrastrar($event, s.id)"
               @dragover.prevent
@@ -224,18 +241,32 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
             >
               <div class="space-y-3.5">
                 <div>
-                  <label class="ui-label" :for="`nombre-${s.id}`">Nombre</label>
+                  <label
+                    class="ui-label"
+                    :class="{ 'ui-label-cambiada': cambio('nombre') }"
+                    :for="`nombre-${s.id}`"
+                  >
+                    Nombre
+                  </label>
                   <input
                     class="ui-campo"
+                    :class="{ 'ui-campo-cambiado': cambio('nombre') }"
                     :id="`nombre-${s.id}`"
                     x-model="borrador.nombre"
                   />
                 </div>
 
                 <div>
-                  <label class="ui-label" :for="`desc-${s.id}`">Descripción</label>
+                  <label
+                    class="ui-label"
+                    :class="{ 'ui-label-cambiada': cambio('descripcion') }"
+                    :for="`desc-${s.id}`"
+                  >
+                    Descripción
+                  </label>
                   <textarea
                     class="ui-campo"
+                    :class="{ 'ui-campo-cambiado': cambio('descripcion') }"
                     :id="`desc-${s.id}`"
                     x-model="borrador.descripcion"
                     rows="3"
@@ -245,9 +276,16 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label class="ui-label" :for="`min-${s.id}`">Precio desde</label>
+                    <label
+                      class="ui-label"
+                      :class="{ 'ui-label-cambiada': cambio('precio_min') }"
+                      :for="`min-${s.id}`"
+                    >
+                      Precio desde
+                    </label>
                     <input
                       class="ui-campo ui-num"
+                      :class="{ 'ui-campo-cambiado': cambio('precio_min') }"
                       :id="`min-${s.id}`"
                       x-model="borrador.precio_min"
                       placeholder="vacío"
@@ -255,9 +293,16 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
                     />
                   </div>
                   <div>
-                    <label class="ui-label" :for="`max-${s.id}`">Precio hasta</label>
+                    <label
+                      class="ui-label"
+                      :class="{ 'ui-label-cambiada': cambio('precio_max') }"
+                      :for="`max-${s.id}`"
+                    >
+                      Precio hasta
+                    </label>
                     <input
                       class="ui-campo ui-num"
+                      :class="{ 'ui-campo-cambiado': cambio('precio_max') }"
                       :id="`max-${s.id}`"
                       x-model="borrador.precio_max"
                       placeholder="vacío"
@@ -269,7 +314,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 
               <div class="ui-editor-barra">
                 <span class="ui-sin-guardar" x-show="hayCambios()">
-                  Cambios sin guardar
+                  <span x-text="`${camposCambiados().length} ${camposCambiados().length === 1 ? 'campo editado' : 'campos editados'} sin guardar`"></span>
                 </span>
                 <span class="ui-ayuda mt-0" x-show="!hayCambios()">
                   Sin cambios.
@@ -318,8 +363,16 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
     </p>
   </div>
 
-  <!-- Velo: atenúa todo lo que no se está editando -->
-  <div class="ui-velo" x-show="editando !== null" x-cloak aria-hidden="true"></div>
+  <!-- Velo: atenúa todo lo que no está en foco.
+      Tres modos: editando una fila, reordenando toda la lista, o
+      confirmando un cambio de visibilidad. -->
+  <div
+    class="ui-velo"
+    :class="{ 'ui-velo-suave': ordenando }"
+    x-show="editando !== null || ordenando || senalada !== null"
+    x-cloak
+    aria-hidden="true"
+  ></div>
 </AdminLayout>
 
 <script>
@@ -335,6 +388,8 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
     orden: number;
     activo: boolean;
   }
+
+  type Campo = 'nombre' | 'descripcion' | 'precio_min' | 'precio_max';
 
   interface Borrador {
     id: string;
@@ -360,8 +415,12 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
       guardando: false,
       guardandoId: null as string | null,
       creando: false,
+      /** Reordenando: el foco abarca toda la lista. */
+      ordenando: false,
       arrastrando: null as string | null,
       idSoltado: null as string | null,
+      /** Fila recién reordenada o con visibilidad cambiada. */
+      senalada: null as string | null,
       recienGuardado: null as string | null,
       error: '',
 
@@ -386,18 +445,44 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
         return `Hasta $${formato.format(max ?? 0)}`;
       },
 
-      /** ¿El borrador difiere de lo que está guardado? */
-      hayCambios(): boolean {
-        if (!this.borrador) return false;
-        const s = this.servicioActual();
-        if (!s) return false;
+      // -------------------------------------------------- borrador
 
-        return (
-          this.borrador.nombre !== s.nombre ||
-          this.borrador.descripcion !== (s.descripcion ?? '') ||
-          (this.borrador.precio_min || null) !== s.precio_min ||
-          (this.borrador.precio_max || null) !== s.precio_max
-        );
+      valorGuardado(campo: Campo): string {
+        const s = this.servicioActual();
+        if (!s) return '';
+        if (campo === 'nombre') return s.nombre;
+        if (campo === 'descripcion') return s.descripcion ?? '';
+        return s[campo]?.toString() ?? '';
+      },
+
+      /** Un campo concreto fue tocado respecto de lo guardado. */
+      cambio(campo: Campo): boolean {
+        if (!this.borrador) return false;
+        return this.borrador[campo] !== this.valorGuardado(campo);
+      },
+
+      camposCambiados(): Campo[] {
+        const campos: Campo[] = [
+          'nombre',
+          'descripcion',
+          'precio_min',
+          'precio_max',
+        ];
+        return campos.filter((campo) => this.cambio(campo));
+      },
+
+      hayCambios(): boolean {
+        return this.camposCambiados().length > 0;
+      },
+
+      // -------------------------------------------------- señalización
+
+      /** Marca una fila un instante: "esto es lo que acaba de cambiar". */
+      senalar(id: string) {
+        this.senalada = id;
+        setTimeout(() => {
+          if (this.senalada === id) this.senalada = null;
+        }, 1400);
       },
 
       // -------------------------------------------------- edición
@@ -415,11 +500,13 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
           precio_max: s.precio_max?.toString() ?? '',
         };
         this.editando = s.id;
+        this.registrarCambiosPendientes(s.nombre);
       },
 
       cancelarEdicion() {
         this.editando = null;
         this.borrador = null;
+        this.limpiarCambiosPendientes();
       },
 
       async guardar() {
@@ -446,12 +533,15 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
             },
           );
 
+          this.limpiarCambiosPendientes();
+
           // Recién acá la lista refleja el cambio.
           const indice = this.lista.findIndex((x) => x.id === s.id);
           if (indice >= 0) this.lista[indice] = servicio;
 
           this.cancelarEdicion();
 
+          this.senalar(s.id);
           this.recienGuardado = servicio.id;
           setTimeout(() => {
             if (this.recienGuardado === servicio.id) this.recienGuardado = null;
@@ -463,6 +553,32 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
         } finally {
           this.guardandoId = null;
         }
+      },
+
+      // ------------------------------ guard de cambios sin guardar
+
+      /**
+       * Avisa al layout que hay un borrador abierto. Si el usuario intenta
+       * cambiar de sección o recargar, se ofrece guardar o descartar.
+       */
+      registrarCambiosPendientes(nombre: string) {
+        (Alpine.store('cambios') as {
+          registrar: (
+            etiqueta: string,
+            guardar: () => void | Promise<void>,
+            descartar: () => void,
+          ) => void;
+        }).registrar(
+          nombre,
+          async () => {
+            await this.guardar();
+          },
+          () => this.cancelarEdicion(),
+        );
+      },
+
+      limpiarCambiosPendientes() {
+        (Alpine.store('cambios') as { limpiar: () => void }).limpiar();
       },
 
       // -------------------------------------------------- alta
@@ -515,12 +631,14 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
       async alternar(s: Servicio) {
         const anterior = s.activo;
         s.activo = !s.activo;
+        this.senalar(s.id);
 
         try {
           await api(`/api/admin/servicios/${s.id}`, {
             method: 'PATCH',
             body: JSON.stringify({ activo: s.activo }),
           });
+          avisos.exito(s.activo ? 'Visible en la web' : 'Oculto de la web');
         } catch (e) {
           s.activo = anterior;
           avisarError(e);
@@ -575,6 +693,9 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 
       arrastrar(evento: DragEvent, id: string) {
         if (this.editando !== null) return;
+        // El foco pasa a ser la lista entera: se atenúa el resto de la página
+        // mientras se organiza.
+        this.ordenando = true;
         this.arrastrando = id;
         evento.dataTransfer?.setData('text/plain', id);
         if (evento.dataTransfer) evento.dataTransfer.effectAllowed = 'move';
@@ -599,6 +720,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
             method: 'PATCH',
             body: JSON.stringify({ ordenes: this.lista.map((s) => s.id) }),
           });
+          this.senalar(movido.id);
           setTimeout(() => (this.idSoltado = null), 600);
         } catch (e) {
           avisarError(e);
@@ -607,6 +729,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 
       terminarArrastre() {
         this.arrastrando = null;
+        this.ordenando = false;
       },
     };
   }
