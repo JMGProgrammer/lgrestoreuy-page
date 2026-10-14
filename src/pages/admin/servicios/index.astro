@@ -143,6 +143,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
         class="min-h-16"
         x-ref="lista"
         @dragover.prevent="alMover($event)"
+        @drop.prevent="soltar()"
       >
         <template x-for="(s, indice) in lista" :key="s.id">
           <li
@@ -151,7 +152,6 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
             :class="{
               'ui-item-enfocado': editando === s.id,
               'ui-item-enfocado': senalada === s.id,
-              'ui-fila-arrastrando': arrastrando === s.id,
               'ui-fila-soltada': idSoltado === s.id,
               'ui-pulso': recienGuardado === s.id,
             }"
@@ -162,14 +162,10 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
               :class="{
                 'guardando': guardandoId === s.id,
                 'ui-fila-senalada': senalada === s.id,
-                'ui-fila-lugar': lugar === s.id,
+                'ui-fila-arrastrando': arrastrando === s.id,
               }"
-              :style="desplazamiento(indice)"
               draggable="true"
               @dragstart="arrastrar($event, s.id)"
-              @dragenter.prevent="alEntrar(indice)"
-              @dragover.prevent
-              @drop.prevent="soltar()"
               @dragend="terminarArrastre()"
             >
               <div class="ui-progreso" x-show="guardandoId === s.id" aria-hidden="true">
@@ -724,55 +720,94 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
         return this.magics().$refs.lista;
       },
 
-      /** Índice que tenía la fila cuando empezó el arrastre. */
+      /**
+       * Índice que tenía la fila cuando empezó el arrastre.
+       * Se usa para decidir si el puntero está "antes" o "después" de ella.
+       */
       indiceOrigen: -1,
-      /** Índice de la fila sobre la que está el cursor. */
-      hoverIndice: -1,
-      /** Fila donde caería el servicio si se suelta ahora. */
-      lugar: null as string | null,
-      /** Alto de una fila, medido al empezar. */
-      altoFila: 56,
 
-      /** Transform que corresponde a cada fila según hacia dónde se arrastra. */
-      desplazamiento(indice: number): string {
-        if (this.arrastrando === null || this.hoverIndice < 0) return '';
-
-        const origen = this.indiceOrigen;
-        const destino = this.hoverIndice;
-        if (indice === origen) return '';
-
-        // Bajando: las filas entre origen y destino se corren una posición arriba.
-        if (origen < destino && indice > origen && indice <= destino) {
-          return 'transform: translateY(calc(-1 * var(--alto-fila)))';
-        }
-
-        // Subiendo: se corren una posición abajo.
-        if (origen > destino && indice >= destino && indice < origen) {
-          return 'transform: translateY(var(--alto-fila))';
-        }
-
-        return '';
-      },
-
-      alEntrar(indice: number) {
-        if (this.arrastrando === null) return;
-        this.hoverIndice = indice;
-        this.lugar = this.lista[indice]?.id ?? null;
-      },
-
+      /**
+       * Calcula en qué posición caería el servicio según dónde esté el
+       * puntero, y lo mueve ahí mismo.
+       *
+       * El puntero se compara contra el centro de cada fila, no contra la
+       * fila que tiene debajo: así el destino depende de la posición real del
+       * cursor y no de "la fila que estás tocando". Por eso funciona igual
+       * para subir que para bajar.
+       */
       alMover(evento: DragEvent) {
-        if (this.arrastrando === null) return;
+        const id = this.arrastrando;
+        if (id === null) return;
 
-        const fila = (evento.target as HTMLElement | null)?.closest('.ui-fila');
-        if (!fila) return;
+        const lista = this.listaEl();
+        if (!lista) return;
 
-        const contenedor = fila.parentElement;
-        if (!contenedor) return;
+        const filas = Array.from(
+          lista.querySelectorAll<HTMLElement>('[data-id]'),
+        );
 
-        const indice = Array.from(contenedor.children).indexOf(fila);
-        if (indice < 0) return;
+        const actual = this.lista.findIndex((s) => s.id === id);
+        if (actual < 0) return;
 
-        this.alEntrar(indice);
+        // Cuántas filas hay "por encima" del punto donde caería.
+        const sobreElCurso = filas.filter((fila) => {
+          const caja = fila.getBoundingClientRect();
+          // Si el puntero está en la mitad superior de la fila, va antes.
+          return evento.clientY < caja.top + caja.height / 2;
+        }).length;
+
+        // `sobreElCurso` cuenta también la fila que se arrastra; hay que
+        // sacarla porque va a cambiar de lugar.
+        const dragged = filas.findIndex((f) => f.dataset.id === id);
+        const destino = sobreElCurso > dragged ? sobreElCurso - 1 : sobreElCurso;
+
+        if (destino === actual) return;
+
+        this.moverA(destino);
+      },
+
+      /** Reordena la lista localmente y anima el desplazamiento. */
+      async moverA(destino: number) {
+        const id = this.arrastrando;
+        if (id === null) return;
+
+        const lista = this.listaEl();
+        const actual = this.lista.findIndex((s) => s.id === id);
+        if (actual < 0 || actual === destino) return;
+
+        // 1. Medir dónde está cada fila ANTES de tocar nada.
+        const antes = new Map<string, number>();
+        lista
+          ?.querySelectorAll<HTMLElement>('[data-id]')
+          .forEach((fila) => {
+            antes.set(fila.dataset.id ?? '', fila.getBoundingClientRect().top);
+          });
+
+        // 2. Reordenar.
+        const [movido] = this.lista.splice(actual, 1);
+        this.lista.splice(destino, 0, movido);
+
+        // 3. Esperar al redibujado y animar desde la posición anterior: eso es
+        //    lo que da la sensación de que la lista acompaña al cursor.
+        await this.magics().$nextTick();
+
+        lista
+          ?.querySelectorAll<HTMLElement>('[data-id]')
+          .forEach((fila) => {
+            const previa = antes.get(fila.dataset.id ?? '');
+            if (previa === undefined) return;
+
+            const delta = previa - fila.getBoundingClientRect().top;
+            if (Math.abs(delta) < 1) return;
+
+            fila.animate(
+              [
+                { transform: `translateY(${delta}px)` },
+                { transform: 'translateY(0)' },
+              ],
+              { duration: 200, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
+            );
+          });
       },
 
       arrastrar(evento: DragEvent, id: string) {
@@ -780,82 +815,35 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 
         this.arrastrando = id;
         this.indiceOrigen = this.lista.findIndex((s) => s.id === id);
-        this.hoverIndice = this.indiceOrigen;
-        this.lugar = null;
 
         // El foco pasa a ser la lista entera: se atenúa el resto de la página
         // mientras se organiza.
         this.ordenando = true;
 
-        // Se mide una fila real para que el desplazamiento sea exacto.
-        const lista = this.listaEl();
-        const primeraFila = lista?.querySelector('.ui-fila');
-        if (primeraFila) {
-          this.altoFila = primeraFila.getBoundingClientRect().height;
-          lista?.style.setProperty('--alto-fila', `${this.altoFila}px`);
-        }
-
         evento.dataTransfer?.setData('text/plain', id);
-        if (evento.dataTransfer && lista) {
+        if (evento.dataTransfer) {
           evento.dataTransfer.effectAllowed = 'move';
-          evento.dataTransfer.setDragImage(primeraFila ?? document.body, 20, 20);
+
+          // Sin esto el cursor muestra un rectángulo transparente.
+          const fila = this.listaEl()?.querySelector('.ui-fila');
+          if (fila) evento.dataTransfer.setDragImage(fila, 20, 20);
         }
       },
 
       async soltar() {
-        const origen = this.indiceOrigen;
-        const destino = this.hoverIndice;
         const id = this.arrastrando;
+        if (id === null) return;
 
+        const ordenFinal = this.lista.map((s) => s.id);
         this.terminarArrastre();
-
-        if (id === null || origen < 0 || destino < 0 || origen === destino) return;
-
-        const lista = this.listaEl();
-
-        // FLIP: se mide dónde está cada fila antes del cambio.
-        const antes = new Map<string, number>();
-        lista
-          ?.querySelectorAll<HTMLElement>('[data-id]')
-          .forEach((item) => {
-            antes.set(item.dataset.id ?? '', item.getBoundingClientRect().top);
-          });
-
-        const [movido] = this.lista.splice(origen, 1);
-        this.lista.splice(destino, 0, movido);
-
-        this.idSoltado = id;
 
         try {
           await api('/api/admin/servicios', {
             method: 'PATCH',
-            body: JSON.stringify({ ordenes: this.lista.map((s) => s.id) }),
+            body: JSON.stringify({ ordenes: ordenFinal }),
           });
 
-          // Ahora que el DOM ya se reordenó, cada fila viaja desde donde
-          // estaba hasta donde quedó.
-          await this.magics().$nextTick();
-
-          lista
-            ?.querySelectorAll<HTMLElement>('[data-id]')
-            .forEach((item) => {
-              const previo = antes.get(item.dataset.id ?? '');
-              if (previo === undefined) return;
-
-              const delta = previo - item.getBoundingClientRect().top;
-              if (Math.abs(delta) < 1) return;
-
-              item.animate(
-                [
-                  { transform: `translateY(${delta}px)` },
-                  { transform: 'translateY(0)' },
-                ],
-                { duration: 240, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
-              );
-            });
-
           this.senalar(id);
-          setTimeout(() => (this.idSoltado = null), 600);
         } catch (e) {
           avisarError(e);
         }
@@ -865,8 +853,6 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
         this.arrastrando = null;
         this.ordenando = false;
         this.indiceOrigen = -1;
-        this.hoverIndice = -1;
-        this.lugar = null;
       },
     };
   }
