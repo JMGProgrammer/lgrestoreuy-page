@@ -19,7 +19,14 @@ const isActive = (href: string) =>
 ---
 
 <header class="site-header sticky top-0 z-40 border-b border-linea bg-papel/95 backdrop-blur">
-  <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-4">
+  {/*
+    Tres columnas y no flex con justify-between: con flex, el ancho del logo
+    empuja el menú y nunca queda centrado de verdad. Con la columna 1fr en el
+    medio, el menú se centra siempre, se llame como se llame el taller.
+  */}
+  <div
+    class="mx-auto grid max-w-6xl grid-cols-[auto_1fr_auto] items-center gap-6 px-4 py-4"
+  >
     <a href="/" class="group flex items-baseline gap-2">
       <span class="font-display text-xl font-semibold tracking-tight text-tinta">
         {siteName}
@@ -31,14 +38,17 @@ const isActive = (href: string) =>
       </span>
     </a>
 
-    <nav class="hidden items-center gap-7 md:flex" aria-label="Principal">
+    <nav
+      class="hidden items-center justify-self-center gap-8 md:flex"
+      aria-label="Principal"
+    >
       {
         nav.map((item) => (
           <a
             href={item.href}
             aria-current={isActive(item.href) ? 'page' : undefined}
             class:list={[
-              'text-sm transition-colors',
+              'nav-enlace text-sm',
               isActive(item.href)
                 ? 'text-tinta'
                 : 'text-tinta-suave hover:text-tinta',
@@ -50,9 +60,23 @@ const isActive = (href: string) =>
       }
     </nav>
 
-    <div class="flex items-center gap-3">
-      <a href="/cotizar" class="btn-principal hidden sm:inline-flex">
+    <div class="flex items-center justify-self-end gap-3">
+      <a href="/cotizar" class="btn-principal">
         Cotizar
+        <svg
+          class="btn-flecha"
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M5 12h13M12 5l7 7-7 7"></path>
+        </svg>
       </a>
 
       <!-- Menú móvil con <details>: sin JavaScript -->
@@ -82,18 +106,23 @@ const isActive = (href: string) =>
             nav.map((item) => (
               <a
                 href={item.href}
-                class="block rounded px-3 py-2 text-sm text-tinta-suave hover:bg-papel-oscuro hover:text-tinta"
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                class:list={[
+                  'block rounded px-3 py-2 text-sm hover:bg-papel-oscuro hover:text-tinta',
+                  isActive(item.href)
+                    ? 'bg-papel-oscuro text-tinta'
+                    : 'text-tinta-suave',
+                ]}
               >
                 {item.label}
               </a>
             ))
           }
-          <a
-            href="/cotizar"
-            class="mt-1 block rounded bg-nogal px-3 py-2 text-center text-sm text-papel"
-          >
-            Cotizar
-          </a>
+          {/*
+          Sin botón de Cotizar acá adentro a propósito: el de la barra está
+          siempre visible, también en el celular. Dos "Cotizar" en pantalla
+          es decidir cuál apretar.
+        */}
         </nav>
       </details>
     </div>

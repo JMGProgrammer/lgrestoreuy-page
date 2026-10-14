@@ -45,27 +45,53 @@ const precioPieza = (p: (typeof pieces)[number]) =>
 
   <!-- ================= HERO ================= -->
   <section class="border-b border-linea bg-papel">
-    <div class="mx-auto grid max-w-6xl gap-12 px-4 py-16 lg:grid-cols-[1.1fr_1fr] lg:py-24">
-      <div class="self-center">
+    {/*
+      El alto mínimo hace que el bloque entre entero en la pantalla al
+      abrir. Con padding fijo el titular caía por debajo del pliegue y había
+      que scrollear para leerlo. svh y no vh: en el móvil vh cuenta la barra
+      de direcciones y el alto se pasa cuando aparece.
+    */}
+    <div
+      class="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:py-14 lg:min-h-[calc(100svh-var(--alto-header))] lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:py-16"
+    >
+      <div>
         <p class="rotulo">Restauración de muebles y antigüedades</p>
         <h1
-          class="mt-4 text-4xl leading-[1.1] text-tinta sm:text-5xl lg:text-6xl"
+          class="mt-3 text-4xl leading-[1.1] text-tinta sm:text-5xl lg:text-6xl"
         >
           Muebles con historia,<br />
           <span class="text-latón">restaurados como merecen.</span>
         </h1>
-        <p class="mt-6 max-w-lg text-lg leading-relaxed text-tinta-suave">
+        <p class="mt-5 max-w-lg text-lg leading-relaxed text-tinta-suave">
           Reparamos estructura, aplicamos lustre y pintura, y recuperamos piezas
           de época. Contanos qué pieza tenés y te pasamos un presupuesto sin
           compromiso.
         </p>
 
-        <div class="mt-8 flex flex-wrap gap-3">
-          <a href="/cotizar" class="btn-principal">Pedir cotización</a>
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a href="/cotizar" class="btn-principal">
+            Pedir cotización
+            <svg
+              class="btn-flecha"
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h13M12 5l7 7-7 7"></path>
+            </svg>
+          </a>
           <a href="/piezas" class="btn-secundario">Ver piezas en venta</a>
         </div>
 
-        <dl class="mt-12 grid max-w-md grid-cols-3 gap-6 border-t border-linea pt-6">
+        <dl
+          class="mt-10 grid max-w-md grid-cols-3 gap-6 border-t border-linea pt-6"
+        >
           {
             [
               { k: 'Evaluación', v: 'Evaluación en el taller' },
@@ -196,7 +222,7 @@ const precioPieza = (p: (typeof pieces)[number]) =>
     <div
       class="rounded border border-linea bg-nogal px-6 py-12 text-center sombra-vintage sm:px-12"
     >
-      <p class="rotulo text-latón-tenue">¿Empezamos?</p>
+      <p class="rotulo rotulo-latón">¿Empezamos?</p>
       <h2 class="mx-auto mt-3 max-w-xl text-3xl text-papel sm:text-4xl">
         Contanos qué pieza tenés y te cotizamos
       </h2>

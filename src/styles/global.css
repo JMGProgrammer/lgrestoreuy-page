@@ -134,6 +134,12 @@
    Base
    ===================================================================== */
 @layer base {
+  /* Alto real del encabezado (py-4 + contenido + borde + filete). Lo usa el
+     hero para llenar la pantalla sin tapar el header. */
+  :root {
+    --alto-header: 4.75rem;
+  }
+
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
@@ -203,6 +209,64 @@
   color: var(--color-tinta-suave);
 }
 
+/*
+  Un rótulo en latón. Existe como clase y no como `text-latón` pegado al
+  rotulo porque estas utilidades viven fuera de @layer, y lo que está fuera
+  de una capa gana contra cualquier utilidad de Tailwind: un `text-*` al
+  lado de .rotulo no cambia nada y parece que sí.
+*/
+.rotulo-latón {
+  color: var(--color-latón);
+}
+
+/* Enlace del menú: el subrayado se dibuja de izquierda a derecha, y la
+   sección en la que estás se queda subrayada. Un cambio de color solo no
+   alcanza para saber dónde quedó el cursor. */
+.nav-enlace {
+  position: relative;
+  padding-block: 0.3rem;
+}
+
+.nav-enlace::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background-color: var(--color-latón);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.nav-enlace:hover::after {
+  transform: scaleX(1);
+}
+
+/* La activa va declarada antes que el hover a propósito: al pasar el cursor
+   por encima no tiene que cambiar nada. */
+.nav-enlace[aria-current='page']::after {
+  transform: scaleX(1);
+  background-color: var(--color-tinta);
+}
+
+/* Disparador del menú móvil: <details> sin JavaScript */
+details > summary {
+  list-style: none;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details[open] > summary {
+  border-color: var(--color-latón);
+  color: var(--color-tinta);
+}
+
 /* Textura sutil de papel para tarjetas */
 .textura-papel {
   background-color: var(--color-papel);
@@ -223,7 +287,7 @@
     0 8px 24px -12px rgb(59 49 34 / 18%);
 }
 
-/* Botón principal: nogal con brillo dorado al hover */
+/* Botón principal: nogal que se levanta y enciende en latón al hover */
 .btn-principal {
   display: inline-flex;
   align-items: center;
@@ -232,21 +296,34 @@
   border-radius: var(--radius-card);
   background-color: var(--color-nogal);
   color: var(--color-papel);
-  padding: 0.75rem 1.5rem;
+  padding: 0.7rem 1.4rem;
   font-size: 0.9375rem;
   font-weight: 500;
+  box-shadow: 0 1px 2px rgb(59 49 34 / 14%);
   transition:
-    background-color 150ms ease,
-    transform 150ms ease;
+    background-color 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 180ms ease;
 }
 
 .btn-principal:hover {
   background-color: var(--color-caoba);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -10px rgb(150 101 42 / 70%);
 }
 
 .btn-principal:active {
   transform: translateY(0);
+  box-shadow: 0 1px 2px rgb(59 49 34 / 14%);
+}
+
+/* La flecha acompaña al botón: se separa apenas, como si empujara */
+.btn-flecha {
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-principal:hover .btn-flecha {
+  transform: translateX(3px);
 }
 
 /* Botón secundario: solo borde de latón */
@@ -258,14 +335,21 @@
   border-radius: var(--radius-card);
   border: 1px solid var(--color-latón);
   color: var(--color-caoba);
-  padding: 0.75rem 1.5rem;
+  padding: 0.7rem 1.4rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  transition: background-color 150ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .btn-secundario:hover {
   background-color: rgb(168 118 62 / 10%);
+  transform: translateY(-2px);
+}
+
+.btn-secundario:active {
+  transform: translateY(0);
 }
 
 /* Botón de WhatsApp: verde de marca, plano, sin redondeo excesivo */
@@ -277,14 +361,17 @@
   border-radius: var(--radius-card);
   background-color: #1f7a4d;
   color: #fff;
-  padding: 0.75rem 1.5rem;
+  padding: 0.7rem 1.4rem;
   font-size: 0.9375rem;
   font-weight: 500;
-  transition: background-color 150ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .btn-wa:hover {
   background-color: #196140;
+  transform: translateY(-2px);
 }
 
 /* Campos de formulario */
