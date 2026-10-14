@@ -9,10 +9,14 @@ import { getSupabaseConSesion } from './lib/supabase/server';
  */
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
-  const isAdmin = pathname.startsWith('/admin');
-  const isLogin = pathname === '/admin/login';
 
-  if (isAdmin && !isLogin) {
+  // El panel y sus APIs. Ojo: /api/admin NO empieza por /admin, así que
+  // hay que cubrirlo explícitamente o quedaría sin protección.
+  const esAdmin =
+    pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
+  const esLogin = pathname === '/admin/login';
+
+  if (esAdmin && !esLogin) {
     // Sin variables de entorno no se puede validar la sesión: en desarrollo
     // se deja pasar y el error se ve en pantalla en vez de redirigir al login.
     const hayEnv =
@@ -37,7 +41,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   response.headers.set(
     'Cache-Control',
-    isAdmin
+    esAdmin
       ? 'no-store'
       : 'public, s-maxage=60, stale-while-revalidate=600',
   );

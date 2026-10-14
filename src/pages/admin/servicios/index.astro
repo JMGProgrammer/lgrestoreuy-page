@@ -1,0 +1,140 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import {
+  adminContext,
+  listarServicios,
+  numeroONull,
+  textoONull,
+  slugify,
+  crearServicio,
+} from '../../../lib/admin';
+import { formatPriceRange } from '../../../lib/whatsapp';
+
+const ctx = adminContext(Astro.request, Astro.cookies);
+
+let error = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const nombre = String(form.get('nombre') ?? '').trim();
+
+  if (!nombre) {
+    error = 'El servicio necesita un nombre.';
+  } else {
+    try {
+      await crearServicio(ctx, {
+        nombre,
+        slug: slugify(nombre),
+        descripcion: textoONull(form.get('descripcion')),
+        precio_min: numeroONull(form.get('precio_min')),
+        precio_max: numeroONull(form.get('precio_max')),
+        icono: textoONull(form.get('icono')),
+        orden: numeroONull(form.get('orden')) ?? 0,
+        activo: true,
+      });
+      return Astro.redirect('/admin/servicios?ok=creado');
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'No se pudo crear.';
+    }
+  }
+}
+
+const servicios = await listarServicios(ctx);
+const ok = Astro.url.searchParams.get('ok');
+---
+
+<AdminLayout titulo="Servicios">
+  <p class="mt-2 max-w-2xl text-sm text-tinta-suave">
+    Lo que aparece en <a href="/servicios" class="underline decoration-latón underline-offset-4">la página de servicios</a>.
+    Si un servicio está inactivo, no se ve en la web.
+  </p>
+
+  {
+    error && (
+      <p class="mt-4 rounded border border-[#9a2f2f] bg-[#9a2f2f]/10 px-4 py-3 text-sm text-[#7a2626]">
+        {error}
+      </p>
+    )
+  }
+
+  {
+    ok && (
+      <p class="mt-4 rounded border border-[#4f6b46] bg-[#4f6b46]/10 px-4 py-3 text-sm text-[#33472e]">
+        Servicio creado. Ya está en la web.
+      </p>
+    )
+  }
+
+  <ul class="mt-6 divide-y divide-linea rounded border border-linea bg-papel">
+    {
+      servicios.map((servicio) => (
+        <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div class="min-w-0">
+            <p class="flex items-center gap-2 text-sm text-tinta">
+              {servicio.nombre}
+              {!servicio.activo && (
+                <span class="rotulo rounded bg-papel-oscuro px-2 py-0.5">
+                  oculto
+                </span>
+              )}
+              {servicio.activo &&
+                (servicio.precio_min === null || servicio.precio_max === null) && (
+                  <span class="rotulo rounded bg-[#9a6b2f]/15 px-2 py-0.5 text-caoba">
+                    sin precio
+                  </span>
+                )}
+            </p>
+            <p class="mt-0.5 truncate text-xs text-tinta-tenue">
+              {formatPriceRange(servicio.precio_min, servicio.precio_max)}
+            </p>
+          </div>
+          <a
+            href={`/admin/servicios/${servicio.id}`}
+            class="shrink-0 text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+          >
+            Editar
+          </a>
+        </li>
+      ))
+    }
+
+    {
+      servicios.length === 0 && (
+        <li class="px-4 py-8 text-center text-sm text-tinta-suave">
+          Todavía no hay servicios.
+        </li>
+      )
+    }
+  </ul>
+
+  <h2 class="mt-10 text-lg text-tinta">Agregar un servicio</h2>
+  <form method="post" class="mt-4 max-w-2xl space-y-4">
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="campo-label" for="nombre">Nombre</label>
+        <input class="campo" id="nombre" name="nombre" required placeholder="Ej: Tapicería" />
+      </div>
+      <div>
+        <label class="campo-label" for="orden">Orden en la web</label>
+        <input class="campo" id="orden" name="orden" type="number" min="0" placeholder="0" />
+      </div>
+    </div>
+
+    <div>
+      <label class="campo-label" for="descripcion">Descripción</label>
+      <textarea class="campo" id="descripcion" name="descripcion" rows="3"></textarea>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="campo-label" for="precio_min">Precio desde (UYU)</label>
+        <input class="campo" id="precio_min" name="precio_min" inputmode="numeric" placeholder="A consultar" />
+      </div>
+      <div>
+        <label class="campo-label" for="precio_max">Precio hasta (UYU)</label>
+        <input class="campo" id="precio_max" name="precio_max" inputmode="numeric" placeholder="A consultar" />
+      </div>
+    </div>
+
+    <button type="submit" class="btn-principal">Agregar servicio</button>
+  </form>
+</AdminLayout>

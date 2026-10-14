@@ -1,0 +1,205 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import {
+  adminContext,
+  guardarContenido,
+  leerContenido,
+  limpiarTelefono,
+  textoONull,
+} from '../../lib/admin';
+import { whatsappLink, normalizePhone } from '../../lib/whatsapp';
+
+const ctx = adminContext(Astro.request, Astro.cookies);
+
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const telefono = limpiarTelefono(textoONull(form.get('whatsapp')));
+
+  if (form.get('whatsapp') && !telefono) {
+    error =
+      'El WhatsApp no parece un número válido. Formato: 59890123456 (sin espacios ni +).';
+  } else {
+    try {
+      await guardarContenido(ctx, {
+        nombre_taller: String(form.get('nombre_taller') ?? '').trim() || 'L&G Restore',
+        whatsapp: telefono,
+        email: textoONull(form.get('email')),
+        direccion: textoONull(form.get('direccion')),
+        horarios: textoONull(form.get('horarios')),
+        mapa_url: textoONull(form.get('mapa_url')),
+        instagram: textoONull(form.get('instagram')),
+        facebook: textoONull(form.get('facebook')),
+        texto_nosotros: textoONull(form.get('texto_nosotros')),
+        texto_proceso: textoONull(form.get('texto_proceso')),
+        texto_garantia: textoONull(form.get('texto_garantia')),
+        texto_legal: textoONull(form.get('texto_legal')),
+      });
+      return Astro.redirect('/admin/contenido?ok=guardado');
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'No se pudo guardar.';
+    }
+  }
+}
+
+const contenido = await leerContenido(ctx);
+const ok = Astro.url.searchParams.get('ok');
+const wa = whatsappLink(contenido.whatsapp, 'Hola');
+---
+
+<AdminLayout titulo="Contenido del sitio">
+  <p class="mt-2 max-w-2xl text-sm text-tinta-suave">
+    Estos datos salen en el encabezado, el pie y el botón de WhatsApp. Después de
+    guardar, la web los muestra en un minuto.
+  </p>
+
+  {
+    error && (
+      <p class="mt-4 rounded border border-[#9a2f2f] bg-[#9a2f2f]/10 px-4 py-3 text-sm text-[#7a2626]">
+        {error}
+      </p>
+    )
+  }
+
+  {
+    ok && (
+      <p class="mt-4 rounded border border-[#4f6b46] bg-[#4f6b46]/10 px-4 py-3 text-sm text-[#33472e]">
+        Guardado.
+      </p>
+    )
+  }
+
+  <form method="post" class="mt-6 max-w-2xl space-y-8">
+    <fieldset class="space-y-4">
+      <legend class="rotulo mb-2">Identidad</legend>
+
+      <div>
+        <label class="campo-label" for="nombre_taller">Nombre del taller</label>
+        <input
+          class="campo"
+          id="nombre_taller"
+          name="nombre_taller"
+          value={contenido.nombre_taller}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="campo-label" for="whatsapp">WhatsApp</label>
+        <input
+          class="campo"
+          id="whatsapp"
+          name="whatsapp"
+          inputmode="numeric"
+          placeholder="59890123456"
+          value={contenido.whatsapp ?? ''}
+        />
+        <p class="mt-1 text-xs text-tinta-tenue">
+          Sin espacios, sin +. Con código de país.
+        </p>
+        {
+          normalizePhone(contenido.whatsapp) ? (
+            <p class="mt-2 text-xs text-[#4f6b46]">
+              El botón flotante ya está activo →{' '}
+              <a
+                href={wa ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="underline underline-offset-4"
+              >
+                probarlo
+              </a>
+            </p>
+          ) : (
+            <p class="mt-2 text-xs text-caoba">
+              Sin número no se muestra el botón de consulta.
+            </p>
+          )
+        }
+      </div>
+
+      <div>
+        <label class="campo-label" for="email">Email</label>
+        <input class="campo" id="email" name="email" type="email" value={contenido.email ?? ''} />
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4 border-t border-linea pt-6">
+      <legend class="rotulo mb-2">Dónde y cuándo</legend>
+
+      <div>
+        <label class="campo-label" for="direccion">Dirección</label>
+        <input class="campo" id="direccion" name="direccion" value={contenido.direccion ?? ''} />
+      </div>
+
+      <div>
+        <label class="campo-label" for="horarios">Horarios</label>
+        <input
+          class="campo"
+          id="horarios"
+          name="horarios"
+          placeholder="Lun a Vie 9 a 18 hs · Sáb 9 a 13 hs"
+          value={contenido.horarios ?? ''}
+        />
+      </div>
+
+      <div>
+        <label class="campo-label" for="mapa_url">Link del mapa</label>
+        <input
+          class="campo"
+          id="mapa_url"
+          name="mapa_url"
+          placeholder="https://maps.app.goo.gl/..."
+          value={contenido.mapa_url ?? ''}
+        />
+        <p class="mt-1 text-xs text-tinta-tenue">
+          Abrí Google Maps, compartí el lugar y copiá el link.
+        </p>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="campo-label" for="instagram">Instagram</label>
+          <input class="campo" id="instagram" name="instagram" value={contenido.instagram ?? ''} />
+        </div>
+        <div>
+          <label class="campo-label" for="facebook">Facebook</label>
+          <input class="campo" id="facebook" name="facebook" value={contenido.facebook ?? ''} />
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="space-y-4 border-t border-linea pt-6">
+      <legend class="rotulo mb-2">Textos</legend>
+
+      <div>
+        <label class="campo-label" for="texto_nosotros">Sobre el taller</label>
+        <textarea class="campo" id="texto_nosotros" name="texto_nosotros" rows="5">{contenido.texto_nosotros ?? ''}</textarea>
+        <p class="mt-1 text-xs text-tinta-tenue">
+          Cada línea nueva es un párrafo.
+        </p>
+      </div>
+
+      <div>
+        <label class="campo-label" for="texto_proceso">Cómo trabajamos (texto corto)</label>
+        <textarea class="campo" id="texto_proceso" name="texto_proceso" rows="3">{contenido.texto_proceso ?? ''}</textarea>
+      </div>
+
+      <div>
+        <label class="campo-label" for="texto_garantia">Garantía</label>
+        <textarea class="campo" id="texto_garantia" name="texto_garantia" rows="3">{contenido.texto_garantia ?? ''}</textarea>
+      </div>
+
+      <div>
+        <label class="campo-label" for="texto_legal">Términos legales</label>
+        <textarea class="campo" id="texto_legal" name="texto_legal" rows="6">{contenido.texto_legal ?? ''}</textarea>
+        <p class="mt-1 text-xs text-tinta-tenue">
+          Si lo dejás vacío, la web muestra condiciones generales de ejemplo.
+        </p>
+      </div>
+    </fieldset>
+
+    <button type="submit" class="btn-principal">Guardar</button>
+  </form>
+</AdminLayout>

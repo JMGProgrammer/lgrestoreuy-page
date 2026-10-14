@@ -1,0 +1,119 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { adminContext, listarCotizaciones, resumen } from '../../lib/admin';
+import { formatUYU } from '../../lib/whatsapp';
+
+const ctx = adminContext(Astro.request, Astro.cookies);
+const [datos, cotizaciones] = await Promise.all([
+  resumen(ctx),
+  listarCotizaciones(ctx, 5),
+]);
+
+const tarjetas = [
+  { etiqueta: 'Piezas disponibles', valor: String(datos.piezasDisponibles) },
+  { etiqueta: 'En proceso', valor: String(datos.piezasEnProceso) },
+  { etiqueta: 'Valor en stock', valor: formatUYU(datos.valorStock) ?? '$0' },
+  { etiqueta: 'Cotizaciones nuevas', valor: String(datos.cotizacionesNuevas) },
+];
+---
+
+<AdminLayout titulo="Resumen">
+  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {
+      tarjetas.map((tarjeta) => (
+        <div class="textura-papel rounded border border-linea p-5">
+          <p class="font-display text-3xl text-tinta">{tarjeta.valor}</p>
+          <p class="rotulo mt-1">{tarjeta.etiqueta}</p>
+        </div>
+      ))
+    }
+  </div>
+
+  {
+    datos.serviciosSinPrecio > 0 && (
+      <p class="mt-6 rounded border border-[#9a6b2f] bg-[#9a6b2f]/10 px-4 py-3 text-sm text-caoba">
+        {datos.serviciosSinPrecio}{' '}
+        {datos.serviciosSinPrecio === 1 ? 'servicio activo no tiene' : 'servicios activos no tienen'}{' '}
+        rango de precio. La web los muestra como "A consultar".
+      </p>
+    )
+  }
+
+  <section class="mt-10">
+    <div class="flex items-baseline justify-between">
+      <h2 class="text-lg text-tinta">Últimas cotizaciones</h2>
+      <a
+        href="/admin/cotizaciones"
+        class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+      >
+        Ver todas
+      </a>
+    </div>
+
+    {
+      cotizaciones.length === 0 ? (
+        <p class="mt-4 rounded border border-dashed border-linea px-4 py-8 text-center text-sm text-tinta-suave">
+          Todavía no llegaron cotizaciones. Aparecen acá apenas alguien use el
+          formulario de la web.
+        </p>
+      ) : (
+        <ul class="mt-4 divide-y divide-linea rounded border border-linea bg-papel">
+          {cotizaciones.map((c) => (
+            <li class="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
+              <div>
+                <p class="text-sm text-tinta">{c.nombre}</p>
+                <p class="text-xs text-tinta-tenue">
+                  {c.telefono}
+                  {c.tipo_mueble ? ` · ${c.tipo_mueble}` : ''}
+                  {c.comuna ? ` · ${c.comuna}` : ''}
+                </p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="rotulo">{c.estado}</span>
+                <a
+                  href={`/admin/cotizaciones/${c.id}`}
+                  class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+                >
+                  Abrir
+                </a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+
+  <section class="mt-10">
+    <h2 class="text-lg text-tinta">Próximos pasos</h2>
+    <ul class="mt-4 space-y-2 text-sm text-tinta-suave">
+      <li>
+        <a
+          href="/admin/contenido"
+          class="underline decoration-latón underline-offset-4 hover:text-tinta"
+        >
+          Cargar tus datos
+        </a>{' '}
+        (WhatsApp, dirección, horarios) y así se activa el botón de consulta.
+      </li>
+      <li>
+        <a
+          href="/admin/servicios"
+          class="underline decoration-latón underline-offset-4 hover:text-tinta"
+        >
+          Revisar servicios
+        </a>{' '}
+        y completar los rangos de precio.
+      </li>
+      <li>
+        <a
+          href="/admin/piezas"
+          class="underline decoration-latón underline-offset-4 hover:text-tinta"
+        >
+          Publicar piezas
+        </a>{' '}
+        con fotos antes/después.
+      </li>
+    </ul>
+  </section>
+</AdminLayout>
