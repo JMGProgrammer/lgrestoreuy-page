@@ -37,11 +37,13 @@ const opciones = pares.map((par) => JSON.stringify(par).replace(/"/g, '&quot;'))
   <div class="marco" style={`--proporcion:${proporcion}`} data-marco>
     {
       pares.length === 0 ? (
-        <div class="sin-pares">
-          <span class="rotulo">Antes y después</span>
-          <p class="comparador__vacio">
-            Cada trabajo que publicamos muestra su antes y su después.
-          </p>
+        <div class="vacio">
+          <div class="vacio__panel vacio__panel--oscuro">
+            <span>Antes</span>
+          </div>
+          <div class="vacio__panel vacio__panel--claro">
+            <span>Después</span>
+          </div>
         </div>
       ) : (
         <>
@@ -249,21 +251,40 @@ const opciones = pares.map((par) => JSON.stringify(par).replace(/"/g, '&quot;'))
     right: 0.75rem;
   }
 
-  .sin-pares {
-    display: flex;
+  /* Estado vacío: dos mitades, una oscura y otra clara. Nada más. */
+  .vacio {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     height: 100%;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 2rem;
-    text-align: center;
   }
 
-  .comparador__vacio {
-    max-width: 18rem;
-    font-size: 0.875rem;
-    color: var(--color-tinta-suave);
+  .vacio__panel {
+    display: grid;
+    place-items: center;
+  }
+
+  .vacio__panel span {
+    font-family: var(--font-sans);
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .vacio__panel--oscuro {
+    background: #4a4238;
+  }
+
+  .vacio__panel--oscuro span {
+    color: #efe8dc;
+  }
+
+  .vacio__panel--claro {
+    background: #e4d9c5;
+  }
+
+  .vacio__panel--claro span {
+    color: #6b5f4e;
   }
 
   .controles {

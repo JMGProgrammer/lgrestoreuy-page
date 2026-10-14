@@ -2,11 +2,12 @@
  * Datos de demostración.
  *
  * Se usan SOLO cuando todavía no hay .env con las claves de Supabase, para
- * poder revisar el diseño y la estructura sin la base de datos. Es el mismo
- * contenido que si Supabase no está configurado: el cliente reemplaza todo
- * desde /admin.
+ * poder revisar el diseño y la estructura sin la base de datos.
+ *
+ * Solo servicios: son texto real que el cliente conserva. No hay fotos ni
+ * ilustraciones de relleno, para no mostrar en la web trabajo que no existe.
  */
-import type { GalleryItem, Service } from './types';
+import type { Service } from './types';
 
 export const DEMO_SERVICES: Service[] = [
   {
@@ -64,19 +65,5 @@ export const DEMO_SERVICES: Service[] = [
     activo: true,
     created_at: '',
     updated_at: '',
-  },
-];
-
-export const DEMO_GALLERY: GalleryItem[] = [
-  {
-    id: 'demo-g1',
-    titulo: 'Cómoda de nogal',
-    antes_url: '/demo/antes-camara.svg',
-    despues_url: '/demo/despues-camara.svg',
-    tag_servicio: 'Lustre',
-    destacada_home: true,
-    orden: 1,
-    created_by: null,
-    created_at: '',
   },
 ];

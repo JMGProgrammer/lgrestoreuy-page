@@ -11,7 +11,7 @@
  * poder revisar el diseño antes de tener la base de datos.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { DEMO_GALLERY, DEMO_SERVICES } from './demo';
+import { DEMO_SERVICES } from './demo';
 import type {
   GalleryItem,
   PiecePhoto,
@@ -169,7 +169,7 @@ export async function getGalleryHighlights(
   limit = 6,
 ): Promise<GalleryItem[]> {
   const supabase = cliente();
-  if (!supabase) return DEMO_GALLERY.slice(0, limit);
+  if (!supabase) return [];
 
   const { data, error } = await supabase
     .from('gallery_items')

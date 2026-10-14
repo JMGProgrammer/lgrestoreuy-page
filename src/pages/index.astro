@@ -17,41 +17,17 @@ const [services, pieces, gallery] = await Promise.all([
 ]);
 
 /**
- * Pares antes/después para el comparador. Sin fotos cargadas se usan las
- * imágenes de demostración, para que la home se vea terminada el primer día
- * en vez de mostrar un hueco.
+ * Pares antes/después para el comparador. Sin trabajos cargados queda vacío y
+ * el comparador dibuja su propio estado vacío: dos tonos neutros, oscuro y
+ * claro. Nada de ilustraciones de relleno.
  */
-const comparables = gallery.length
-  ? gallery.map((item) => ({
-      id: item.id,
-      titulo: item.titulo ?? 'Trabajo del taller',
-      antes: item.antes_url,
-      despues: item.despues_url,
-      etiqueta: item.tag_servicio,
-    }))
-  : [
-      {
-        id: 'demo-1',
-        titulo: 'Cómoda de nogal',
-        antes: '/demo/antes-camara.svg',
-        despues: '/demo/despues-camara.svg',
-        etiqueta: 'Lustre',
-      },
-      {
-        id: 'demo-2',
-        titulo: 'Silla de caño',
-        antes: '/demo/antes-silla.svg',
-        despues: '/demo/despues-silla.svg',
-        etiqueta: 'Pintura',
-      },
-      {
-        id: 'demo-3',
-        titulo: 'Mesa de comedor',
-        antes: '/demo/antes-mesa.svg',
-        despues: '/demo/despues-mesa.svg',
-        etiqueta: 'Reparación',
-      },
-    ];
+const comparables = gallery.map((item) => ({
+  id: item.id,
+  titulo: item.titulo ?? 'Trabajo del taller',
+  antes: item.antes_url,
+  despues: item.despues_url,
+  etiqueta: item.tag_servicio,
+}));
 
 const precioPieza = (p: (typeof pieces)[number]) =>
   formatUYU(p.precio) ?? 'A consultar';
