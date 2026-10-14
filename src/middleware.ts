@@ -14,7 +14,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // hay que cubrirlo explícitamente o quedaría sin protección.
   const esAdmin =
     pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
-  const esLogin = pathname === '/admin/login';
+
+  // Estas dos tienen que quedar fuera del muro. El POST del formulario de
+  // login va a /api/admin/login, que empieza por /api/admin: si no lo exceptu-
+  // we'd, el propio login se encontraría con que no hay sesión y se
+  // redirigiría a /admin/login. El login nunca funcionó por esto.
+  const esLogin =
+    pathname === '/admin/login' || pathname === '/api/admin/login';
 
   if (esAdmin && !esLogin) {
     // Sin variables de entorno no se puede validar la sesión: en desarrollo
@@ -30,9 +36,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        return context.redirect(
-          `/admin/login?next=${encodeURIComponent(pathname)}`,
-        );
+        // A una API no le sirve volver a una página: se redirige al login
+        // sin `next`, que para /api/admin sería una URL inútil.
+        const destino = pathname.startsWith('/api/admin')
+          ? '/admin/login'
+          : `/admin/login?next=${encodeURIComponent(pathname)}`;
+        return context.redirect(destino);
       }
     }
   }

@@ -26,8 +26,20 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    // Antes todos los fallos volvían como "credenciales". Supabase devuelve
+    // un mensaje distinto cuando el usuario existe pero el correo no está
+    // confirmado, y esa es una causa muy común: el usuario se crea en el
+    // panel de Supabase y no llega el correo de confirmación. Sin esto el
+    // cliente ve "contraseña incorrecta" y busca el error en el lugar
+    // equivocado.
+    const motivo = /not confirmed/i.test(error.message)
+      ? 'no-confirmado'
+      : /invalid login credentials/i.test(error.message)
+        ? 'credenciales'
+        : 'generico';
+
     return redirect(
-      `/admin/login?error=credenciales&next=${encodeURIComponent(destino)}`,
+      `/admin/login?error=${motivo}&next=${encodeURIComponent(destino)}`,
     );
   }
 
