@@ -1,0 +1,481 @@
+---
+/**
+ * Comparador antes/después con línea movible y navegación entre piezas.
+ *
+ * - La línea se arrastra con el mouse, el dedo o las flechas del teclado.
+ * - Un clic sobre la imagen lleva la línea a ese punto.
+ * - Las flechas y los puntos pasan de una pieza a la otra.
+ */
+import Imagen from './Imagen.astro';
+
+export interface Par {
+  id: string;
+  titulo: string;
+  antes: string;
+  despues: string;
+  etiqueta?: string | null;
+}
+
+interface Props {
+  pares: Par[];
+  /** 'auto' = 3/4 en el home, 'alto' = 4/5 en fichas. */
+  proporcion?: string;
+}
+
+const { pares, proporcion = '3 / 4' } = Astro.props;
+
+const opciones = pares.map((par) => JSON.stringify(par).replace(/"/g, '&quot;'));
+---
+
+<div
+  class="comparador"
+  data-comparador
+  data-pares={opciones.join('|')}
+  x-show="true"
+>
+  {/* Pista de carga de los datos */}
+  <div class="marco" style={`--proporcion:${proporcion}`} data-marco>
+    {
+      pares.length === 0 ? (
+        <div class="sin-pares">
+          <span class="rotulo">Antes y después</span>
+          <p class="comparador__vacio">
+            Cada trabajo que publicamos muestra su antes y su después.
+          </p>
+        </div>
+      ) : (
+        <>
+          {pares.map((par, indice) => (
+            <div
+              class="capa"
+              data-capa={indice}
+              x-show={indice === 0}
+              style="display: contents"
+            >
+              <div class="capa__despues">
+                <Imagen
+                  src={par.despues}
+                  alt={`${par.titulo}, después de restaurar`}
+                  ratio={proporcion}
+                  priority={indice === 0}
+                />
+              </div>
+              <div class="capa__antes">
+                <Imagen
+                  src={par.antes}
+                  alt={`${par.titulo}, antes de restaurar`}
+                  ratio={proporcion}
+                  priority={indice === 0}
+                />
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            class="manija"
+            data-manija
+            style="--pos:50%"
+            aria-label="Mover la línea para comparar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="50"
+            role="slider"
+          >
+            <span class="manija__punto" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 6-6 6 6 6M15 6l6 6-6 6" />
+              </svg>
+            </span>
+          </button>
+
+          <span class="marca marca--antes" aria-hidden="true">Antes</span>
+          <span class="marca marca--despues" aria-hidden="true">Después</span>
+        </>
+      )
+    }
+  </div>
+
+  {
+    pares.length > 0 && (
+      <div class="controles">
+        <button type="button" class="flecha" data-prev aria-label="Trabajo anterior">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+
+        <div class="puntos" role="tablist" aria-label="Trabajos">
+          {pares.map((par, indice) => (
+            <button
+              type="button"
+              class="punto"
+              data-punto={indice}
+              role="tab"
+              aria-selected={indice === 0 ? 'true' : 'false'}
+              aria-label={par.titulo}
+              title={par.titulo}
+            />
+          ))}
+        </div>
+
+        <button type="button" class="flecha" data-next aria-label="Trabajo siguiente">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
+    )
+  }
+
+  {
+    pares.length > 1 && (
+      <p class="contador" data-contador aria-live="polite">
+        <span data-actual>1</span> / {pares.length}
+      </p>
+    )
+  }
+</div>
+
+<style>
+  .comparador {
+    position: relative;
+    width: 100%;
+  }
+
+  .marco {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-linea);
+    background: var(--color-papel-oscuro);
+    box-shadow:
+      0 1px 2px rgb(59 49 34 / 8%),
+      0 8px 24px -12px rgb(59 49 34 / 18%);
+    aspect-ratio: var(--proporcion);
+    touch-action: pan-y;
+  }
+
+  .capa {
+    position: absolute;
+    inset: 0;
+  }
+
+  .capa :global(.marco-imagen) {
+    height: 100%;
+  }
+
+  .capa__antes {
+    position: absolute;
+    inset: 0;
+    /* Revela el "antes" desde la izquierda hasta la línea */
+    clip-path: inset(0 calc(100% - var(--pos, 50%)) 0 0);
+  }
+
+  .manija {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos, 50%);
+    z-index: 3;
+    width: 2.5rem;
+    margin-left: -1.25rem;
+    cursor: ew-resize;
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+
+  .manija::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--color-papel);
+    box-shadow: 0 0 0 1px rgb(46 36 25 / 25%);
+  }
+
+  .manija__punto {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    background: var(--color-papel);
+    color: var(--color-tinta);
+    box-shadow:
+      0 0 0 1px rgb(46 36 25 / 20%),
+      0 4px 12px rgb(46 36 25 / 25%);
+    transition:
+      transform 140ms cubic-bezier(0.2, 0, 0, 1),
+      box-shadow 140ms ease;
+  }
+
+  .manija:hover .manija__punto,
+  .manija:focus-visible .manija__punto {
+    transform: translate(-50%, -50%) scale(1.06);
+    box-shadow:
+      0 0 0 1px rgb(46 36 25 / 25%),
+      0 6px 18px rgb(46 36 25 / 30%);
+  }
+
+  .marca {
+    position: absolute;
+    top: 0.75rem;
+    z-index: 2;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.125rem;
+    background: rgb(46 36 25 / 55%);
+    color: var(--color-papel);
+    font-size: 0.625rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .marca--antes {
+    left: 0.75rem;
+  }
+
+  .marca--despues {
+    right: 0.75rem;
+  }
+
+  .sin-pares {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .comparador__vacio {
+    max-width: 18rem;
+    font-size: 0.875rem;
+    color: var(--color-tinta-suave);
+  }
+
+  .controles {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+
+  .flecha {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-linea);
+    background: var(--color-papel);
+    color: var(--color-tinta-suave);
+    cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      color 140ms ease,
+      border-color 140ms ease,
+      transform 120ms ease;
+  }
+
+  .flecha:hover:not(:disabled) {
+    border-color: var(--color-latón);
+    background: var(--color-papel);
+    color: var(--color-tinta);
+  }
+
+  .flecha:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+
+  .flecha:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .puntos {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .punto {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-linea);
+    cursor: pointer;
+    transition:
+      background-color 160ms ease,
+      width 200ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .punto[aria-selected='true'] {
+    width: 1.5rem;
+    background: var(--color-latón);
+  }
+
+  .contador {
+    position: absolute;
+    bottom: 0.75rem;
+    right: 0.75rem;
+    z-index: 2;
+    padding: 0.2rem 0.45rem;
+    border-radius: 0.125rem;
+    background: rgb(46 36 25 / 55%);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    color: var(--color-papel);
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .manija__punto,
+    .flecha,
+    .punto {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  /**
+   * Un solo handler para todos los comparadores de la página.
+   * Astro deduplica el script, así que no se registra dos veces.
+   */
+  function iniciarComparadores() {
+    document
+      .querySelectorAll<HTMLElement>('[data-comparador]:not([data-listo])')
+      .forEach((raiz) => {
+        raiz.dataset.listo = 'si';
+
+        const marco = raiz.querySelector<HTMLElement>('[data-marco]');
+        const manija = raiz.querySelector<HTMLButtonElement>('[data-manija]');
+        if (!marco || !manija) return;
+
+        const capas = Array.from(
+          raiz.querySelectorAll<HTMLElement>('[data-capa]'),
+        );
+        const puntos = Array.from(
+          raiz.querySelectorAll<HTMLButtonElement>('[data-punto]'),
+        );
+        const anterior = raiz.querySelector<HTMLButtonElement>('[data-prev]');
+        const siguiente = raiz.querySelector<HTMLButtonElement>('[data-next]');
+        const contador = raiz.querySelector<HTMLElement>('[data-actual]');
+
+        let indice = 0;
+
+        // ------------------------------------------------ línea
+
+        const fijarPosicion = (porcentaje: number, animar = false) => {
+          const pos = Math.max(0, Math.min(100, porcentaje));
+          marco.style.setProperty('--pos', `${pos}%`);
+          manija.style.setProperty('--pos', `${pos}%`);
+          manija.setAttribute('aria-valuenow', String(Math.round(pos)));
+
+          if (!animar) {
+            // Saltea la transición mientras se arrastra: sin esto la línea
+            // "va detrás" del dedo.
+            marco.style.setProperty('--sin-transicion', '1');
+            requestAnimationFrame(() =>
+              marco.style.removeProperty('--sin-transicion'),
+            );
+          }
+        };
+
+        const posicionDesdeEvento = (evento: PointerEvent) => {
+          const caja = marco.getBoundingClientRect();
+          const x = evento.clientX - caja.left;
+          return (x / caja.width) * 100;
+        };
+
+        let arrastrando = false;
+
+        marco.addEventListener('pointerdown', (evento) => {
+          if (capas.length === 0) return;
+          arrastrando = true;
+          marco.setPointerCapture(evento.pointerId);
+          fijarPosicion(posicionDesdeEvento(evento));
+        });
+
+        marco.addEventListener('pointermove', (evento) => {
+          if (!arrastrando) return;
+          fijarPosicion(posicionDesdeEvento(evento));
+        });
+
+        const soltar = (evento: PointerEvent) => {
+          if (!arrastrando) return;
+          arrastrando = false;
+          if (marco.hasPointerCapture(evento.pointerId)) {
+            marco.releasePointerCapture(evento.pointerId);
+          }
+        };
+
+        marco.addEventListener('pointerup', soltar);
+        marco.addEventListener('pointercancel', soltar);
+
+        manija.addEventListener('keydown', (evento) => {
+          const salto = evento.shiftKey ? 10 : 2;
+          const actual = Number(manija.getAttribute('aria-valuenow') ?? '50');
+
+          if (evento.key === 'ArrowLeft') fijarPosicion(actual - salto, true);
+          else if (evento.key === 'ArrowRight') fijarPosicion(actual + salto, true);
+          else if (evento.key === 'Home') fijarPosicion(0, true);
+          else if (evento.key === 'End') fijarPosicion(100, true);
+          else return;
+
+          evento.preventDefault();
+        });
+
+        // ------------------------------------------------ piezas
+
+        const irA = (nuevo: number) => {
+          if (capas.length === 0) return;
+
+          const total = capas.length;
+          indice = Math.max(0, Math.min(total - 1, nuevo));
+
+          capas.forEach((capa, i) => {
+            capa.style.opacity = i === indice ? '1' : '0';
+            capa.style.visibility = i === indice ? 'visible' : 'hidden';
+          });
+
+          puntos.forEach((punto, i) => {
+            punto.setAttribute('aria-selected', i === indice ? 'true' : 'false');
+          });
+
+          if (contador) contador.textContent = String(indice + 1);
+
+          if (anterior) anterior.disabled = indice === 0;
+          if (siguiente) siguiente.disabled = indice === total - 1;
+        };
+
+        anterior?.addEventListener('click', () => irA(indice - 1));
+        siguiente?.addEventListener('click', () => irA(indice + 1));
+        puntos.forEach((punto, i) =>
+          punto.addEventListener('click', () => irA(i)),
+        );
+
+        irA(0);
+      });
+  }
+
+  document.addEventListener('astro:page-load', iniciarComparadores);
+  iniciarComparadores();
+</script>

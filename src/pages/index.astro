@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Imagen from '../components/Imagen.astro';
+import Comparador from '../components/Comparador.astro';
 import {
   getServices,
   getPieces,
@@ -12,10 +13,46 @@ import { formatPriceRange, formatUYU } from '../lib/whatsapp';
 const [services, pieces, gallery] = await Promise.all([
   getServices(),
   getPieces({ soloDestacadas: true, limit: 4 }),
-  getGalleryHighlights(3),
+  getGalleryHighlights(6),
 ]);
 
-const destacado = gallery[0];
+/**
+ * Pares antes/después para el comparador. Sin fotos cargadas se usan las
+ * imágenes de demostración, para que la home se vea terminada el primer día
+ * en vez de mostrar un hueco.
+ */
+const comparables = gallery.length
+  ? gallery.map((item) => ({
+      id: item.id,
+      titulo: item.titulo ?? 'Trabajo del taller',
+      antes: item.antes_url,
+      despues: item.despues_url,
+      etiqueta: item.tag_servicio,
+    }))
+  : [
+      {
+        id: 'demo-1',
+        titulo: 'Cómoda de nogal',
+        antes: '/demo/antes-camara.svg',
+        despues: '/demo/despues-camara.svg',
+        etiqueta: 'Lustre',
+      },
+      {
+        id: 'demo-2',
+        titulo: 'Silla de caño',
+        antes: '/demo/antes-silla.svg',
+        despues: '/demo/despues-silla.svg',
+        etiqueta: 'Pintura',
+      },
+      {
+        id: 'demo-3',
+        titulo: 'Mesa de comedor',
+        antes: '/demo/antes-mesa.svg',
+        despues: '/demo/despues-mesa.svg',
+        etiqueta: 'Reparación',
+      },
+    ];
+
 const precioPieza = (p: (typeof pieces)[number]) =>
   formatUYU(p.precio) ?? 'A consultar';
 ---
@@ -70,64 +107,8 @@ const precioPieza = (p: (typeof pieces)[number]) =>
         </dl>
       </div>
 
-      <!-- Antes / después -->
-      <div class="relative">
-        {
-          destacado ? (
-            <figure class="overflow-hidden rounded border border-linea sombra-vintage">
-              <div class="grid grid-cols-2">
-                <div>
-                  <Imagen
-                    src={destacado.antes_url}
-                    alt={`${destacado.titulo ?? 'Pieza'} antes de restaurar`}
-                    ratio="3 / 4"
-                  />
-                  <figcaption class="bg-papel-oscuro py-1 text-center text-[0.65rem] uppercase tracking-[0.2em] text-tinta-suave">
-                    Antes
-                  </figcaption>
-                </div>
-                <div>
-                  <Imagen
-                    src={destacado.despues_url}
-                    alt={`${destacado.titulo ?? 'Pieza'} después de restaurar`}
-                    ratio="3 / 4"
-                  />
-                  <figcaption class="bg-papel py-1 text-center text-[0.65rem] uppercase tracking-[0.2em] text-tinta-suave">
-                    Después
-                  </figcaption>
-                </div>
-              </div>
-            </figure>
-          ) : (
-            /* Sin fotos cargadas: se muestra un marco compuesto, no un
-               rectángulo vacío. La página se ve terminada desde el primer día. */
-            <figure class="overflow-hidden rounded border border-linea sombra-vintage">
-              <div class="grid grid-cols-2">
-                {['Antes', 'Después'].map((etiqueta, i) => (
-                  <div class={i === 0 ? 'bg-[#8a7a66]' : 'bg-[#a8703c]'}>
-                    <div
-                      class="h-64 w-full sm:h-80"
-                      style="background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 7px);"
-                    >
-                      <span class="flex h-full items-center justify-center font-display text-sm tracking-[0.3em] text-[#efe6d8]/80 uppercase">
-                        {etiqueta}
-                      </span>
-                    </div>
-                    <figcaption
-                      class:list={[
-                        'py-1 text-center text-[0.65rem] uppercase tracking-[0.2em] text-tinta-suave',
-                        i === 0 ? 'bg-papel-oscuro' : 'bg-papel',
-                      ]}
-                    >
-                      {etiqueta}
-                    </figcaption>
-                  </div>
-                ))}
-              </div>
-            </figure>
-          )
-        }
-      </div>
+      <!-- Antes / después con línea movible y navegación entre trabajos -->
+      <Comparador pares={comparables} proporcion="3 / 4" />
     </div>
   </section>
 
