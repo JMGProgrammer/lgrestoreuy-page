@@ -58,6 +58,16 @@ const fuente = url || IMAGEN_POR_DEFECTO;
     left: -6%;
     width: 112%;
     height: 112%;
+
+    /*
+      El preflight de Tailwind trae img { max-width: 100% }. No es una
+      competencia de cascada: max-width acota el ancho que se usa, asi que
+      el width: 112% de arriba se recortaba a 100% igual. Con left: -6% la
+      foto quedaba de -6% a 94% y faltaban 6% del lado derecho, que se veian
+      como un corte vertical. Por eso el max-width: none va explicito.
+    */
+    max-width: none;
+
     object-fit: cover;
 
     /*
