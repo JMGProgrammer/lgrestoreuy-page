@@ -38,8 +38,8 @@ const mapa = settings.mapa_url?.includes('google.com/maps')
           </a>
         ) : (
           <div class="rounded border border-dashed border-linea px-5 py-5 text-sm text-tinta-suave">
-            El número de WhatsApp se carga desde
-            <span class="font-medium text-tinta">/admin → Contenido</span>.
+            Estamos confirmando el número de WhatsApp. Mientras tanto, podés
+            escribir por el formulario de cotización.
           </div>
         )
       }
@@ -86,7 +86,7 @@ const mapa = settings.mapa_url?.includes('google.com/maps')
           {
             (!settings.direccion || !settings.horarios) && (
               <li class="text-tinta-tenue">
-                Datos del taller a cargar desde el panel.
+                Estamos completando los datos del taller.
               </li>
             )
           }

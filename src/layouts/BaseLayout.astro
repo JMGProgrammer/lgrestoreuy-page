@@ -6,6 +6,7 @@
  */
 import { getSiteSettings } from '../lib/content';
 import { whatsappLink, generalInquiryMessage } from '../lib/whatsapp';
+import { ClientRouter } from 'astro:transitions';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import WhatsappFloat from '../components/WhatsappFloat.astro';
@@ -48,12 +49,21 @@ const waGeneral = whatsappLink(settings.whatsapp, generalInquiryMessage(siteName
     {image && <meta property="og:image" content={image} />}
     <meta name="twitter:card" content="summary_large_image" />
 
+    <meta name="theme-color" content="#f5efe4" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap"
     />
+
+    <!--
+      Navegación sin recarga: Astro intercepta los links, trae la página por
+      fetch y la cambia con una transición. Por eso el sitio se siente rápido
+      y no como un documento que se recarga entero.
+    -->
+    <ClientRouter />
   </head>
 
   <body class="flex min-h-screen flex-col">
@@ -81,10 +91,42 @@ const waGeneral = whatsappLink(settings.whatsapp, generalInquiryMessage(siteName
     {
       !waGeneral && !import.meta.env.PROD && (
         <p class="border-t border-linea bg-papel px-4 py-2 text-center text-xs text-tinta-tenue">
-          Hint: cargá el número de WhatsApp en /admin/contenido para activar el
-          botón flotante.
+          Hint: falta cargar el número de WhatsApp, por eso todavía no
+          aparece el botón de consulta.
         </p>
       )
     }
   </body>
 </html>
+
+<script>
+  /**
+   * Las imágenes se muestran apenas llegan. Si ya venían en caché, se marcan
+   * como inmediatas para que no haya un destello de esqueleto.
+   */
+  function activarImagenes() {
+    document.querySelectorAll<HTMLElement>('.js-imagen').forEach((marco) => {
+      const img = marco.querySelector('img');
+      if (!img) return;
+
+      if (img.complete && img.naturalWidth > 0) {
+        img.dataset.inmediata = '';
+        return;
+      }
+
+      img.addEventListener('load', () => img.classList.add('cargada'), {
+        once: true,
+      });
+      img.addEventListener(
+        'error',
+        () => marco.setAttribute('data-error', ''),
+        { once: true },
+      );
+    });
+  }
+
+  // Con ClientRouter la página se cambia sin recargar: hay que rearmar el
+  // listener en cada navegación, no solo en la primera.
+  document.addEventListener('astro:page-load', activarImagenes);
+  activarImagenes();
+</script>
