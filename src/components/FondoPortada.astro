@@ -59,25 +59,36 @@ const fuente = url || IMAGEN_POR_DEFECTO;
     width: 120%;
     height: 120%;
     object-fit: cover;
-    filter: blur(1.4rem) saturate(0.85);
-    opacity: 0.55;
+    /*
+      El sepia no es decoración: es lo que hace que cualquier foto que suba
+      el cliente entre en la paleta del sitio. Sin él, una foto fría o con
+      luz de tubo queda como una mancha gris sobre un fondo crema. Con
+      sepia queda cálida pase lo que pase, y a esta altura de desenfoque
+      nadie lo lee como filtro.
+    */
+    filter: blur(1.15rem) saturate(0.7) sepia(0.42) contrast(0.95);
+    opacity: 0.8;
     transform: translateZ(0);
   }
 
   /*
-    Velo por encima: sin esto el texto queda sobre una foto y se lee mal.
-    Pesado a la izquierda, donde va el titular, y casi limpio a la derecha,
-    que es donde está la foto de antes/después.
+    Velo por encima. Antes tapaba la foto entera del lado izquierdo: el
+    titular queda en un lavado de crema opaco, y a la derecha, donde está
+    la foto de antes/después, no se veía nada. La foto se perdía.
+
+    Ahora solo se lava fuerte donde va el texto y se abre rápido hacia la
+    derecha, que es donde la foto tiene que leerse.
   */
   .fondo-portada::after {
     content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(
-      100deg,
-      var(--color-papel) 0%,
-      rgb(251 247 239 / 92%) 38%,
-      rgb(245 239 228 / 62%) 100%
+      96deg,
+      rgb(251 247 239 / 90%) 0%,
+      rgb(251 247 239 / 74%) 30%,
+      rgb(245 239 228 / 30%) 58%,
+      rgb(245 239 228 / 12%) 100%
     );
   }
 

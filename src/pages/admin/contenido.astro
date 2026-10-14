@@ -51,7 +51,6 @@ if (Astro.request.method === 'POST') {
         texto_garantia: textoONull(form.get('texto_garantia')),
         texto_legal: textoONull(form.get('texto_legal')),
         portada_url: portadaUrl,
-        portada_alt: textoONull(form.get('portada_alt')),
       });
       return Astro.redirect('/admin/contenido?ok=guardado');
     } catch (e) {
@@ -86,9 +85,22 @@ const wa = whatsappLink(contenido.whatsapp, 'Hola');
 
   {
     ok && (
-      <p class="mt-4 rounded border border-[#4f6b46] bg-[#4f6b46]/10 px-4 py-3 text-sm text-[#33472e]">
-        Guardado.
-      </p>
+      <div class="mt-4 rounded border border-[#4f6b46] bg-[#4f6b46]/10 px-4 py-3 text-sm text-[#33472e]">
+        <p>Guardado.</p>
+        <p class="mt-1.5 text-[#4f5f48]">
+          La web pública se cachea un minuto, así que el cambio puede tardar
+          hasta eso en verse.{' '}
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener"
+            class="underline underline-offset-4"
+          >
+            Abrir la web
+          </a>{' '}
+          para verlo.
+        </p>
+      </div>
     )
   }
 
@@ -138,20 +150,6 @@ const wa = whatsappLink(contenido.whatsapp, 'Hola');
           pelar el texto. Sirve una foto del taller, de una pieza en
           restauración o de las dos. JPG, PNG o WebP, hasta 8 MB.
         </p>
-      </div>
-
-      <div>
-        <label class="campo-label" for="portada_alt">
-          Texto alternativo
-        </label>
-        <input
-          class="campo"
-          id="portada_alt"
-          name="portada_alt"
-          type="text"
-          value={contenido.portada_alt ?? ''}
-          placeholder="Ej: el taller de L&G Restore"
-        />
       </div>
 
       <input type="hidden" name="portada_url_actual" value={contenido.portada_url ?? ''} />
