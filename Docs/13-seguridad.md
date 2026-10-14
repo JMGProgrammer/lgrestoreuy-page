@@ -70,6 +70,25 @@ Las agrega el middleware en todas las respuestas:
 | `Strict-Transport-Security` | Fuerza HTTPS en Vercel |
 | `X-Robots-Tag: noindex` | Solo en `/admin`: Google no lo indexa |
 
+### Por qué el panel necesita `unsafe-eval`
+
+Alpine evalúa sus expresiones con `new Function()`. Con la CSP estricta
+(`script-src 'self'`) cada directiva lanza `EvalError` y la pantalla queda
+visible pero **sin comportamiento**: los botones no hacen nada.
+
+La alternativa es el build `@alpinejs/csp`, que no usa `eval` pero obliga a
+reescribir todo el markup (nada de llamadas en `x-data`, nada de argumentos en
+los handlers). El costo no compensó el beneficio.
+
+**Decisión:** `unsafe-eval` queda **solo en el panel**, que es una superficie de
+ataque mucho menor que la web pública. La web pública sigue con `script-src
+'self'`: no evalúa nada. Los textos que el cliente carga desde `/admin` salen
+por Astro escapados (no se usa `set:html`), así que no hay vector de inyección
+ conocido que aproveche.
+
+En desarrollo se suma `unsafe-inline` porque la barra de herramientas de Astro
+inyecta scripts en línea. En producción no existe y no está permitido.
+
 ## Endurecimientos aplicados en el camino
 
 1. **`/api/admin/*` no estaba protegido.** El middleware cubría `/admin/*` pero las APIs viven en `/api/admin/*`, que no empieza por `/admin`. No era explotable (la RLS frenaba), pero faltaba una capa.

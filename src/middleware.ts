@@ -67,11 +67,30 @@ export const onRequest = defineMiddleware(async (context, next) => {
     ' ',
   );
 
+  /**
+   * El panel necesita 'unsafe-eval': Alpine evalúa sus expresiones con
+   * `new Function()`. Sin esto, cada directiva lanza EvalError y la pantalla
+   * se queda sin comportamiento (por eso los botones "no sirven").
+   *
+   * La alternativa es el build `@alpinejs/csp`, que obliga a reescribir todas
+   * las expresiones (sin llamadas inline en x-data, sin argumentos en los
+   * handlers). Se acepta 'unsafe-eval' solo acá, que es una superficie de
+   * ataque mucho menor que la web pública, y esa sigue sin eval.
+   *
+   * En desarrollo se suma 'unsafe-inline' porque la barra de herramientas de
+   * Astro inyecta scripts en línea. En producción no existe.
+   */
+  const scripts = import.meta.env.DEV
+    ? `'self' 'unsafe-inline'${esAdmin ? " 'unsafe-eval'" : ''}`
+    : esAdmin
+      ? "'self' 'unsafe-eval'"
+      : "'self'";
+
   response.headers.set(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      `script-src 'self'${esAdmin ? '' : " 'unsafe-inline'"}`,
+      `script-src ${scripts}`,
       // Tailwind inyecta estilos; los de Google Fonts necesitan su dominio.
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       'font-src https://fonts.gstatic.com',
