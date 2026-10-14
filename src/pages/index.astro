@@ -22,7 +22,6 @@ const [services, pieces, gallery, settings] = await Promise.all([
 // Si la base todavía no tiene las columnas de la 0004, la web sigue
 // entrando: salen undefined y el fondo cae a la textura de CSS.
 const portadaUrl = settings.portada_url ?? null;
-const portadaAlt = settings.portada_alt ?? null;
 
 /**
  * Pares antes/después para el comparador. Sin trabajos cargados queda vacío y
@@ -53,10 +52,7 @@ const precioPieza = (p: (typeof pieces)[number]) =>
 
   <!-- ================= HERO ================= -->
   <section class="relative overflow-hidden border-b border-linea bg-papel">
-    <FondoPortada
-      url={portadaUrl}
-      alt={portadaAlt}
-    />
+    <FondoPortada url={portadaUrl} />
 
     {/*
       El alto mínimo hace que el bloque entre entero en la pantalla al

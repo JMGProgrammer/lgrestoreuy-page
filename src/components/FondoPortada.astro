@@ -13,29 +13,29 @@
  */
 interface Props {
   url?: string | null;
-  alt?: string | null;
 }
 
-const { url, alt } = Astro.props;
+const { url } = Astro.props;
+
+/**
+ * Sin foto del taller se usa una textura de madera que va con el repo. Es un
+ * dibujo, no una foto de stock: no inventa nada del taller ni hay que
+ * buscar de quién es la licencia. El cliente la reemplaza desde
+ * /admin → Contenido cuando tenga una foto propia.
+ */
+const IMAGEN_POR_DEFECTO = '/portada.svg';
+const fuente = url || IMAGEN_POR_DEFECTO;
 ---
 
-<div
-  class:list={['fondo-portada', !url && 'fondo-portada--textura']}
-  aria-hidden={url ? 'true' : undefined}
-  role={url ? undefined : undefined}
->
-  {
-    url && (
-      <img
-        src={url}
-        alt={alt ?? ''}
-        class="fondo-portada__foto"
-        loading="eager"
-        decoding="async"
-        fetchpriority="low"
-      />
-    )
-  }
+<div class="fondo-portada" aria-hidden="true">
+  <img
+    src={fuente}
+    alt=""
+    class="fondo-portada__foto"
+    loading="eager"
+    decoding="async"
+    fetchpriority="low"
+  />
 </div>
 
 <style>
@@ -59,8 +59,8 @@ const { url, alt } = Astro.props;
     width: 120%;
     height: 120%;
     object-fit: cover;
-    filter: blur(1.5rem) saturate(0.8);
-    opacity: 0.42;
+    filter: blur(1.4rem) saturate(0.85);
+    opacity: 0.55;
     transform: translateZ(0);
   }
 
@@ -81,34 +81,11 @@ const { url, alt } = Astro.props;
     );
   }
 
-  /* Sin foto: papel viejo con veta de madera, con la paleta del sitio. */
-  .fondo-portada--textura {
+  /*
+    Color detras de la imagen. No se ve en condiciones normales, pero si la
+    imagen tarda o falla el bloque no queda en blanco.
+  */
+  .fondo-portada {
     background-color: var(--color-papel-oscuro);
-    background-image:
-      radial-gradient(
-        ellipse at 22% 12%,
-        rgb(199 154 94 / 30%),
-        transparent 58%
-      ),
-      radial-gradient(
-        ellipse at 88% 82%,
-        rgb(90 70 50 / 22%),
-        transparent 55%
-      ),
-      repeating-linear-gradient(
-        92deg,
-        rgb(90 70 50 / 4%) 0px,
-        rgb(90 70 50 / 4%) 2px,
-        transparent 2px,
-        transparent 9px
-      );
-  }
-
-  .fondo-portada--textura::after {
-    background: linear-gradient(
-      100deg,
-      rgb(251 247 239 / 72%) 0%,
-      rgb(245 239 228 / 30%) 100%
-    );
   }
 </style>

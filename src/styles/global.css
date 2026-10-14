@@ -33,23 +33,29 @@
   --color-alerta: #9a6b2f;
 
   /*
-    Bodoni Moda y Archivo en lugar de Fraunces e Inter.
+    Tipografía.
 
-    Esa pareja es exactamente a la que todo generador de páginas converge:
-    una serif de contraste medio muy visible y una sans neutra de manual.
-    Se cambia por una Didone de alto contraste, que es la tipografía de los
-    catálogos de subastas y de la letra de imprenta fina, y una humanista
-    con algo de carácter en vez de una neutra.
+    Fraunces + Inter es la pareja a la que converge todo generador de
+    páginas, y por eso el sitio se leía como IA. Inter se fue por Archivo:
+    misma claridad de sans, pero humanista y con más carácter.
 
-    Bodoni tiene el pelo fino: en cuerpo de texto grande y chico se ve
-    (un display que se lee de una sola pasada a la distancia es otro problema), así
-    que acá se reserva para títulos.
+    Para los títulos se probó una Didone de alto contraste y se descartó:
+    el pelo fino de Bodoni a 20px se ve como una raya, no como una letra.
+    Ahora va Newsreader, una serif editorial con eje óptico y cifras
+    antiguas. Tiene cuerpo de sobra en 600 y 700, que es lo que faltaba.
+
+    Alternativas para probar, cambiando solo la línea de abajo:
+      Newsreader       (actual)    editorial, cálida
+      Young Serif                   rotunda y con carácter, un solo cuerpo
+      Libre Baskerville              de libro, clásica, sin sorpresas
+      Petrona                        slab sólida, más rústica
+
+    Si algún día se prueba otra, son dos sitios: esta línea y el <link> de
+    Google Fonts en BaseLayout.astro.
   */
-  --font-display: 'Bodoni Moda', 'Didot', 'Bodoni MT', Georgia, serif;
+  --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
   --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', monospace;
-
-  --radius-card: 0.25rem;
 }
 
 /* =====================================================================
@@ -181,9 +187,8 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    /* Bodoni Moda no tiene un 600 que aguante en 20px: el pelo se come la
-       contraforma. A partir de h3 el peso sube para que el título se lea
-       de lejos y no parezca una línea fina. */
+    /* En cuerpo chico el 600 se ve fino: a partir de h3 el peso sube
+       para que el título se lea de lejos. */
     font-weight: 600;
     letter-spacing: -0.015em;
     font-optical-sizing: auto;
