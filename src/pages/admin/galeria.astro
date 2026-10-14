@@ -269,8 +269,8 @@ function etiquetaDe(foto: { rol: string }): string {
               ))}
             </select>
             <p class="ui-ayuda" x-show="faltanFotos">
-              Esta pieza tiene una sola foto. Subile al menos dos desde
-              /admin → Piezas para armar un antes y un después distintos.
+              Esta pieza tiene una sola foto. Podés subir la que falta con el
+              botón de arriba, sin salir de esta pantalla.
             </p>
           </div>
 
@@ -409,23 +409,51 @@ function etiquetaDe(foto: { rol: string }): string {
             </div>
           </div>
 
-          <!-- Vista previa -->
-          <div
-            class="overflow-hidden rounded border border-ui-borde"
-            x-show="urlAntes && urlDespues"
-            x-cloak
-          >
+          <!-- Vista previa: siempre visible, con marcador donde falte la
+               foto. Asi nunca se ve una imagen rota ni un hueco raro. -->
+          <div class="overflow-hidden rounded border border-ui-borde">
             <div class="grid grid-cols-2">
-              <img
-                x-bind:src="urlAntes"
-                alt="Antes"
-                class="aspect-square w-full object-cover"
-              />
-              <img
-                x-bind:src="urlDespues"
-                alt="Después"
-                class="aspect-square w-full object-cover"
-              />
+              <figure>
+                <img
+                  x-show="urlAntes"
+                  x-bind:src="urlAntes"
+                  alt="Foto antes"
+                  class="aspect-square w-full bg-ui-panel-2 object-cover"
+                />
+                <div
+                  class="flex aspect-square items-center justify-center bg-ui-panel-2"
+                  x-show="!urlAntes"
+                  x-cloak
+                >
+                  <span class="text-xs tracking-[0.2em] text-ui-texto-3 uppercase">
+                    Antes
+                  </span>
+                </div>
+                <figcaption class="bg-ui-panel-2 py-1 text-center text-[0.65rem] tracking-[0.2em] text-ui-texto-2 uppercase">
+                  Antes
+                </figcaption>
+              </figure>
+
+              <figure class="border-l border-ui-borde">
+                <img
+                  x-show="urlDespues"
+                  x-bind:src="urlDespues"
+                  alt="Foto después"
+                  class="aspect-square w-full bg-ui-panel-2 object-cover"
+                />
+                <div
+                  class="flex aspect-square items-center justify-center bg-ui-panel-2"
+                  x-show="!urlDespues"
+                  x-cloak
+                >
+                  <span class="text-xs tracking-[0.2em] text-ui-texto-3 uppercase">
+                    Después
+                  </span>
+                </div>
+                <figcaption class="bg-ui-panel-2 py-1 text-center text-[0.65rem] tracking-[0.2em] text-ui-texto-2 uppercase">
+                  Después
+                </figcaption>
+              </figure>
             </div>
           </div>
 
@@ -458,7 +486,24 @@ function etiquetaDe(foto: { rol: string }): string {
             Mostrar en la home
           </label>
 
-          <button type="submit" class="ui-btn ui-btn-acento" :disabled="!puedeGuardar()">
+          <!-- Por qué el botón está deshabilitado: un control apagado sin
+               explicación hace que el usuario busque el error en otro lado. -->
+          <div
+            class="flex items-start gap-2 rounded border border-ui-borde-fuerte bg-ui-panel-2 px-3 py-2.5 text-sm"
+            x-show="!puedeGuardar()"
+            x-cloak
+          >
+            <Icon nombre="atras" clase="mt-0.5 size-4 shrink-0 text-ui-texto-3" />
+            <div>
+              <p class="font-medium text-ui-texto" x-text="motivoBloqueo()"></p>
+              <p class="mt-0.5 text-xs text-ui-texto-2">
+                Elegí una foto de la pieza o subí una nueva con el botón de
+                arriba.
+              </p>
+            </div>
+          </div>
+
+          <button type="submit" class="ui-btn ui-btn-acento" x-bind:disabled="!puedeGuardar()">
             <Icon nombre="mas" clase="size-4" />
             Agregar a la galería
           </button>
@@ -588,6 +633,37 @@ function etiquetaDe(foto: { rol: string }): string {
         if (this.archivoAntes || this.archivoDespues) return false;
         const fotos = this.piezaActual()?.fotos.length ?? 0;
         return fotos > 0 && fotos < 2;
+      },
+
+      /**
+       * Explica, en palabras, qué falta para poder guardar. Un botón
+       * deshabilitado sin motivo hace que el usuario busque el error en
+       * otro lado de la pantalla.
+       */
+      motivoBloqueo(this: {
+        pieceId: string;
+        piezaActual: () => Pieza | null;
+        fotoAntes: string;
+        fotoDespues: string;
+        archivoAntes: File | null;
+        archivoDespues: File | null;
+      }): string {
+        if (!this.pieceId) {
+          return 'Elegí de qué pieza es el par.';
+        }
+
+        const falta: string[] = [];
+        if (!this.archivoAntes && !this.fotoAntes) falta.push('la de antes');
+        if (!this.archivoDespues && !this.fotoDespues) falta.push('la de después');
+
+        if (falta.length === 0) return 'Todo listo para agregar.';
+
+        if (falta.length === 2) {
+          return 'Faltan las dos fotos: elegí la de antes y la de después.';
+        }
+
+        return `Falta elegir ${falta[0]}.`;
+
       },
 
       puedeGuardar(this: {
