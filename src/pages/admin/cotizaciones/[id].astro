@@ -2,8 +2,10 @@
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import {
   adminContext,
+  DIAS_EN_PAPELERA,
   ESTADOS_QUOTE,
   leerContenido,
+  moverAPapelera,
   numeroONull,
   urlFirmada,
 } from '../../../lib/admin';
@@ -21,6 +23,18 @@ let aviso = '';
 
 if (Astro.request.method === 'POST' && usuario) {
   const form = await Astro.request.formData();
+
+  // Borrar. Va antes del guardado porque redirige: no tiene sentido seguir
+  // procesando el resto del formulario si la fila ya no existe.
+  if (form.get('_accion') === 'eliminar') {
+    try {
+      await moverAPapelera(ctx, id);
+      return Astro.redirect('/admin/cotizaciones?ok=eliminada');
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'No se pudo eliminar.';
+    }
+  }
+
   const estadoPedido = String(form.get('estado') ?? 'nueva');
 
   if (!ESTADOS_VALIDOS.includes(estadoPedido as EstadoQuote)) {
@@ -269,6 +283,67 @@ const wa = whatsappLink(
             </p>
           )
         }
+      </div>
+    </div>
+
+    {/*
+      Borrar. No es un "Deshacer" como en servicios, porque acá no alcanza
+      con volver a insertar: hay fotos en un bucket. Por eso pide confirmación
+      de verdad y por eso la papelera dura unos días: el error se puede
+      deshacer desde otro lado.
+
+      La confirmación son dos pasos dentro del mismo botón, sin modal nativo:
+      un confirm() del navegador rompe el aire del panel.
+    */}
+    <div
+      class="mt-8 border-t border-linea pt-5"
+      x-data={`{ confirmando: false, nombre: ${JSON.stringify(cotizacion.nombre)} }`}
+    >
+      <p
+        x-show="!confirmando"
+        x-cloak
+        class="text-xs text-tinta-tenue"
+      >
+        ¿Este pedido no lo vas a tomar?
+      </p>
+
+      <button
+        type="button"
+        class="ui-btn ui-btn-neutro mt-2"
+        x-show="!confirmando"
+        x-cloak
+        @click="confirmando = true"
+      >
+        Mover a la papelera
+      </button>
+
+      <div
+        x-show="confirmando"
+        x-cloak
+        class="rounded border border-[#a03328] bg-[#a03328]/8 p-4"
+      >
+        <p class="text-sm font-medium text-tinta">
+          ¿Vas a descartar la cotización de <span x-text="nombre"></span>?
+        </p>
+        <p class="mt-1 text-xs text-tinta-suave">
+          Se va a la papelera y desaparece de la lista. Vas a poder recuperarla
+          durante {DIAS_EN_PAPELERA} días. Después se borra para siempre,
+          con las fotos que mandó.
+        </p>
+
+        <form method="post" class="mt-3 flex flex-wrap gap-2">
+          <input type="hidden" name="_accion" value="eliminar" />
+          <button type="submit" class="ui-btn ui-btn-peligro">
+            Sí, mover a la papelera
+          </button>
+          <button
+            type="button"
+            class="ui-btn ui-btn-neutro"
+            @click="confirmando = false"
+          >
+            Cancelar
+          </button>
+        </form>
       </div>
     </div>
   </div>

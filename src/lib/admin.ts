@@ -158,6 +158,163 @@ export async function borrarServicio(ctx: AdminContext, id: string) {
   if (error) throw new Error(error.message);
 }
 
+// ----------------------------------------------------------------- cotizaciones
+
+/**
+ * Días que un pedido queda en la papelera antes de purgarse.
+ *
+ * Tres días alcanza para darse cuenta de que algo se borró de más y
+ * recuperarlo. Está en una constante y no en la tabla a propósito: cambiarlo
+ * es cambiar un número acá, y no una UPDATE sobre pedidos que ya están en la
+ * papelera (que arrastraría el cambio hacia atrás sin avisar).
+ */
+export const DIAS_EN_PAPELERA = 3;
+
+/** Copia el pedido a la papelera y lo saca de la lista. */
+export async function moverAPapelera(ctx: AdminContext, id: string) {
+  const { data, error } = await ctx.supabase
+    .from('quotes')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Ese pedido ya no está.');
+
+  const { error: errorPapelera } = await ctx.supabase
+    .from('quotes_borradas')
+    .insert({
+      ...data,
+      borrada_at: new Date().toISOString(),
+      se_borra_el: new Date(
+        Date.now() + DIAS_EN_PAPELERA * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+    });
+
+  if (errorPapelera) throw new Error(errorPapelera.message);
+
+  // La fila solo se saca después de que la copia entró. Si el insert falla,
+  // el pedido sigue en la lista y nada se perdió.
+  const { error: errorBorrado } = await ctx.supabase
+    .from('quotes')
+    .delete()
+    .eq('id', id);
+
+  if (errorBorrado) throw new Error(errorBorrado.message);
+}
+
+export interface PapeleraItem extends Quote {
+  borrada_at: string;
+  se_borra_el: string;
+}
+
+/**
+ * Purga lo que ya venció y devuelve lo que queda.
+ *
+ * El purgado corre desde acá y no desde un job de base por una razón
+ * concreta: Storage tiene un trigger que no deja borrar desde SQL, así que
+ * un job podría limpiar la fila pero dejaría las fotos huérfanas en el
+ * bucket para siempre. Desde la web se borran las dos cosas juntas.
+ */
+export async function listarPapelera(ctx: AdminContext) {
+  await purgarPapelera(ctx);
+
+  const { data, error } = await ctx.supabase
+    .from('quotes_borradas')
+    .select('*')
+    .order('borrada_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PapeleraItem[];
+}
+
+/** Borra para siempre lo que ya cumplió su plazo. Archivos incluidos. */
+export async function purgarPapelera(ctx: AdminContext) {
+  const { data: vencidas, error } = await ctx.supabase
+    .from('quotes_borradas')
+    .select('id, fotos')
+    .lte('se_borra_el', new Date().toISOString());
+
+  if (error) throw new Error(`papelera: ${error.message}`);
+  if (!vencidas || vencidas.length === 0) return 0;
+
+  const rutas = vencidas.flatMap((v) => (v.fotos as string[] | null) ?? []);
+
+  if (rutas.length > 0) {
+    const { error: errorStorage } = await ctx.supabase.storage
+      .from('cotizaciones')
+      .remove(rutas);
+
+    // Si los archivos no se van, igual hay que sacar la fila: si no, el
+    // purgado vuelve a intentar en cada visita y nunca termina.
+    if (errorStorage) {
+      console.warn('[papelera] no se pudieron borrar los archivos:', errorStorage.message);
+    }
+  }
+
+  const { error: errorBorrado } = await ctx.supabase
+    .from('quotes_borradas')
+    .delete()
+    .in('id', vencidas.map((v) => v.id));
+
+  if (errorBorrado) throw new Error(`papelera: ${errorBorrado.message}`);
+
+  return vencidas.length;
+}
+
+/** Devuelve un pedido de la papelera a la lista, con el mismo id. */
+export async function restaurarDePapelera(ctx: AdminContext, id: string) {
+  const { data, error } = await ctx.supabase
+    .from('quotes_borradas')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Ese pedido ya no está en la papelera.');
+
+  const { borrada_at, se_borra_el, ...pedido } = data;
+
+  const { error: errorVuelta } = await ctx.supabase
+    .from('quotes')
+    .insert(pedido);
+
+  if (errorVuelta) throw new Error(errorVuelta.message);
+
+  const { error: errorFuera } = await ctx.supabase
+    .from('quotes_borradas')
+    .delete()
+    .eq('id', id);
+
+  if (errorFuera) throw new Error(errorFuera.message);
+}
+
+/**
+ * Borrado definitivo desde la papelera. A diferencia de moverAPapelera, acá
+ * sí se borran los archivos: no hay a dónde volver atrás.
+ */
+export async function borrarDePapelera(ctx: AdminContext, id: string) {
+  const { data, error } = await ctx.supabase
+    .from('quotes_borradas')
+    .select('fotos')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  const rutas = (data?.fotos as string[] | null) ?? [];
+  if (rutas.length > 0) {
+    await ctx.supabase.storage.from('cotizaciones').remove(rutas);
+  }
+
+  const { error: errorBorrado } = await ctx.supabase
+    .from('quotes_borradas')
+    .delete()
+    .eq('id', id);
+
+  if (errorBorrado) throw new Error(errorBorrado.message);
+}
+
 // ----------------------------------------------------------------- contenido
 
 export async function leerContenido({

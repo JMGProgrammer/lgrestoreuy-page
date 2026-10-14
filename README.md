@@ -46,8 +46,9 @@ En **SQL Editor → New query**, pegar y ejecutar en orden:
 2. `supabase/migrations/0002_seed.sql` — servicios de ejemplo y fila de `site_settings`
 3. `supabase/migrations/0003_galeria-desde-piezas.sql` — la galería pasa a armarse desde las piezas
 4. `supabase/migrations/0004_portada-fondo.sql` — foto de fondo del hero, subida desde `/admin → Contenido`
+5. `supabase/migrations/0005_papelera-cotizaciones.sql` — papelera: los descartes se recuperan y se purgan solos
 
-> Correrlas en orden importa. Sin la `0003`, `/admin → Galería` falla al guardar un par. Sin la `0004`, el hero cae a la textura de CSS en lugar de la foto: el sitio funciona igual, solo falta la foto.
+> Correrlas en orden importa. Sin la `0003`, `/admin → Galería` falla al guardar un par. Sin la `0004`, el hero cae a la textura de CSS en lugar de la foto: el sitio funciona igual, solo falta la foto. Sin la `0005`, el botón de eliminar cotizaciones no aparece.
 
 ### 4. Usuario admin
 
