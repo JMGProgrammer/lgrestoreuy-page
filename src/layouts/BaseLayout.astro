@@ -10,6 +10,7 @@ import { ClientRouter } from 'astro:transitions';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import WhatsappFloat from '../components/WhatsappFloat.astro';
+import Cortina from '../components/Cortina.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -82,6 +83,9 @@ const waGeneral = whatsappLink(settings.whatsapp, generalInquiryMessage(siteName
 
     <SiteFooter settings={settings} />
 
+    {/* Va al final del body para que quede por encima de todo lo demás. */}
+    <Cortina />
+
     {
       waGeneral && (
         <WhatsappFloat href={waGeneral} />
@@ -129,4 +133,21 @@ const waGeneral = whatsappLink(settings.whatsapp, generalInquiryMessage(siteName
   // listener en cada navegación, no solo en la primera.
   document.addEventListener('astro:page-load', activarImagenes);
   activarImagenes();
+
+  /**
+   * Cada sección se abre desde arriba, como si se recargara el sitio.
+   *
+   * Astro ya lo hace por defecto al navegar hacia adelante, pero vuelve a su
+   * lugar cuando se usa el botón "atrás". Acá se pide siempre arriba, que es
+   * lo que espera quien está recorriendo el sitio sección por sección.
+   *
+   * Con hash sí se respeta el ancla: un enlace a #contacto tiene que llevar
+   * al contacto.
+   */
+  document.addEventListener('astro:page-load', () => {
+    if (window.location.hash) return;
+    // 'instant' porque en global.css hay scroll-behavior: smooth: sin esto
+    // el salto al inicio se arrastra y se ve como un scroll más.
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  });
 </script>

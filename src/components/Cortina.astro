@@ -1,0 +1,151 @@
+---
+/**
+ * Cortina de navegación.
+ *
+ * El sitio navega sin recargar (ver <ClientRouter /> en BaseLayout). Sin más,
+ * eso produce un salto seco entre secciones. Acá se cubre ese salto con dos
+ * medias hojas que se parten por la diagonal:
+ *
+ *   - la de arriba-izquierda se va hacia arriba-izquierda
+ *   - la de abajo-derecha se va hacia abajo-derecha
+ *
+ * El recorrido completo es: al clickear un link las dos mitades entran y
+ * tapan la pantalla, recién ahí se trae la página nueva, y después se abren
+ * mostrando el contenido de destino.
+ *
+ * La forma de la diagonal no es recta: los dos puntos del medio se desvían
+ * un poco para que la abertura se lea como una onda y no como un corte con
+ * tijera. clip-path interpola punto por punto, así que el movimiento sale
+ * solo del CSS.
+ *
+ * Estados:
+ *   (sin clase)  → tapa la pantalla. Es el estado inicial al cargar y el
+ *                  estado en que queda la página nueva recién cambiada.
+ *   --abierta    → abierta, sin capturar clicks.
+ */
+---
+
+<div class="cortina" id="cortina" aria-hidden="true">
+  <div class="cortina__hoja cortina__hoja--arriba"></div>
+  <div class="cortina__hoja cortina__hoja--abajo"></div>
+</div>
+
+{/*
+  Si el JS no corre, la cortina taparía el sitio para siempre. El <noscript>
+  es la única forma de que el CSS se entere.
+*/}
+<noscript>
+  <style>
+    .cortina {
+      display: none;
+    }
+  </style>
+</noscript>
+
+<style>
+  .cortina {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+  }
+
+  .cortina__hoja {
+    position: absolute;
+    inset: 0;
+    /* Cada estado define su propia duración: entrar es rápido (uno está
+       mirando la página de la que se va), abrir es más lento (uno está
+       mirando la que acaba de pedir). */
+    transition:
+      clip-path 240ms cubic-bezier(0.4, 0, 1, 1),
+      background-color 240ms linear;
+    will-change: clip-path;
+  }
+
+  /* Arriba-izquierda. La diagonal va del ángulo superior derecho al
+     inferior izquierdo; los dos puntos medios se salen de la recta para
+     curvar la onda. */
+  .cortina__hoja--arriba {
+    background-color: var(--color-nogal);
+    clip-path: polygon(0% 0%, 100% 0%, 74% 30%, 26% 70%, 0% 100%);
+  }
+
+  /* Abajo-derecha. Exactamente el complemento de la anterior: entre las dos
+     cubren la pantalla entera sin solaparse. */
+  .cortina__hoja--abajo {
+    background-color: var(--color-caoba);
+    clip-path: polygon(100% 0%, 100% 100%, 0% 100%, 26% 70%, 74% 30%);
+  }
+
+  .cortina--abierta {
+    pointer-events: none;
+  }
+
+  /* Abierta: cada mitad se retira por su esquina, ~70% de más allá del
+     borde, hasta quedar completamente fuera de la pantalla. */
+  .cortina--abierta .cortina__hoja--arriba {
+    clip-path: polygon(-70% -70%, 30% -70%, 4% -40%, -44% 0%, -70% 30%);
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    transition-duration: 420ms;
+  }
+
+  .cortina--abierta .cortina__hoja--abajo {
+    clip-path: polygon(170% 70%, 170% 170%, 70% 170%, 96% 140%, 144% 100%);
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    transition-duration: 420ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cortina {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  /** Espera de la cortina entrando. Tiene que calzar con el CSS. */
+  const MS_CIERRE = 240;
+
+  const sinMovimiento = () =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const cortina = () => document.getElementById('cortina');
+
+  /**
+   * Abre la cortina. Necesita un frame de por medio: si la clase se agrega en
+   * el mismo frame en que se pintó el estado cerrado, el navegador salta
+   * directo al final y no hay transición.
+   */
+  function abrir() {
+    const el = cortina();
+    if (!el) return;
+
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => el.classList.add('cortina--abierta')),
+    );
+
+    // Red de seguridad: si el rAF queda pausado (pestaña en segundo plano) la
+    // clase termina poniéndose igual y la cortina no se queda tapando.
+    window.setTimeout(() => el.classList.add('cortina--abierta'), 800);
+  }
+
+  // Cada página, incluida la primera, entra abriendo la cortina.
+  document.addEventListener('astro:page-load', abrir);
+
+  document.addEventListener('astro:before-preparation', (ev) => {
+    // Sin movimiento no hay cortina: ni espera, ni cambio de estado.
+    if (sinMovimiento()) return;
+
+    const el = cortina();
+    if (!el) return;
+
+    el.classList.remove('cortina--abierta');
+
+    // Recién después de que la cortina tapó la pantalla se pide la página.
+    // Si se pidiera antes, el sitio nuevo se vería debajo mientras entra.
+    const cargar = ev.loader;
+    ev.loader = async function () {
+      await new Promise((resolve) => window.setTimeout(resolve, MS_CIERRE));
+      return cargar();
+    };
+  });
+</script>
