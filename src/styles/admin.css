@@ -555,6 +555,95 @@ select.ui-campo {
   box-shadow: 0 24px 56px -16px rgb(31 25 16 / 45%);
 }
 
+/* ---------------------------------------------------------------- foco al editar
+
+   Mientras se edita una fila, el resto se atenúa y la fila en edición queda
+   destacada. El overlay usa z-40 y el elemento en foco z-50: por eso se ve
+   recortado el resto sin que el editor quede bloqueado. */
+
+.ui-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(31 25 16 / 26%);
+  backdrop-filter: blur(1.5px);
+  animation: ui-velo-entra 200ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes ui-velo-entra {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(1.5px);
+  }
+}
+
+.ui-item {
+  position: relative;
+  transition: box-shadow 200ms ease;
+}
+
+.ui-item-enfocado {
+  z-index: 50;
+}
+
+.ui-item-enfocado .ui-fila {
+  background: var(--color-ui-panel);
+  box-shadow: 0 0 0 2px var(--color-ui-acento);
+}
+
+.ui-item-enfocado .ui-fila > :first-child {
+  border-radius: var(--radius-ui-sm) 0 0 var(--radius-ui-sm);
+}
+
+.ui-editor {
+  padding: 0.875rem;
+  background: var(--color-ui-panel);
+  border-bottom: 1px solid var(--color-ui-borde);
+  box-shadow: 0 0 0 2px var(--color-ui-acento);
+}
+
+.ui-editor-barra {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--color-ui-borde);
+}
+
+/*变化的标记：告诉用户有未保存的内容 */
+.ui-sin-guardar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ui-alerta);
+}
+
+.ui-sin-guardar::before {
+  content: '';
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 999px;
+  background: var(--color-ui-alerta);
+  animation: ui-latido 1.8s ease-in-out infinite;
+}
+
+@keyframes ui-latido {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 /* ---------------------------------------------------------------- varios */
 
 .ui-truncar {
@@ -705,7 +794,18 @@ select.ui-campo {
   .ui-campo,
   .ui-accion,
   .ui-switch,
-  .ui-switch-mando {
+  .ui-switch-mando,
+  .ui-item {
     transition: none;
+  }
+
+  .ui-velo,
+  .ui-velo-entra {
+    animation: none;
+    backdrop-filter: none;
+  }
+
+  .ui-sin-guardar::before {
+    animation: none;
   }
 }

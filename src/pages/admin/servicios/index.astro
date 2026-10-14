@@ -6,7 +6,7 @@ import Icon from '../../../components/admin/Icon.astro';
 const ctx = adminContext(Astro.request, Astro.cookies);
 const servicios = await listarServicios(ctx);
 
-// Se pasa al cliente como JSON, no como script inline: el panel no permite
+// Los datos viajan como JSON, no como script inline: el panel no permite
 // scripts inline (CSP). El "<" escapado evita que un texto rompa el HTML.
 const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
 ---
@@ -18,7 +18,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
   <script type="application/json" id="datos-servicios" set:html={datosJson} />
 
   <div x-data="servicios()" x-cloak class="space-y-4">
-    <!-- ============ Alta: se despliega, no aparece de golpe ============ -->
+    <!-- ============ Alta ============ -->
     <div class="ui-despliegue" :data-abierto="creando">
       <div>
         <form
@@ -106,7 +106,7 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
     </div>
 
     <!-- ============ Lista ============ -->
-    <div class="ui-panel overflow-hidden">
+    <div class="ui-panel">
       <div
         class="flex items-center justify-between gap-3 border-b border-ui-borde bg-ui-panel-2 px-3 py-2"
       >
@@ -129,142 +129,170 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
       <ul class="min-h-16">
         <template x-for="(s, indice) in lista" :key="s.id">
           <li
-            class="ui-fila"
+            class="ui-item border-b border-ui-borde last:border-b-0"
             :class="{
+              'ui-item-enfocado': editando === s.id,
               'ui-fila-arrastrando': arrastrando === s.id,
               'ui-fila-soltada': idSoltado === s.id,
-              'guardando': guardandoId === s.id,
               'ui-pulso': recienGuardado === s.id,
             }"
-            draggable="true"
-            @dragstart="arrastrar($event, s.id)"
-            @dragover.prevent
-            @drop.prevent="soltar($event, indice)"
-            @dragend="terminarArrastre()"
           >
+            <!-- ============ Fila de lectura ============ -->
             <div
-              class="ui-progreso"
-              x-show="guardandoId === s.id"
-              aria-hidden="true"
+              class="ui-fila !border-b-0"
+              :class="{ 'guardando': guardandoId === s.id }"
+              draggable="true"
+              @dragstart="arrastrar($event, s.id)"
+              @dragover.prevent
+              @drop.prevent="soltar($event, indice)"
+              @dragend="terminarArrastre()"
             >
-            </div>
-
-            <!-- asa de arrastre -->
-            <span class="ui-asa shrink-0 select-none" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
-                <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-                <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
-              </svg>
-            </span>
-
-            <!-- Modo lectura -->
-            <div class="min-w-0 flex-1" x-show="editando !== s.id">
-              <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-ui-texto">
-                <span class="ui-truncate" x-text="s.nombre"></span>
-                <span x-show="!s.activo" class="ui-chip ui-chip-neutro">oculto</span>
-                <span
-                  x-show="s.activo && (s.precio_min === null || s.precio_max === null)"
-                  class="ui-chip ui-chip-alerta"
-                >sin precio</span>
-              </p>
-              <p
-                class="ui-num mt-1"
-                :class="s.precio_min === null && s.precio_max === null ? 'text-ui-texto-3 italic' : 'text-ui-texto-2'"
-                x-text="precio(s)"
-              >
-              </p>
-            </div>
-
-            <!-- Modo edición: se despliega en alto real -->
-            <div
-              class="ui-despliegue w-full"
-              :data-abierto="editando === s.id"
-            >
-              <div>
-                <div class="space-y-2.5 pb-1" x-show="editando === s.id" x-cloak>
-                  <input class="ui-campo" x-model="s.nombre" aria-label="Nombre" />
-                  <textarea
-                    class="ui-campo"
-                    x-model="s.descripcion"
-                    rows="2"
-                    placeholder="Descripción"
-                    aria-label="Descripción"
-                  ></textarea>
-                  <div class="grid grid-cols-2 gap-2">
-                    <input
-                      class="ui-campo ui-num"
-                      x-model="s.precio_min"
-                      placeholder="Precio desde"
-                      inputmode="numeric"
-                      aria-label="Precio desde"
-                    />
-                    <input
-                      class="ui-campo ui-num"
-                      x-model="s.precio_max"
-                      placeholder="Precio hasta"
-                      inputmode="numeric"
-                      aria-label="Precio hasta"
-                    />
-                  </div>
-                </div>
+              <div class="ui-progreso" x-show="guardandoId === s.id" aria-hidden="true">
               </div>
-            </div>
 
-            <!-- Acciones -->
-            <div class="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                class="ui-switch"
-                @click="alternar(s)"
-                :aria-label="s.activo ? 'Ocultar de la web' : 'Mostrar en la web'"
-                :aria-pressed="s.activo"
-              >
-                <span class="ui-switch-mando"></span>
-              </button>
+              <span class="ui-asa shrink-0 select-none" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+                  <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+                  <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
+                </svg>
+              </span>
 
-              <div class="flex items-center gap-1">
-                <template x-if="editando !== s.id">
-                  <button
-                    type="button"
-                    class="ui-btn ui-btn-fantasma ui-btn-sm ui-btn-icono ui-accion"
-                    @click="empezarEdicion(s)"
-                    aria-label="Editar"
-                  >
-                    <Icon nombre="lapiz" />
-                  </button>
-                </template>
+              <!-- Nombre + precio: una sola línea, el texto no se parte -->
+              <div class="min-w-0 flex-1">
+                <p class="flex items-center gap-2">
+                  <span class="ui-truncate text-sm font-medium text-ui-texto" x-text="s.nombre"></span>
+                  <span x-show="!s.activo" class="ui-chip ui-chip-neutro shrink-0">oculto</span>
+                  <span
+                    x-show="s.activo && (s.precio_min === null || s.precio_max === null)"
+                    class="ui-chip ui-chip-alerta shrink-0"
+                  >sin precio</span>
+                </p>
+                <p
+                  class="ui-num mt-0.5 whitespace-nowrap"
+                  :class="s.precio_min === null && s.precio_max === null
+                    ? 'text-ui-texto-3 italic'
+                    : 'text-ui-texto-2'"
+                  x-text="precio(s)"
+                >
+                </p>
+              </div>
 
-                <template x-if="editando === s.id">
-                  <button
-                    type="button"
-                    class="ui-btn ui-btn-primario ui-btn-sm"
-                    @click="guardar(s)"
-                    :disabled="guardandoId === s.id"
-                  >
-                    Guardar
-                  </button>
-                </template>
+              <div class="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  class="ui-switch"
+                  @click="alternar(s)"
+                  :aria-label="s.activo ? 'Ocultar de la web' : 'Mostrar en la web'"
+                  :aria-pressed="s.activo"
+                >
+                  <span class="ui-switch-mando"></span>
+                </button>
 
-                <template x-if="editando === s.id">
-                  <button
-                    type="button"
-                    class="ui-btn ui-btn-fantasma ui-btn-sm"
-                    @click="cancelarEdicion()"
-                  >
-                    Cancelar
-                  </button>
-                </template>
+                <button
+                  type="button"
+                  class="ui-btn ui-btn-fantasma ui-btn-sm ui-btn-icono ui-accion"
+                  @click="empezarEdicion(s)"
+                  :disabled="editando !== null"
+                  aria-label="Editar"
+                  x-show="editando === null"
+                >
+                  <Icon nombre="lapiz" />
+                </button>
 
                 <button
                   type="button"
                   class="ui-btn ui-btn-peligro ui-btn-sm ui-btn-icono ui-accion"
                   @click="eliminar(s, indice)"
+                  :disabled="editando !== null"
                   aria-label="Eliminar"
-                  x-show="editando !== s.id"
+                  x-show="editando === null"
                 >
                   <Icon nombre="tacho" />
                 </button>
+              </div>
+            </div>
+
+            <!-- ============ Editor: a ancho completo, debajo ============ -->
+            <div
+              class="ui-editor"
+              x-show="editando === s.id"
+              x-cloak
+              x-transition:enter="transition ease-out duration-200"
+              x-transition:enter-start="opacity-0 -translate-y-1"
+              x-transition:enter-end="opacity-100 translate-y-0"
+            >
+              <div class="space-y-3.5">
+                <div>
+                  <label class="ui-label" :for="`nombre-${s.id}`">Nombre</label>
+                  <input
+                    class="ui-campo"
+                    :id="`nombre-${s.id}`"
+                    x-model="borrador.nombre"
+                  />
+                </div>
+
+                <div>
+                  <label class="ui-label" :for="`desc-${s.id}`">Descripción</label>
+                  <textarea
+                    class="ui-campo"
+                    :id="`desc-${s.id}`"
+                    x-model="borrador.descripcion"
+                    rows="3"
+                    placeholder="Qué incluye y para quién es."
+                  ></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="ui-label" :for="`min-${s.id}`">Precio desde</label>
+                    <input
+                      class="ui-campo ui-num"
+                      :id="`min-${s.id}`"
+                      x-model="borrador.precio_min"
+                      placeholder="vacío"
+                      inputmode="numeric"
+                    />
+                  </div>
+                  <div>
+                    <label class="ui-label" :for="`max-${s.id}`">Precio hasta</label>
+                    <input
+                      class="ui-campo ui-num"
+                      :id="`max-${s.id}`"
+                      x-model="borrador.precio_max"
+                      placeholder="vacío"
+                      inputmode="numeric"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="ui-editor-barra">
+                <span class="ui-sin-guardar" x-show="hayCambios()">
+                  Cambios sin guardar
+                </span>
+                <span class="ui-ayuda mt-0" x-show="!hayCambios()">
+                  Sin cambios.
+                </span>
+
+                <div class="ml-auto flex gap-2">
+                  <button
+                    type="button"
+                    class="ui-btn ui-btn-neutro ui-btn-sm"
+                    @click="cancelarEdicion()"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    class="ui-btn ui-btn-acento ui-btn-sm"
+                    @click="guardar()"
+                    :disabled="!hayCambios() || guardandoId !== null"
+                  >
+                    <span x-show="guardandoId === null">Guardar</span>
+                    <span x-show="guardandoId !== null">Guardando…</span>
+                  </button>
+                </div>
               </div>
             </div>
           </li>
@@ -289,6 +317,9 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
       menos de un minuto.
     </p>
   </div>
+
+  <!-- Velo: atenúa todo lo que no se está editando -->
+  <div class="ui-velo" x-show="editando !== null" x-cloak aria-hidden="true"></div>
 </AdminLayout>
 
 <script>
@@ -305,6 +336,14 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
     activo: boolean;
   }
 
+  interface Borrador {
+    id: string;
+    nombre: string;
+    descripcion: string;
+    precio_min: string;
+    precio_max: string;
+  }
+
   const formato = new Intl.NumberFormat('es-UY');
 
   /**
@@ -313,219 +352,263 @@ const datosJson = JSON.stringify(servicios).replace(/</g, '\\u003c');
    */
   function serviciosEstado() {
     return {
-    lista: leerDatos<Servicio[]>('datos-servicios'),
-    editando: null as string | null,
-    original: null as Servicio | null,
-    guardando: false,
-    guardandoId: null as string | null,
-    creando: false,
-    arrastrando: null as string | null,
-    idSoltado: null as string | null,
-    recienGuardado: null as string | null,
-    error: '',
+      lista: leerDatos<Servicio[]>('datos-servicios'),
+      /** Fila abierta en edición. Una sola a la vez. */
+      editando: null as string | null,
+      /** Copia de trabajo. La lista nunca cambia hasta guardar. */
+      borrador: null as Borrador | null,
+      guardando: false,
+      guardandoId: null as string | null,
+      creando: false,
+      arrastrando: null as string | null,
+      idSoltado: null as string | null,
+      recienGuardado: null as string | null,
+      error: '',
 
-    form: { nombre: '', descripcion: '', precio_min: '', precio_max: '' },
+      form: { nombre: '', descripcion: '', precio_min: '', precio_max: '' },
 
-    activos() {
-      return this.lista.filter((s) => s.activo).length;
-    },
+      // -------------------------------------------------- lectura
 
-    precio(s: Servicio) {
-      const min = s.precio_min;
-      const max = s.precio_max;
-      if (min === null && max === null) return 'A consultar';
-      if (min !== null && max !== null)
-        return `$${formato.format(min)} – $${formato.format(max)} UYU`;
-      if (min !== null) return `Desde $${formato.format(min)} UYU`;
-      return `Hasta $${formato.format(max ?? 0)} UYU`;
-    },
+      servicioActual(): Servicio | null {
+        return this.lista.find((s) => s.id === this.editando) ?? null;
+      },
 
-    abrirNuevo() {
-      this.error = '';
-      this.form = { nombre: '', descripcion: '', precio_min: '', precio_max: '' };
-      this.creando = true;
-    },
+      activos() {
+        return this.lista.filter((s) => s.activo).length;
+      },
 
-    async crear() {
-      this.error = '';
-      if (!this.form.nombre.trim()) {
-        this.error = 'Poné un nombre.';
-        return;
-      }
+      precio(s: Servicio) {
+        const { precio_min: min, precio_max: max } = s;
+        if (min === null && max === null) return 'A consultar';
+        if (min !== null && max !== null)
+          return `$${formato.format(min)} – $${formato.format(max)}`;
+        if (min !== null) return `Desde $${formato.format(min)}`;
+        return `Hasta $${formato.format(max ?? 0)}`;
+      },
 
-      this.guardando = true;
-      try {
-        const { servicio } = await api<{ servicio: Servicio }>(
-          '/api/admin/servicios',
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              nombre: this.form.nombre.trim(),
-              descripcion: this.form.descripcion.trim() || null,
-              precio_min: this.form.precio_min || null,
-              precio_max: this.form.precio_max || null,
-              orden: this.lista.length,
-            }),
-          },
+      /** ¿El borrador difiere de lo que está guardado? */
+      hayCambios(): boolean {
+        if (!this.borrador) return false;
+        const s = this.servicioActual();
+        if (!s) return false;
+
+        return (
+          this.borrador.nombre !== s.nombre ||
+          this.borrador.descripcion !== (s.descripcion ?? '') ||
+          (this.borrador.precio_min || null) !== s.precio_min ||
+          (this.borrador.precio_max || null) !== s.precio_max
         );
+      },
 
-        this.lista.push(servicio);
-        this.creando = false;
-        avisos.exito('Servicio agregado');
-      } catch (e) {
-        this.error = e instanceof Error ? e.message : 'No se pudo crear.';
-      } finally {
-        this.guardando = false;
-      }
-    },
+      // -------------------------------------------------- edición
 
-    empezarEdicion(s: Servicio) {
-      this.original = JSON.parse(JSON.stringify(s));
-      this.editando = s.id;
-    },
+      /**
+       * Abrir el editor no toca la lista. Todo lo que se escriba vive en
+       * `borrador` y solo se aplica al guardar.
+       */
+      empezarEdicion(s: Servicio) {
+        this.borrador = {
+          id: s.id,
+          nombre: s.nombre,
+          descripcion: s.descripcion ?? '',
+          precio_min: s.precio_min?.toString() ?? '',
+          precio_max: s.precio_max?.toString() ?? '',
+        };
+        this.editando = s.id;
+      },
 
-    cancelarEdicion() {
-      if (this.original && this.editando) {
-        const indice = this.lista.findIndex((x) => x.id === this.editando);
-        if (indice >= 0) this.lista[indice] = this.original;
-      }
-      this.editando = null;
-      this.original = null;
-    },
-
-    async guardar(s: Servicio) {
-      if (!s.nombre.trim()) {
-        avisarError(new Error('El nombre no puede quedar vacío.'));
-        return;
-      }
-
-      this.guardandoId = s.id;
-      try {
-        const { servicio } = await api<{ servicio: Servicio }>(
-          `/api/admin/servicios/${s.id}`,
-          {
-            method: 'PATCH',
-            body: JSON.stringify({
-              nombre: s.nombre.trim(),
-              descripcion: s.descripcion?.trim() || null,
-              precio_min: s.precio_min || null,
-              precio_max: s.precio_max || null,
-            }),
-          },
-        );
-
-        Object.assign(s, servicio);
+      cancelarEdicion() {
         this.editando = null;
-        this.original = null;
+        this.borrador = null;
+      },
 
-        // Resalte breve: confirma que el cambio se guardó sin recargar.
-        this.recienGuardado = s.id;
-        setTimeout(() => {
-          if (this.recienGuardado === s.id) this.recienGuardado = null;
-        }, 900);
+      async guardar() {
+        const s = this.servicioActual();
+        if (!s || !this.borrador) return;
 
-        avisos.exito('Guardado');
-      } catch (e) {
-        avisarError(e);
-      } finally {
-        this.guardandoId = null;
-      }
-    },
+        if (!this.borrador.nombre.trim()) {
+          avisarError(new Error('El nombre no puede quedar vacío.'));
+          return;
+        }
 
-    async alternar(s: Servicio) {
-      const anterior = s.activo;
-      s.activo = !s.activo; // optimista: responde al instante
+        this.guardandoId = s.id;
+        try {
+          const { servicio } = await api<{ servicio: Servicio }>(
+            `/api/admin/servicios/${s.id}`,
+            {
+              method: 'PATCH',
+              body: JSON.stringify({
+                nombre: this.borrador.nombre.trim(),
+                descripcion: this.borrador.descripcion.trim() || null,
+                precio_min: this.borrador.precio_min || null,
+                precio_max: this.borrador.precio_max || null,
+              }),
+            },
+          );
 
-      try {
-        await api(`/api/admin/servicios/${s.id}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ activo: s.activo }),
-        });
-      } catch (e) {
-        s.activo = anterior; // si falla, vuelve atrás
-        avisarError(e);
-      }
-    },
+          // Recién acá la lista refleja el cambio.
+          const indice = this.lista.findIndex((x) => x.id === s.id);
+          if (indice >= 0) this.lista[indice] = servicio;
 
-    async eliminar(s: Servicio, indice: number) {
-      const copia = JSON.parse(JSON.stringify(s));
-      this.lista.splice(indice, 1);
+          this.cancelarEdicion();
 
-      try {
-        await api(`/api/admin/servicios/${s.id}`, { method: 'DELETE' });
+          this.recienGuardado = servicio.id;
+          setTimeout(() => {
+            if (this.recienGuardado === servicio.id) this.recienGuardado = null;
+          }, 900);
 
-        avisos.mostrar(`Se eliminó “${copia.nombre}”`, 'ok', {
-          texto: 'Deshacer',
-          fn: () => this.restaurar(copia, indice),
-        });
-      } catch (e) {
-        this.lista.splice(indice, 0, copia);
-        avisarError(e);
-      }
-    },
+          avisos.exito('Cambios guardados');
+        } catch (e) {
+          avisarError(e);
+        } finally {
+          this.guardandoId = null;
+        }
+      },
 
-    async restaurar(s: Servicio, indice: number) {
-      try {
-        const { servicio } = await api<{ servicio: Servicio }>(
-          '/api/admin/servicios',
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              nombre: s.nombre,
-              descripcion: s.descripcion,
-              precio_min: s.precio_min,
-              precio_max: s.precio_max,
-              icono: s.icono,
-              orden: s.orden,
-              activo: s.activo,
-            }),
-          },
-        );
+      // -------------------------------------------------- alta
 
-        this.lista.splice(indice, 0, servicio);
-        avisos.exito('Servicio restaurado');
-      } catch (e) {
-        avisarError(e);
-      }
-    },
+      abrirNuevo() {
+        this.error = '';
+        this.form = { nombre: '', descripcion: '', precio_min: '', precio_max: '' };
+        this.creando = true;
+      },
 
-    arrastrar(evento: DragEvent, id: string) {
-      this.arrastrando = id;
-      evento.dataTransfer?.setData('text/plain', id);
-      if (evento.dataTransfer) evento.dataTransfer.effectAllowed = 'move';
-    },
+      async crear() {
+        this.error = '';
+        if (!this.form.nombre.trim()) {
+          this.error = 'Poné un nombre.';
+          return;
+        }
 
-    async soltar(evento: DragEvent, indice: number) {
-      evento.preventDefault();
-      const idArrastrado =
-        this.arrastrando ??
-        evento.dataTransfer?.getData('text/plain') ??
-        null;
+        this.guardando = true;
+        try {
+          const { servicio } = await api<{ servicio: Servicio }>(
+            '/api/admin/servicios',
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                nombre: this.form.nombre.trim(),
+                descripcion: this.form.descripcion.trim() || null,
+                precio_min: this.form.precio_min || null,
+                precio_max: this.form.precio_max || null,
+                orden: this.lista.length,
+              }),
+            },
+          );
 
-      const desde = this.lista.findIndex((s) => s.id === idArrastrado);
-      this.terminarArrastre();
+          this.lista.push(servicio);
+          this.creando = false;
+          avisos.exito('Servicio agregado');
+        } catch (e) {
+          this.error = e instanceof Error ? e.message : 'No se pudo crear.';
+        } finally {
+          this.guardando = false;
+        }
+      },
 
-      if (desde < 0 || desde === indice) return;
+      // -------------------------------------------------- acciones de fila
 
-      const [movido] = this.lista.splice(desde, 1);
-      this.lista.splice(indice, 0, movido);
-      this.idSoltado = movido.id;
+      /**
+       * El interruptor es una acción de un toque con su propio guardado, así
+       * que responde al instante. Si falla, vuelve atrás.
+       */
+      async alternar(s: Servicio) {
+        const anterior = s.activo;
+        s.activo = !s.activo;
 
-      try {
-        await api('/api/admin/servicios', {
-          method: 'PATCH',
-          body: JSON.stringify({ ordenes: this.lista.map((s) => s.id) }),
-        });
-        setTimeout(() => (this.idSoltado = null), 600);
-      } catch (e) {
-        avisarError(e);
-      }
-    },
+        try {
+          await api(`/api/admin/servicios/${s.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ activo: s.activo }),
+          });
+        } catch (e) {
+          s.activo = anterior;
+          avisarError(e);
+        }
+      },
 
-    terminarArrastre() {
-      this.arrastrando = null;
-    },
-  };
+      async eliminar(s: Servicio, indice: number) {
+        if (this.editando === s.id) this.cancelarEdicion();
+
+        const copia = JSON.parse(JSON.stringify(s));
+        this.lista.splice(indice, 1);
+
+        try {
+          await api(`/api/admin/servicios/${s.id}`, { method: 'DELETE' });
+
+          avisos.mostrar(`Se eliminó “${copia.nombre}”`, 'ok', {
+            texto: 'Deshacer',
+            fn: () => this.restaurar(copia, indice),
+          });
+        } catch (e) {
+          this.lista.splice(indice, 0, copia);
+          avisarError(e);
+        }
+      },
+
+      async restaurar(s: Servicio, indice: number) {
+        try {
+          const { servicio } = await api<{ servicio: Servicio }>(
+            '/api/admin/servicios',
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                nombre: s.nombre,
+                descripcion: s.descripcion,
+                precio_min: s.precio_min,
+                precio_max: s.precio_max,
+                icono: s.icono,
+                orden: s.orden,
+                activo: s.activo,
+              }),
+            },
+          );
+
+          this.lista.splice(indice, 0, servicio);
+          avisos.exito('Servicio restaurado');
+        } catch (e) {
+          avisarError(e);
+        }
+      },
+
+      // -------------------------------------------------- arrastre
+
+      arrastrar(evento: DragEvent, id: string) {
+        if (this.editando !== null) return;
+        this.arrastrando = id;
+        evento.dataTransfer?.setData('text/plain', id);
+        if (evento.dataTransfer) evento.dataTransfer.effectAllowed = 'move';
+      },
+
+      async soltar(evento: DragEvent, indice: number) {
+        evento.preventDefault();
+        const idArrastrado =
+          this.arrastrando ?? evento.dataTransfer?.getData('text/plain') ?? null;
+
+        const desde = this.lista.findIndex((s) => s.id === idArrastrado);
+        this.terminarArrastre();
+
+        if (desde < 0 || desde === indice) return;
+
+        const [movido] = this.lista.splice(desde, 1);
+        this.lista.splice(indice, 0, movido);
+        this.idSoltado = movido.id;
+
+        try {
+          await api('/api/admin/servicios', {
+            method: 'PATCH',
+            body: JSON.stringify({ ordenes: this.lista.map((s) => s.id) }),
+          });
+          setTimeout(() => (this.idSoltado = null), 600);
+        } catch (e) {
+          avisarError(e);
+        }
+      },
+
+      terminarArrastre() {
+        this.arrastrando = null;
+      },
+    };
   }
 
   Alpine.data('servicios', serviciosEstado);
