@@ -53,6 +53,11 @@ const fotos = await Promise.all(
   (cotizacion.fotos ?? []).map((ruta: string) => urlFirmada(ctx, ruta)),
 );
 
+// Total y firmadas van por separado: una foto que existe pero no se pudo
+// firmar tiene que verse como un problema, no como si no viniera.
+const fotosTotales = (cotizacion.fotos ?? []).length;
+const fotosFallidas = fotosTotales - fotos.filter(Boolean).length;
+
 const contenido = await leerContenido(ctx);
 const resumen = [
   cotizacion.tipo_mueble && `Pieza: ${cotizacion.tipo_mueble}`,
@@ -136,10 +141,37 @@ const wa = whatsappLink(
         )
       }
 
+      {/*
+        Antes no se renderizaba nada cuando el pedido no traía fotos, y el
+        panel dejaba un hueco vacío: indistinguible de "las fotos están pero
+        no se ven". Ahora dice siempre cuál de las dos cosas es.
+
+        Si hay fotos pero alguna no se pudo firmar, tampoco se calla: se ve
+        cuántas fallaron en lugar de una grilla con huecos.
+      */}
       {
-        fotos.filter(Boolean).length > 0 && (
+        fotosTotales === 0 ? (
           <div class="mt-6">
             <p class="rotulo mb-2">Fotos que mandó</p>
+            <p class="rounded border border-dashed border-linea px-4 py-6 text-center text-sm text-tinta-tenue">
+              Este pedido no trajo fotos.
+            </p>
+          </div>
+        ) : (
+          <div class="mt-6">
+            <p class="rotulo mb-2">Fotos que mandó</p>
+
+            {
+              fotosFallidas > 0 && (
+                <p class="mb-3 rounded border border-[#9a6b2f] bg-[#9a6b2f]/10 px-3 py-2 text-xs text-caoba">
+                  {fotosFallidas === 1
+                    ? '1 foto no se pudo abrir.'
+                    : `${fotosFallidas} fotos no se pudieron abrir.`}{' '}
+                  Puede que el archivo ya no esté en el bucket.
+                </p>
+              )
+            }
+
             <ul class="grid grid-cols-3 gap-3 sm:grid-cols-5">
               {fotos.map((url) =>
                 url ? (
@@ -155,8 +187,8 @@ const wa = whatsappLink(
               )}
             </ul>
             <p class="mt-2 text-xs text-tinta-tenue">
-              Links válidos por una hora. No son públicas: si alguien tiene la URL
-              no puede verla después.
+              Links válidos por una hora. No son públicas: si alguien tiene la
+              URL no puede verla después.
             </p>
           </div>
         )
