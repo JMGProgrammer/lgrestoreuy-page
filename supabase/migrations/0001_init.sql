@@ -1,29 +1,20 @@
 -- 0001_init.sql — LG Restore Uy
 -- MVP sin Mercado Pago. Ver Docs/10-modelo-relacional.md y Docs/09-panel-admin.md
--- Aplicar en el SQL Editor de Supabase o con `supabase db push`.
+-- Aplicar en el SQL Editor de Supabase (o `supabase db push`).
+--
+-- ORDEN IMPORTANTE: primero las tablas, después las funciones que las consultan
+-- (is_admin). PostgreSQL valida el cuerpo de una función al crearla, así que una
+-- función que consulta public.profiles no se puede definir antes de que exista.
+
+begin;
 
 create extension if not exists pgcrypto;
 
 -- =====================================================================
--- Helper: ¿el usuario actual es admin del panel?
--- security definer para no disparar la RLS de profiles dentro de la policy.
+-- 1. Tablas
 -- =====================================================================
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.profiles p
-    where p.id = auth.uid() and p.role in ('admin', 'ayudante')
-  );
-$$;
 
--- =====================================================================
--- Tablas
--- =====================================================================
+-- Roles del panel (la fila la crea el trigger al registrarse un usuario)
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text unique not null,
@@ -67,7 +58,7 @@ create table if not exists public.site_settings (
   updated_at timestamptz not null default now()
 );
 
--- Piezas:vitrina + gestión del taller
+-- Piezas: vitrina pública + gestión del taller
 create table if not exists public.pieces (
   id uuid primary key default gen_random_uuid(),
   slug text unique not null,
@@ -128,8 +119,9 @@ create table if not exists public.quotes (
 );
 
 -- =====================================================================
--- updated_at automático
+-- 2. Funciones y triggers
 -- =====================================================================
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -154,7 +146,7 @@ begin
 end;
 $$;
 
--- Crear profile automáticamente al crear el usuario en Supabase Auth
+-- Perfil con rol admin apenas se crea el usuario en Supabase Auth
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -174,8 +166,23 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- ¿El usuario actual es del panel? security definer para no disparar la RLS
+-- de profiles desde adentro de una policy (si no, se hace recursiva).
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and p.role in ('admin', 'ayudante')
+  );
+$$;
+
 -- =====================================================================
--- Índices
+-- 3. Índices
 -- =====================================================================
 create index if not exists idx_services_activo_orden on public.services (activo, orden);
 create index if not exists idx_pieces_estado on public.pieces (estado);
@@ -185,7 +192,7 @@ create index if not exists idx_gallery_destacada on public.gallery_items (destac
 create index if not exists idx_quotes_estado_fecha on public.quotes (estado, created_at desc);
 
 -- =====================================================================
--- RLS
+-- 4. RLS
 -- =====================================================================
 alter table public.profiles      enable row level security;
 alter table public.services      enable row level security;
@@ -195,7 +202,7 @@ alter table public.piece_photos  enable row level security;
 alter table public.gallery_items enable row level security;
 alter table public.quotes        enable row level security;
 
--- profiles: solo el propio usuario y admins
+-- profiles: solo el propio usuario y los admins
 drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
   for select using (id = auth.uid() or public.is_admin());
@@ -266,7 +273,7 @@ create policy quotes_admin_write on public.quotes
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- =====================================================================
--- Storage
+-- 5. Storage
 -- piezas / galeria / servicios: lectura pública, escritura admin
 -- cotizaciones: solo escritura anónima (fotos del formulario), sin lectura
 -- =====================================================================
@@ -294,7 +301,9 @@ drop policy if exists storage_admin_write on storage.objects;
 create policy storage_admin_write on storage.objects
   for all using (public.is_admin()) with check (public.is_admin());
 
--- El cotizador sube sus fotos de forma anónima: permitimos insert en ese bucket
+-- El cotizador sube sus fotos de forma anónima: solo insert en ese bucket
 drop policy if exists storage_quote_upload on storage.objects;
 create policy storage_quote_upload on storage.objects
   for insert with check (bucket_id = 'cotizaciones');
+
+commit;

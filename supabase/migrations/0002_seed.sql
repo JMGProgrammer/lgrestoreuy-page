@@ -8,21 +8,13 @@
 
 -- =====================================================================
 -- site_settings: fila única (id = 1)
--- whatsapp: formato internacional SIN signos ni espacios (59890123456).
--- El 0000 de abajo es un PLACEHOLDER: cambiar desde /admin/contenido.
+-- Solo se crea la fila con lo mínimo. El resto (WhatsApp, dirección, horarios,
+-- textos) queda en NULL y lo carga el cliente desde /admin/contenido.
+-- El WhatsApp va en formato internacional SIN signos ni espacios: 59890123456
 -- =====================================================================
-insert into public.site_settings (id, nombre_taller, whatsapp, email, direccion, horarios)
-values (
-  1,
-  'L&G Restore',
-  null,            -- PLACEHOLDER: cargar el número real en /admin/contenido
-  null,
-  null,
-  null,
-  null
-)
-on conflict (id) do update
-  set updated_at = now();
+insert into public.site_settings (id, nombre_taller)
+values (1, 'L&G Restore')
+on conflict (id) do nothing;
 
 -- =====================================================================
 -- Servicios: foco en antigüedades + muebles sencillos con lustre y pintura.
