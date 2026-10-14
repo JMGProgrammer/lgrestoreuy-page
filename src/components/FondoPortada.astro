@@ -54,20 +54,24 @@ const fuente = url || IMAGEN_POR_DEFECTO;
   */
   .fondo-portada__foto {
     position: absolute;
-    top: -10%;
-    left: -10%;
-    width: 120%;
-    height: 120%;
+    top: -6%;
+    left: -6%;
+    width: 112%;
+    height: 112%;
     object-fit: cover;
+
     /*
-      El sepia no es decoración: es lo que hace que cualquier foto que suba
-      el cliente entre en la paleta del sitio. Sin él, una foto fría o con
-      luz de tubo queda como una mancha gris sobre un fondo crema. Con
-      sepia queda cálida pase lo que pase, y a esta altura de desenfoque
-      nadie lo lee como filtro.
+      Difuminado corto a propósito. Con 1.15rem la foto deja de ser una
+      foto: se ve una mancha de color y el cliente no reconoce ni el
+      taller ni la pieza. Con 6px se sigue leyendo de qué se trata, que es
+      justo lo que hace falta para que el fondo diga algo.
+
+      El sepia va bajo porque ya no tiene que arreglar una foto que no se
+      ve: tiene que dejar entrar la que se ve, con la paleta un poco
+      corrida hacia el sitio, no encima de la foto.
     */
-    filter: blur(1.15rem) saturate(0.7) sepia(0.42) contrast(0.95);
-    opacity: 0.8;
+    filter: blur(6px) saturate(0.92) sepia(0.16);
+    opacity: 0.82;
     transform: translateZ(0);
   }
 
@@ -85,10 +89,10 @@ const fuente = url || IMAGEN_POR_DEFECTO;
     inset: 0;
     background: linear-gradient(
       96deg,
-      rgb(251 247 239 / 90%) 0%,
-      rgb(251 247 239 / 74%) 30%,
-      rgb(245 239 228 / 30%) 58%,
-      rgb(245 239 228 / 12%) 100%
+      rgb(251 247 239 / 88%) 0%,
+      rgb(251 247 239 / 70%) 32%,
+      rgb(245 239 228 / 34%) 60%,
+      rgb(245 239 228 / 18%) 100%
     );
   }
 
