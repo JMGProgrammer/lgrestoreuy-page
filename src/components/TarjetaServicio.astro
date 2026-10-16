@@ -6,8 +6,6 @@
  * cotizador lo preselecciona por query (?servicio=). Mostrar el servicio
  * sin dejar pedirlo ahí mismo es lo que hacía a la sección plana.
  */
-import IconoServicio from './IconoServicio.astro';
-import { formatPriceRange } from '../lib/whatsapp';
 import type { Service } from '../lib/types';
 
 interface Props {
@@ -26,11 +24,6 @@ const numero = String(indice + 1).padStart(2, '0');
 >
   <span class="filete" aria-hidden="true"></span>
   <span class="fantasma" aria-hidden="true">{numero}</span>
-
-  <span class="cabecera">
-    <IconoServicio nombre={servicio.icono} />
-    <span class="precio">{formatPriceRange(servicio.precio_min, servicio.precio_max)}</span>
-  </span>
 
   <span class="titulo">{servicio.nombre}</span>
 
@@ -105,23 +98,9 @@ const numero = String(indice + 1).padStart(2, '0');
     user-select: none;
   }
 
-  .cabecera {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-  }
-
-  .precio {
-    font-family: var(--font-display);
-    font-size: 1.02rem;
-    color: var(--color-latón);
-    text-align: right;
-  }
-
   .titulo {
     display: block;
-    margin-top: 1rem;
+    margin-top: 0.6rem;
     font-family: var(--font-display);
     font-size: 1.35rem;
     font-weight: 600;
