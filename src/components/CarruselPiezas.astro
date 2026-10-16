@@ -107,6 +107,10 @@ const vacias = Math.max(0, TOTAL - reales.length);
     position: absolute;
     left: 50%;
     top: 50%;
+    /* Tamaño cero: el giro pivota justo en el centro del anillo. Con el
+       ancho de la card, el centro quedaba corrido y todo desfasaba. */
+    width: 0;
+    height: 0;
     transform: rotateY(var(--gi)) translateZ(var(--rz));
     /* Sin esto los hijos se aplanan y el dorso sale espejado. */
     transform-style: preserve-3d;
