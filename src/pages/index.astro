@@ -54,75 +54,71 @@ const comparables = gallery.map((item) => ({
     <FondoPortada url={portadaUrl} />
 
     {/*
-      Texto centrado y debajo el carrusel 3D de piezas: cards
-      horizontales con perspectiva que giran en sentido horario.
+      El texto va al medio del anillo: el anillo está en flujo y el texto
+      superpuesto al centro. Las cards que pasan al frente se transparentan
+      (lo hace el script del carrusel) para no tapar la info.
     */}
-    <div
-      class="relative z-10 mx-auto max-w-6xl px-4 py-14 sm:py-20 lg:py-24"
-    >
-      <div class="hero-nucleo relative mx-auto max-w-2xl text-center">
-        <p class="rotulo">Restauración de muebles y antigüedades</p>
-        <h1
-          class="mt-3 text-4xl leading-[1.1] text-tinta sm:text-5xl lg:text-6xl"
-        >
-          Muebles con historia,<br />
-          <span class="text-latón">restaurados como merecen.</span>
-        </h1>
-        <p class="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-tinta-suave">
-          Reparamos estructura, aplicamos lustre y pintura, y recuperamos piezas
-          de época. Contanos qué pieza tenés y te pasamos un presupuesto sin
-          compromiso.
-        </p>
-
-        <div class="mt-7 flex flex-wrap justify-center gap-3">
-          <a href="/cotizar" class="btn-principal">
-            Pedir cotización
-            <svg
-              class="btn-flecha"
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M5 12h13M12 5l7 7-7 7"></path>
-            </svg>
-          </a>
-          <a href="/piezas" class="btn-secundario">Ver piezas en venta</a>
-        </div>
-
-        <dl
-          class="mx-auto mt-10 grid max-w-md grid-cols-3 gap-6 border-t border-linea pt-6"
-        >
-          {
-            [
-              { k: 'Evaluación', v: 'Evaluación en el taller' },
-              { k: 'Retiro', v: 'Retiro a domicilio' },
-              { k: 'Garantía', v: 'Garantía por escrito' },
-            ].map((item) => (
-              <div>
-                <dt class="rotulo mb-1">{item.k}</dt>
-                <dd class="text-sm leading-snug text-tinta-suave">
-                  {item.v}
-                </dd>
-              </div>
-            ))
-          }
-        </dl>
+    <div class="escenario relative">
+      <div class="relative py-10 sm:py-14">
+        <CarruselPiezas piezas={orbitar} />
       </div>
-    </div>
 
-    {/*
-      El carrusel se mete debajo del texto: sube con margen negativo y pasa
-      por detrás del bloque (que va por encima), así las cards quedan a la
-      altura de las garantías en vez de perdidas abajo del todo.
-    */}
-    <div class="tira-carrusel relative pb-14 sm:pb-20">
-      <CarruselPiezas piezas={orbitar} />
+      <div class="velo-texto">
+        <div class="hero-nucleo mx-auto w-full max-w-2xl px-4 text-center">
+          <p class="rotulo">Restauración de muebles y antigüedades</p>
+          <h1
+            class="mt-3 text-4xl leading-[1.1] text-tinta sm:text-5xl lg:text-6xl"
+          >
+            Muebles con historia,<br />
+            <span class="text-latón">restaurados como merecen.</span>
+          </h1>
+          <p class="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-tinta-suave">
+            Reparamos estructura, aplicamos lustre y pintura, y recuperamos piezas
+            de época. Contanos qué pieza tenés y te pasamos un presupuesto sin
+            compromiso.
+          </p>
+
+          <div class="mt-7 flex flex-wrap justify-center gap-3">
+            <a href="/cotizar" class="btn-principal">
+              Pedir cotización
+              <svg
+                class="btn-flecha"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h13M12 5l7 7-7 7"></path>
+              </svg>
+            </a>
+            <a href="/piezas" class="btn-secundario">Ver piezas en venta</a>
+          </div>
+
+          <dl
+            class="mx-auto mt-10 grid max-w-md grid-cols-3 gap-6 border-t border-linea pt-6"
+          >
+            {
+              [
+                { k: 'Evaluación', v: 'Evaluación en el taller' },
+                { k: 'Retiro', v: 'Retiro a domicilio' },
+                { k: 'Garantía', v: 'Garantía por escrito' },
+              ].map((item) => (
+                <div>
+                  <dt class="rotulo mb-1">{item.k}</dt>
+                  <dd class="text-sm leading-snug text-tinta-suave">
+                    {item.v}
+                  </dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -309,11 +305,26 @@ const comparables = gallery.map((item) => ({
     flex: 1;
   }
 
-  /* La tira sube y se mete debajo del texto (que va por encima): las
-     cards quedan a la altura de las garantías. */
-  .tira-carrusel {
-    z-index: 0;
-    margin-top: clamp(-10rem, -16vw, -5rem);
+  /* Escenario del hero: el anillo en flujo y el texto superpuesto al
+     centro. El velo no recibe el mouse (pasa al anillo para frenarlo),
+     salvo los links y botones del contenido. */
+  .escenario {
+    position: relative;
+  }
+
+  .velo-texto {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    padding-block: 1rem;
+    pointer-events: none;
+  }
+
+  .velo-texto a,
+  .velo-texto button {
+    pointer-events: auto;
   }
 
   /* Núcleo legible sobre las cards que pasan por detrás */

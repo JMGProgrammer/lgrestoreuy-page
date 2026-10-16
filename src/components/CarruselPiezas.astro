@@ -5,9 +5,9 @@
  * título + precio y lleva a su ficha; si hay menos de 8 piezas se completa
  * con marcos vacíos neutros (sin fotos inventadas) hasta ser 8.
  *
- * Puro CSS, sin JavaScript: el anillo rota en Y y las cards lo acompañan
- * (esa es la perspectiva: las de atrás se ven de costado). Al pasar el
- * mouse o tabular se frena para poder cliquear.
+ * El giro es CSS puro; un script liviano lee el ángulo real de la animación
+ * (Web Animations API) y transparenta las cards que pasan AL FRENTE para no
+ * tapar el texto central. Al pasar el mouse o tabular se frena todo.
  */
 import { formatUYU } from '../lib/whatsapp';
 import type { PieceWithPhotos } from '../lib/types';
@@ -23,8 +23,8 @@ const reales = piezas.filter((p) => p.fotos.length > 0).slice(0, TOTAL);
 const vacias = Math.max(0, TOTAL - reales.length);
 ---
 
-<div class="carrusel3d">
-  <div class="anillo3d">
+<div class="carrusel3d" data-carrusel3d>
+  <div class="anillo3d" data-anillo3d>
     {reales.map((pieza, i) => {
       const foto = pieza.fotos[0];
       const precio = formatUYU(pieza.precio);
@@ -32,6 +32,8 @@ const vacias = Math.max(0, TOTAL - reales.length);
         <div class="pos3d" style={`--gi:${(i * 360) / TOTAL}deg`}>
           <a
             class="cara cara--foto"
+            data-cara3d
+            data-idx={i}
             href={`/piezas/${pieza.slug}`}
             title={precio ? `${pieza.titulo} — ${precio}` : pieza.titulo}
             aria-label={`Ver ficha de ${pieza.titulo}`}
@@ -49,6 +51,8 @@ const vacias = Math.max(0, TOTAL - reales.length);
       <div class="pos3d" style={`--gi:${(((reales.length + k) * 360) / TOTAL).toFixed(1)}deg`}>
         <a
           class="cara cara--vacia"
+          data-cara3d
+          data-idx={reales.length + k}
           href="/piezas"
           aria-label="Ver piezas en venta"
         >
@@ -61,16 +65,16 @@ const vacias = Math.max(0, TOTAL - reales.length);
 
 <style>
   .carrusel3d {
-    --ancho-cara: 16.5rem;
-    --alto-cara: 11.5rem;
-    --rz: 20rem;
-    perspective: 87.5rem;
+    --ancho-cara: 22rem;
+    --alto-cara: 14.5rem;
+    --rz: 26rem;
+    perspective: 110rem;
     overflow: hidden;
   }
 
   .anillo3d {
     position: relative;
-    height: 19rem;
+    height: 21rem;
     transform-style: preserve-3d;
     animation: giro-y 55s linear infinite;
   }
@@ -105,7 +109,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
   .cara--foto img {
     display: block;
     width: 100%;
-    height: calc(var(--alto-cara) - 3.2rem);
+    height: calc(var(--alto-cara) - 3.4rem);
     object-fit: cover;
   }
 
@@ -114,12 +118,12 @@ const vacias = Math.max(0, TOTAL - reales.length);
     align-items: baseline;
     justify-content: space-between;
     gap: 0.5rem;
-    padding: 0.45rem 0.7rem;
+    padding: 0.55rem 0.85rem;
   }
 
   .cara-titulo {
     font-family: var(--font-display);
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -127,7 +131,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
   }
 
   .cara-precio {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 600;
     white-space: nowrap;
     color: var(--color-latón);
@@ -156,23 +160,25 @@ const vacias = Math.max(0, TOTAL - reales.length);
 
   /* Quietos al pasar el mouse o tabular: si no, no hay quién cliquee */
   .carrusel3d:hover .anillo3d,
-  .carrusel3d:focus-within .anillo3d {
+  .carrusel3d:focus-within .anillo3d,
+  :global(.escenario:hover) .anillo3d,
+  :global(.escenario:focus-within) .anillo3d {
     animation-play-state: paused;
   }
 
   @media (max-width: 40rem) {
     .carrusel3d {
-      --ancho-cara: 12.5rem;
-      --alto-cara: 9.5rem;
-      --rz: 15.5rem;
+      --ancho-cara: 13.5rem;
+      --alto-cara: 10.5rem;
+      --rz: 16.5rem;
     }
 
     .anillo3d {
-      height: 15rem;
+      height: 16rem;
     }
 
     .cara--foto img {
-      height: calc(var(--alto-cara) - 2.9rem);
+      height: calc(var(--alto-cara) - 3rem);
     }
   }
 
@@ -182,3 +188,70 @@ const vacias = Math.max(0, TOTAL - reales.length);
     }
   }
 </style>
+
+<script>
+  /**
+   * Transparenta las cards que pasan al frente para no tapar el texto.
+   * Lee el progreso real de la animación CSS (Web Animations API) y
+   * calcula la profundidad de cada card: frente = fantasma, atrás = sólida.
+   * Un solo handler para todos los carruseles de la página.
+   */
+  function iniciarCarruseles3d() {
+    const conMovimiento = !window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    document
+      .querySelectorAll<HTMLElement>('[data-carrusel3d]:not([data-listo])')
+      .forEach((raiz) => {
+        raiz.dataset.listo = 'si';
+
+        const anillo =
+          raiz.querySelector<HTMLElement>('[data-anillo3d]');
+        const caras = Array.from(
+          raiz.querySelectorAll<HTMLElement>('[data-cara3d]'),
+        );
+        if (!anillo || caras.length === 0) return;
+
+        const total = caras.length;
+        const animacion = conMovimiento
+          ? anillo.getAnimations()[0]
+          : undefined;
+
+        // Sin animación (reduced-motion) no hay nada que seguir.
+        if (!animacion || !animacion.effect) return;
+
+        const efecto = animacion.effect as KeyframeEffect;
+        const duracion = efecto.getTiming().duration;
+
+        const pintar = () => {
+          // En pausa (hover) los valores quedan fijos: no se recalcula.
+          if (animacion.playState === 'running') {
+            const tiempo = animacion.currentTime;
+            const progreso =
+              typeof tiempo === 'number' &&
+              typeof duracion === 'number' &&
+              duracion > 0
+                ? (((tiempo % duracion) + duracion) % duracion) / duracion
+                : 0;
+
+            caras.forEach((cara) => {
+              const i = Number(cara.dataset.idx ?? '0');
+              // El giro va a -360°: el ángulo real es base menos progreso.
+              const angulo = ((i / total - progreso) % 1) * Math.PI * 2;
+              const z = Math.cos(angulo); // 1 = frente, -1 = atrás
+              const opacidad = 0.15 + (0.85 * (1 - z)) / 2;
+              cara.style.opacity = opacidad.toFixed(2);
+            });
+          }
+
+          requestAnimationFrame(pintar);
+        };
+
+        requestAnimationFrame(pintar);
+      });
+  }
+
+  document.addEventListener('astro:page-load', iniciarCarruseles3d);
+  iniciarCarruseles3d();
+</script>
