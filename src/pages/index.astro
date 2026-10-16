@@ -305,11 +305,15 @@ const comparables = gallery.map((item) => ({
     flex: 1;
   }
 
-  /* Escenario del hero: el anillo en flujo y el texto superpuesto al
-     centro. El velo no recibe el mouse (pasa al anillo para frenarlo),
-     salvo los links y botones del contenido. */
+  /* Escenario del hero: ocupa toda la pantalla al entrar. El anillo en
+     flujo y el texto superpuesto al centro. El velo no recibe el mouse
+     (pasa al anillo para frenarlo), salvo links y botones. */
   .escenario {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: calc(100svh - var(--alto-header));
   }
 
   .velo-texto {

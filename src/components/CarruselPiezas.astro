@@ -67,8 +67,8 @@ const vacias = Math.max(0, TOTAL - reales.length);
   .carrusel3d {
     --ancho-cara: 22rem;
     --alto-cara: 14.5rem;
-    --rz: 26rem;
-    perspective: 110rem;
+    --rz: 34rem;
+    perspective: 150rem;
     overflow: hidden;
   }
 
@@ -170,7 +170,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
     .carrusel3d {
       --ancho-cara: 13.5rem;
       --alto-cara: 10.5rem;
-      --rz: 16.5rem;
+      --rz: 19rem;
     }
 
     .anillo3d {
@@ -191,9 +191,9 @@ const vacias = Math.max(0, TOTAL - reales.length);
 
 <script>
   /**
-   * Transparenta las cards que pasan al frente para no tapar el texto.
-   * Lee el progreso real de la animación CSS (Web Animations API) y
-   * calcula la profundidad de cada card: frente = fantasma, atrás = sólida.
+   * Transparenta las cards que pasan al frente para no tapar el texto y
+   * oculta las que van atrás (el backface no alcanza con tanto apilado).
+   * Lee el progreso real de la animación CSS (Web Animations API).
    * Un solo handler para todos los carruseles de la página.
    */
   function iniciarCarruseles3d() {
@@ -223,6 +223,8 @@ const vacias = Math.max(0, TOTAL - reales.length);
 
         const efecto = animacion.effect as KeyframeEffect;
         const duracion = efecto.getTiming().duration;
+        // Ventana del fantasma: solo bien al frente, sólida a los 72°.
+        const VENTANA = Math.PI * 0.4;
 
         const pintar = () => {
           // En pausa (hover) los valores quedan fijos: no se recalcula.
@@ -237,11 +239,17 @@ const vacias = Math.max(0, TOTAL - reales.length);
 
             caras.forEach((cara) => {
               const i = Number(cara.dataset.idx ?? '0');
-              // El giro va a -360°: el ángulo real es base menos progreso.
-              const angulo = ((i / total - progreso) % 1) * Math.PI * 2;
-              const z = Math.cos(angulo); // 1 = frente, -1 = atrás
-              const opacidad = 0.15 + (0.85 * (1 - z)) / 2;
-              cara.style.opacity = opacidad.toFixed(2);
+              // El giro va a -360°: 0 es el frente, 0.5 es atrás.
+              const vuelta = (((i / total - progreso) % 1) + 1) % 1;
+              // Distancia angular al frente (0..PI).
+              const d = Math.min(vuelta, 1 - vuelta) * Math.PI * 2;
+              const t = Math.min(1, d / VENTANA);
+              const suave = t * t * (3 - 2 * t);
+              cara.style.opacity = (0.12 + 0.88 * suave).toFixed(2);
+
+              // Atrás del todo no se muestra: evita textos espejados.
+              const z = Math.cos(vuelta * Math.PI * 2);
+              cara.style.visibility = z > -0.2 ? 'visible' : 'hidden';
             });
           }
 
