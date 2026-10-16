@@ -32,17 +32,23 @@ const vacias = Math.max(0, TOTAL - reales.length);
       return (
         <div class="pos3d" style={`--gi:${(i * 360) / TOTAL}deg`}>
           <a
-            class="cara cara--foto"
+            class="cara"
             data-cara3d
             data-idx={i}
             href={`/piezas/${pieza.slug}`}
             title={precio ? `${pieza.titulo} — ${precio}` : pieza.titulo}
             aria-label={`Ver ficha de ${pieza.titulo}`}
           >
-            <img src={foto.url} alt="" loading="lazy" decoding="async" />
-            <span class="cara-pie">
-              <span class="cara-titulo">{pieza.titulo}</span>
-              {precio && <span class="cara-precio">{precio}</span>}
+            <span class="cara-frente cara-frente--foto" aria-hidden="false">
+              <img src={foto.url} alt="" loading="lazy" decoding="async" />
+              <span class="cara-pie">
+                <span class="cara-titulo">{pieza.titulo}</span>
+                {precio && <span class="cara-precio">{precio}</span>}
+              </span>
+            </span>
+            <span class="cara-dorso" aria-hidden="true">
+              <span class="dorso-marca">L&amp;G</span>
+              <span class="dorso-sub">Restauración</span>
             </span>
           </a>
         </div>
@@ -51,13 +57,19 @@ const vacias = Math.max(0, TOTAL - reales.length);
     {Array.from({ length: vacias }, (_, k) => (
       <div class="pos3d" style={`--gi:${(((reales.length + k) * 360) / TOTAL).toFixed(1)}deg`}>
         <a
-          class="cara cara--vacia"
+          class="cara"
           data-cara3d
           data-idx={reales.length + k}
           href="/piezas"
           aria-label="Ver piezas en venta"
         >
-          <span class="cara-vacia-texto">Próximamente</span>
+          <span class="cara-frente cara-frente--vacia">
+            <span class="cara-vacia-texto">Próximamente</span>
+          </span>
+          <span class="cara-dorso" aria-hidden="true">
+            <span class="dorso-marca">L&amp;G</span>
+            <span class="dorso-sub">Restauración</span>
+          </span>
         </a>
       </div>
     ))}
@@ -76,7 +88,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
 
   .anillo3d {
     position: relative;
-    height: 34rem;
+    height: 47rem;
     transform-style: preserve-3d;
     animation: giro-y 55s linear infinite;
   }
@@ -87,7 +99,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
     el medio. Va en un envoltorio porque la animación pisa el transform.
   */
   .inclinacion {
-    transform: rotateX(-16deg);
+    transform: rotateX(-28deg);
     transform-style: preserve-3d;
   }
 
@@ -96,29 +108,78 @@ const vacias = Math.max(0, TOTAL - reales.length);
     left: 50%;
     top: 50%;
     transform: rotateY(var(--gi)) translateZ(var(--rz));
+    /* Sin esto los hijos se aplanan y el dorso sale espejado. */
+    transform-style: preserve-3d;
   }
 
   .cara {
     display: block;
+    position: relative;
     width: var(--ancho-cara);
     height: var(--alto-cara);
     margin-left: calc(var(--ancho-cara) / -2);
     margin-top: calc(var(--alto-cara) / -2);
+    transform-style: preserve-3d;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /*
+    Dos caras: el frente con la foto y el dorso con la marca. Cada una se
+    oculta sola cuando mira para el otro lado, así atrás se ve el dorso
+    (nunca un texto espejado) y no hace falta esconder cards por JS.
+  */
+  .cara-frente,
+  .cara-dorso {
+    position: absolute;
+    inset: 0;
     overflow: hidden;
     border-radius: var(--radius-card);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
 
-  .cara--foto {
+  .cara-frente--foto {
     border: 1px solid var(--color-linea);
     background: var(--color-papel);
-    color: inherit;
-    text-decoration: none;
     box-shadow: 0 18px 36px -18px rgb(59 49 34 / 50%);
   }
 
-  .cara--foto img {
+  .cara-frente--vacia {
+    display: grid;
+    place-items: center;
+    border: 1.5px dashed var(--color-latón);
+    background: rgb(251 247 239 / 55%);
+  }
+
+  .cara-dorso {
+    display: grid;
+    place-content: center;
+    gap: 0.15rem;
+    border: 1px solid var(--color-latón);
+    outline: 3px solid var(--color-nogal);
+    outline-offset: 3px;
+    background: var(--color-papel);
+    transform: rotateY(180deg);
+    text-align: center;
+  }
+
+  .dorso-marca {
+    font-family: var(--font-display);
+    font-size: 1.9rem;
+    font-weight: 600;
+    color: var(--color-tinta);
+  }
+
+  .dorso-sub {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--color-tinta-suave);
+  }
+
+  .cara-frente--foto img {
     display: block;
     width: 100%;
     height: calc(var(--alto-cara) - 3.4rem);
@@ -147,13 +208,6 @@ const vacias = Math.max(0, TOTAL - reales.length);
     font-weight: 600;
     white-space: nowrap;
     color: var(--color-latón);
-  }
-
-  .cara--vacia {
-    display: grid;
-    place-items: center;
-    border: 1.5px dashed var(--color-latón);
-    background: rgb(251 247 239 / 55%);
   }
 
   .cara-vacia-texto {
@@ -187,7 +241,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
       transform: rotateX(-10deg);
     }
 
-    .cara--foto img {
+    .cara-frente--foto img {
       height: calc(var(--alto-cara) - 3rem);
     }
   }
@@ -201,10 +255,11 @@ const vacias = Math.max(0, TOTAL - reales.length);
 
 <script>
   /**
-   * Transparenta las cards que pasan al frente para no tapar el texto y
-   * oculta las que van atrás (el backface no alcanza con tanto apilado).
-   * Lee el progreso real de la animación CSS (Web Animations API).
-   * Un solo handler para todos los carruseles de la página.
+   * Transparenta las cards que pasan al frente para no tapar el texto.
+   * Las de atrás muestran su dorso (nunca un texto espejado), así que no
+   * se oculta ninguna: las 8 se ven siempre. Lee el progreso real de la
+   * animación CSS (Web Animations API). Un solo handler para todos los
+   * carruseles de la página.
    */
   function iniciarCarruseles3d() {
     const conMovimiento = !window.matchMedia(
@@ -256,10 +311,6 @@ const vacias = Math.max(0, TOTAL - reales.length);
               const t = Math.min(1, d / VENTANA);
               const suave = t * t * (3 - 2 * t);
               cara.style.opacity = (0.12 + 0.88 * suave).toFixed(2);
-
-              // Atrás del todo no se muestra: evita textos espejados.
-              const z = Math.cos(vuelta * Math.PI * 2);
-              cara.style.visibility = z > -0.2 ? 'visible' : 'hidden';
             });
           }
 
