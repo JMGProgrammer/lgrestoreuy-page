@@ -1,184 +1,77 @@
 ---
 /**
- * Visual del hero: cómoda de taller dibujada en SVG.
+ * Foto del hero, enmarcada como lámina de museo.
  *
- * Ocupa el lugar del comparador, que se mudó a su propia sección. Es un
- * dibujo del repo, no una foto: la web pública no lleva fotos de relleno
- * (Decisions 2026-10-14). Cuando el cliente suba fotos reales, este lugar
- * puede pasar a mostrar una pieza destacada.
+ * PROVISORIA: es una cómoda de museo (CC0, Rawpixel/Openverse, ver abajo),
+ * no un trabajo del taller. Se reemplaza por fotos reales del cliente en
+ * cuanto suba las suyas desde /admin. Fuente registrada en la memoria del
+ * proyecto (02-Projects/LG-Restore-Uy/README.md).
+ *
+ * Fuente: https://www.rawpixel.com/image/14264777/commode
+ * Licencia: CC0 (dominio público, uso comercial permitido, sin atribución).
+ * Vía: https://api.openverse.org/v1/images/ (filtro license_type=commercial).
  */
 ---
 
-<div class="hero-visual" aria-hidden="true">
-  <svg viewBox="0 0 420 480" fill="none" role="presentation">
-    <defs>
-      <radialGradient id="hv-halo" cx="50%" cy="46%" r="55%">
-        <stop offset="0%" stop-color="#e4cfae" stop-opacity="0.85" />
-        <stop offset="60%" stop-color="#e4cfae" stop-opacity="0.35" />
-        <stop offset="100%" stop-color="#e4cfae" stop-opacity="0" />
-      </radialGradient>
-      <linearGradient id="hv-madera" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#6e4a2d" />
-        <stop offset="55%" stop-color="#7d5636" />
-        <stop offset="100%" stop-color="#54371f" />
-      </linearGradient>
-      <linearGradient id="hv-madera-os" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#4a2f1b" />
-        <stop offset="100%" stop-color="#3a2413" />
-      </linearGradient>
-      <linearGradient id="hv-laton" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#d8ab6b" />
-        <stop offset="100%" stop-color="#a8763e" />
-      </linearGradient>
-    </defs>
-
-    <!-- halo y costura -->
-    <circle cx="210" cy="225" r="172" fill="url(#hv-halo)" />
-    <circle
-      cx="210"
-      cy="225"
-      r="152"
-      stroke="#c79a5e"
-      stroke-opacity="0.55"
-      stroke-width="1.5"
-      stroke-dasharray="2 7"
+<figure class="hero-foto">
+  <span class="hero-halo" aria-hidden="true"></span>
+  <span class="hero-marco">
+    <img
+      src="/hero-comoda.webp"
+      alt="Cómoda antigua de madera con marquetería, tapa de mármol y bronces dorados"
+      width="1024"
+      height="853"
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
     />
-
-    <!-- sombra de apoyo -->
-    <ellipse cx="210" cy="432" rx="112" ry="13" fill="#2e2419" opacity="0.14" />
-
-    <!-- patas cabriolé -->
-    <path
-      d="M152 322 C146 352 140 384 136 414 L154 414 C158 386 162 356 166 330 Z"
-      fill="url(#hv-madera-os)"
-      stroke="#2e2419"
-      stroke-width="2.5"
-      stroke-linejoin="round"
-    />
-    <path
-      d="M268 322 C274 352 280 384 284 414 L266 414 C262 386 258 356 254 330 Z"
-      fill="url(#hv-madera-os)"
-      stroke="#2e2419"
-      stroke-width="2.5"
-      stroke-linejoin="round"
-    />
-    <ellipse cx="145" cy="420" rx="13" ry="7" fill="#3a2413" stroke="#2e2419" stroke-width="2.5" />
-    <ellipse cx="275" cy="420" rx="13" ry="7" fill="#3a2413" stroke="#2e2419" stroke-width="2.5" />
-
-    <!-- faldón con gota central -->
-    <path
-      d="M142 312 H278 V326 Q244 336 226 336 L216 348 L206 336 Q172 336 142 326 Z"
-      fill="url(#hv-madera-os)"
-      stroke="#2e2419"
-      stroke-width="2.5"
-      stroke-linejoin="round"
-    />
-
-    <!-- cuerpo -->
-    <rect
-      x="140"
-      y="112"
-      width="140"
-      height="204"
-      rx="7"
-      fill="url(#hv-madera)"
-      stroke="#2e2419"
-      stroke-width="3"
-    />
-    <!-- veta lateral -->
-    <rect x="248" y="112" width="32" height="204" fill="#2e2419" opacity="0.18" />
-
-    <!-- cajones -->
-    <line x1="140" y1="180" x2="280" y2="180" stroke="#2e2419" stroke-width="2.5" />
-    <line x1="140" y1="248" x2="280" y2="248" stroke="#2e2419" stroke-width="2.5" />
-    <!-- filetes claros de cajón -->
-    <line x1="150" y1="122" x2="270" y2="122" stroke="#e4cfae" stroke-opacity="0.35" stroke-width="1.5" />
-    <line x1="150" y1="190" x2="270" y2="190" stroke="#e4cfae" stroke-opacity="0.35" stroke-width="1.5" />
-    <line x1="150" y1="258" x2="270" y2="258" stroke="#e4cfae" stroke-opacity="0.35" stroke-width="1.5" />
-
-    <!-- tiradores de latón -->
-    <g fill="url(#hv-laton)" stroke="#2e2419" stroke-width="2">
-      <circle cx="182" cy="146" r="7" />
-      <circle cx="238" cy="146" r="7" />
-      <circle cx="182" cy="214" r="7" />
-      <circle cx="238" cy="214" r="7" />
-      <circle cx="182" cy="282" r="7" />
-      <circle cx="238" cy="282" r="7" />
-    </g>
-    <g fill="#fbf7ef" opacity="0.85">
-      <circle cx="180" cy="144" r="1.8" />
-      <circle cx="236" cy="144" r="1.8" />
-      <circle cx="180" cy="212" r="1.8" />
-      <circle cx="236" cy="212" r="1.8" />
-      <circle cx="180" cy="280" r="1.8" />
-      <circle cx="236" cy="280" r="1.8" />
-    </g>
-
-    <!-- brillo de lustre -->
-    <line x1="158" y1="128" x2="150" y2="170" stroke="#fbf7ef" stroke-opacity="0.5" stroke-width="4" stroke-linecap="round" />
-    <line x1="170" y1="128" x2="164" y2="158" stroke="#fbf7ef" stroke-opacity="0.35" stroke-width="3" stroke-linecap="round" />
-
-    <!-- tapa -->
-    <rect
-      x="130"
-      y="98"
-      width="160"
-      height="16"
-      rx="4"
-      fill="url(#hv-madera-os)"
-      stroke="#2e2419"
-      stroke-width="2.5"
-    />
-    <line x1="138" y1="102" x2="282" y2="102" stroke="#c79a5e" stroke-opacity="0.6" stroke-width="1.5" />
-
-    <!-- copete -->
-    <path
-      d="M172 98 Q210 58 248 98"
-      stroke="#2e2419"
-      stroke-width="2.5"
-      fill="none"
-      stroke-linecap="round"
-    />
-    <path
-      d="M186 98 Q210 74 234 98"
-      stroke="#a8763e"
-      stroke-width="2"
-      fill="none"
-      stroke-linecap="round"
-    />
-    <circle cx="210" cy="72" r="5" fill="url(#hv-laton)" stroke="#2e2419" stroke-width="2" />
-    <circle cx="172" cy="96" r="3.5" fill="url(#hv-laton)" stroke="#2e2419" stroke-width="2" />
-    <circle cx="248" cy="96" r="3.5" fill="url(#hv-laton)" stroke="#2e2419" stroke-width="2" />
-
-    <!-- destellos -->
-    <path
-      d="M92 128l2.2 6.2 6.2 2.2-6.2 2.2-2.2 6.2-2.2-6.2-6.2-2.2 6.2-2.2z"
-      fill="#c79a5e"
-    />
-    <path
-      d="M330 288l1.7 4.8 4.8 1.7-4.8 1.7-1.7 4.8-1.7-4.8-4.8-1.7 4.8-1.7z"
-      fill="#c79a5e"
-    />
-    <circle cx="322" cy="150" r="3" fill="#c79a5e" opacity="0.7" />
-    <circle cx="98" cy="300" r="3" fill="#c79a5e" opacity="0.7" />
-  </svg>
-</div>
+  </span>
+</figure>
 
 <style>
-  .hero-visual {
+  .hero-foto {
+    position: relative;
     width: 100%;
     max-width: 26rem;
     margin-inline: auto;
   }
 
-  .hero-visual svg {
+  /* Resplandor cálido detrás, como el de la referencia */
+  .hero-halo {
+    position: absolute;
+    inset: -12% -18%;
+    background: radial-gradient(
+      ellipse at center,
+      rgb(199 154 94 / 38%) 0%,
+      rgb(199 154 94 / 12%) 55%,
+      transparent 72%
+    );
+    pointer-events: none;
+  }
+
+  /* Paspartú + marco de taller */
+  .hero-marco {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--color-linea);
+    outline: 5px solid var(--color-nogal);
+    outline-offset: 7px;
+    border-radius: 2px;
+    background: var(--color-papel);
+    box-shadow:
+      0 1px 2px rgb(59 49 34 / 12%),
+      0 24px 48px -20px rgb(59 49 34 / 35%);
+  }
+
+  .hero-marco img {
     display: block;
     width: 100%;
     height: auto;
   }
 
   @media (min-width: 1024px) {
-    .hero-visual {
+    .hero-foto {
       max-width: none;
     }
   }
