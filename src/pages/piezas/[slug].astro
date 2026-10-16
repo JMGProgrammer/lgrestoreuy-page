@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import VisorPieza from '../../components/VisorPieza.astro';
 import { getPieceBySlug, getSiteSettings } from '../../lib/content';
 import { formatUYU, pieceInquiryMessage, whatsappLink } from '../../lib/whatsapp';
 
@@ -17,9 +18,7 @@ if (!pieza) {
 }
 
 const precio = formatUYU(pieza.precio);
-const principal = pieza.fotos.find((f) => f.rol === 'general') ?? pieza.fotos[0];
-const antes = pieza.fotos.find((f) => f.rol === 'antes');
-const despues = pieza.fotos.find((f) => f.rol === 'despues');
+const portada = pieza.fotos[0]?.url;
 
 const mensaje = pieceInquiryMessage({
   titulo: pieza.titulo,
@@ -32,7 +31,7 @@ const waConsulta = whatsappLink(settings.whatsapp, mensaje);
 <BaseLayout
   title={pieza.titulo}
   description={pieza.descripcion ?? `Pieza restaurada disponible en ${settings.nombre_taller}.`}
-  image={principal?.url}
+  image={portada}
 >
   <section class="mx-auto max-w-6xl px-4 py-10">
     <nav class="text-sm text-tinta-suave" aria-label="Migas de pan">
@@ -44,63 +43,8 @@ const waConsulta = whatsappLink(settings.whatsapp, mensaje);
     </nav>
 
     <div class="mt-8 grid gap-10 lg:grid-cols-[1.15fr_1fr]">
-      <!-- Fotos -->
-      <div>
-        {
-          principal && (
-            <figure class="overflow-hidden rounded border border-linea bg-papel">
-              <img
-                src={principal.url}
-                alt={pieza.titulo}
-                class="aspect-[4/5] w-full object-cover"
-                loading="eager"
-              />
-            </figure>
-          )
-        }
-
-        {
-          (antes || despues) && (
-            <div class="mt-4 grid grid-cols-2 gap-4">
-              {[
-                { foto: antes, etiqueta: 'Antes' },
-                { foto: despues, etiqueta: 'Después' },
-              ].map(({ foto, etiqueta }) =>
-                foto ? (
-                  <figure class="overflow-hidden rounded border border-linea bg-papel">
-                    <img
-                      src={foto.url}
-                      alt={`${pieza.titulo} — ${etiqueta.toLowerCase()}`}
-                      class="aspect-square w-full object-cover"
-                      loading="lazy"
-                    />
-                    <figcaption class="bg-papel-oscuro py-1 text-center text-[0.65rem] uppercase tracking-[0.2em] text-tinta-suave">
-                      {etiqueta}
-                    </figcaption>
-                  </figure>
-                ) : null,
-              )}
-            </div>
-          )
-        }
-
-        {
-          pieza.fotos.length > 1 && (
-            <ul class="mt-4 grid grid-cols-4 gap-3">
-              {pieza.fotos.map((foto) => (
-                <li>
-                  <img
-                    src={foto.url}
-                    alt=""
-                    class="aspect-square w-full rounded border border-linea object-cover"
-                    loading="lazy"
-                  />
-                </li>
-              ))}
-            </ul>
-          )
-        }
-      </div>
+      <!-- Fotos: tira de miniaturas + lupa al hover, estilo ML -->
+      <VisorPieza fotos={pieza.fotos} titulo={pieza.titulo} />
 
       <!-- Datos + consulta -->
       <div class="self-start">

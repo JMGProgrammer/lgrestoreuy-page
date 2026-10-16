@@ -1,0 +1,763 @@
+---
+/**
+ * Visor de fotos de la ficha, estilo Mercado Libre: tira de miniaturas a la
+ * izquierda y foto grande con lupa al pasar el mouse (zoom total que sigue
+ * el cursor). En táctil no hay hover: se cambia tocando las miniaturas.
+ *
+ * Sin dependencias ni inline handlers (la CSP pública no los permite): un
+ * <script> de Astro, que se empaqueta como módulo externo.
+ */
+import type { PiecePhoto } from '../lib/types';
+
+interface Props {
+  fotos: PiecePhoto[];
+  titulo: string;
+}
+
+const { fotos, titulo } = Astro.props;
+
+function etiquetaDe(rol: string): string | null {
+  if (rol === 'antes') return 'Antes';
+  if (rol === 'despues') return 'Después';
+  return null;
+}
+---
+
+{
+  fotos.length === 0 ? (
+    <div class="visor-vacio">
+      <span>Sin fotos todavía</span>
+    </div>
+  ) : (
+    <div class="visor" data-visor>
+      <div class="visor-tira" role="tablist" aria-label={`Fotos de ${titulo}`}>
+        {fotos.map((f, i) => {
+          const etiqueta = etiquetaDe(f.rol);
+          return (
+            <button
+              type="button"
+              role="tab"
+              data-visor-mini={i}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              aria-label={`Ver foto ${i + 1}${etiqueta ? ` (${etiqueta.toLowerCase()})` : ''}`}
+              title={etiqueta ?? `Foto ${i + 1}`}
+              class:list={['visor-mini', i === 0 && 'activa']}
+            >
+              <img src={f.url} alt="" loading="lazy" decoding="async" />
+              {etiqueta && <span class="visor-mini-rol">{etiqueta}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      <figure
+        class="visor-marco"
+        data-visor-marco
+        tabindex="0"
+        role="button"
+        aria-label={`Ampliar fotos de ${titulo}`}
+      >
+        {fotos.map((f, i) => (
+          <img
+            src={f.url}
+            alt={i === 0 ? titulo : `${titulo} — foto ${i + 1}`}
+            class:list={['visor-foto', i === 0 && 'activa']}
+            data-visor-foto={i}
+            data-rol={etiquetaDe(f.rol) ?? ''}
+            aria-hidden={i === 0 ? undefined : 'true'}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            fetchpriority={i === 0 ? 'high' : 'auto'}
+            draggable="false"
+          />
+        ))}
+        <span class="visor-rol" data-visor-rol hidden={!etiquetaDe(fotos[0].rol)}>
+          {etiquetaDe(fotos[0].rol)}
+        </span>
+        {fotos.length > 1 && (
+          <span class="visor-cuenta" data-visor-cuenta aria-live="polite">
+            {`1 / ${fotos.length}`}
+          </span>
+        )}
+        <span class="visor-ampliar" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+          </svg>
+        </span>
+      </figure>
+
+      {/*
+        Vista completa: fondo oscuro, la foto al centro y abajo las flechas
+        con el contador. La cruz arriba a la derecha la cierra.
+      */}
+      <div
+        class="visor-luz"
+        data-visor-luz
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Vista ampliada: ${titulo}`}
+      >
+        <button
+          type="button"
+          class="luz-cerrar"
+          data-visor-cerrar
+          aria-label="Cerrar vista ampliada"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+
+        <figure class="luz-marco" data-visor-luz-marco>
+          {fotos.map((f, i) => (
+            <img
+              src={f.url}
+              alt={`${titulo} — foto ${i + 1}`}
+              class:list={['luz-foto', i === 0 && 'activa']}
+              data-visor-luz-foto={i}
+              aria-hidden={i === 0 ? undefined : 'true'}
+              loading="lazy"
+              decoding="async"
+              draggable="false"
+            />
+          ))}
+        </figure>
+
+        {fotos.length > 1 ? (
+          <div class="luz-barra">
+            <button
+              type="button"
+              class="luz-flecha"
+              data-visor-luz-ant
+              aria-label="Foto anterior"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <span class="luz-cuenta" data-visor-luz-cuenta aria-live="polite">
+              {`1 / ${fotos.length}`}
+            </span>
+            <button
+              type="button"
+              class="luz-flecha"
+              data-visor-luz-sig
+              aria-label="Foto siguiente"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <p class="luz-leyenda">{titulo}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+<style>
+  .visor {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .visor-marco {
+    order: 1;
+    position: relative;
+    margin: 0;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border: 1px solid var(--color-linea);
+    border-radius: var(--radius-card);
+    background-color: var(--color-papel-oscuro);
+    cursor: zoom-in;
+  }
+
+  .visor-tira {
+    order: 2;
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  /* Desktop: tira vertical a la izquierda, como ML */
+  @media (min-width: 1024px) {
+    .visor {
+      grid-template-columns: 5.25rem minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .visor-tira {
+      order: 1;
+      flex-direction: column;
+      overflow-x: visible;
+      overflow-y: auto;
+      max-height: 34rem;
+      padding-bottom: 0;
+    }
+
+    .visor-marco {
+      order: 2;
+    }
+  }
+
+  .visor-mini {
+    position: relative;
+    flex: 0 0 auto;
+    width: 4.5rem;
+    height: 4.5rem;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-linea);
+    border-radius: var(--radius-card);
+    background-color: var(--color-papel-oscuro);
+    cursor: pointer;
+    opacity: 0.72;
+    transition:
+      opacity 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  @media (min-width: 1024px) {
+    .visor-mini {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1;
+    }
+  }
+
+  .visor-mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .visor-mini:hover {
+    opacity: 1;
+  }
+
+  .visor-mini.activa {
+    opacity: 1;
+    border-color: var(--color-latón);
+    box-shadow: 0 0 0 1px var(--color-latón);
+  }
+
+  .visor-mini-rol {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    padding: 0.1rem 0;
+    background: rgb(46 36 25 / 65%);
+    color: var(--color-papel);
+    font-size: 0.5625rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .visor-foto {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 240ms ease;
+  }
+
+  .visor-foto.activa {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Zoom con la rueda: la foto crece y el origen sigue al cursor.
+     El nivel lo pone --zoom desde JS (1 = sin zoom). */
+  .visor-marco[data-zoom] .visor-foto.activa,
+  .luz-marco[data-zoom] .luz-foto.activa {
+    transform: scale(var(--zoom, 2));
+    transform-origin: var(--zx, 50%) var(--zy, 50%);
+    transition: transform-origin 60ms linear;
+  }
+
+  .visor-marco[data-zoom] {
+    cursor: zoom-out;
+  }
+
+  .visor-rol,
+  .visor-cuenta {
+    position: absolute;
+    z-index: 2;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: rgb(46 36 25 / 62%);
+    color: var(--color-papel);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .visor-rol {
+    top: 0.8rem;
+    left: 0.8rem;
+  }
+
+  .visor-rol[hidden] {
+    display: none;
+  }
+
+  .visor-cuenta {
+    right: 0.8rem;
+    bottom: 0.8rem;
+    font-family: var(--font-mono);
+  }
+
+  .visor-vacio {
+    display: flex;
+    aspect-ratio: 4 / 5;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--color-linea);
+    border-radius: var(--radius-card);
+    font-size: 0.875rem;
+    color: var(--color-tinta-tenue);
+  }
+
+  /* Pista de que la foto se puede ampliar */
+  .visor-ampliar {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    background: rgb(251 247 239 / 92%);
+    color: var(--color-tinta);
+    box-shadow: 0 2px 10px rgb(46 36 25 / 30%);
+    opacity: 0;
+    transition: opacity 180ms ease;
+    pointer-events: none;
+  }
+
+  .visor-marco:hover .visor-ampliar,
+  .visor-marco:focus-visible .visor-ampliar {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    .visor-ampliar {
+      opacity: 1;
+    }
+  }
+
+  /* ================= Vista completa ================= */
+
+  .visor-luz {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3.5rem 1rem 1.5rem;
+    background: rgb(22 15 8 / 93%);
+  }
+
+  .visor-luz[hidden] {
+    display: none;
+  }
+
+  .luz-cerrar {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-papel);
+    color: var(--color-tinta);
+    cursor: pointer;
+    transition: transform 140ms ease;
+  }
+
+  .luz-cerrar:hover {
+    transform: scale(1.07);
+  }
+
+  .luz-cerrar:active {
+    transform: scale(0.94);
+  }
+
+  .luz-marco {
+    position: relative;
+    margin: 0;
+    width: min(100%, 62rem);
+    height: min(72vh, 62rem);
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    cursor: zoom-in;
+  }
+
+  .luz-marco[data-zoom] {
+    cursor: zoom-out;
+  }
+
+  .luz-foto {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 240ms ease;
+  }
+
+  .luz-foto.activa {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .luz-barra {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .luz-flecha {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid rgb(251 247 239 / 35%);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--color-papel);
+    cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      transform 120ms ease;
+  }
+
+  .luz-flecha:hover {
+    background: rgb(251 247 239 / 14%);
+  }
+
+  .luz-flecha:active {
+    transform: scale(0.92);
+  }
+
+  .luz-cuenta {
+    min-width: 3.5rem;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    letter-spacing: 0.08em;
+    color: var(--color-papel);
+  }
+
+  .luz-leyenda {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--color-papel);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .visor-foto,
+    .luz-foto,
+    .visor-mini,
+    .luz-cerrar,
+    .luz-flecha {
+      transition: none;
+    }
+
+    /* Sin zoom: con movimiento reducido marearía */
+    .visor-marco[data-zoom] .visor-foto.activa,
+    .luz-marco[data-zoom] .luz-foto.activa {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  /**
+   * Un solo handler para todos los visores (normalmente hay uno por ficha).
+   * El zoom por rueda y la vista completa usan los mismos datos: un índice
+   * único mueve la ficha y la luz a la vez.
+   */
+  function iniciarVisores() {
+    const conMouse =
+      window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const conZoom =
+      conMouse &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const ZOOM_MIN = 1;
+    const ZOOM_MAX = 4;
+    const ZOOM_PASO = 0.5;
+
+    /**
+     * Zoom por rueda sobre un marco. La rueda hacia arriba acerca, hacia
+     * abajo aleja. En los extremos se deja pasar el evento para no robarle
+     * el scroll a la página cuando ya no hay más zoom que dar.
+     */
+    function activarRueda(marco: HTMLElement): () => void {
+      let nivel = ZOOM_MIN;
+
+      const aplicar = () => {
+        if (nivel > ZOOM_MIN) {
+          marco.style.setProperty('--zoom', nivel.toFixed(2));
+          marco.setAttribute('data-zoom', '');
+        } else {
+          marco.removeAttribute('data-zoom');
+        }
+      };
+
+      marco.addEventListener(
+        'wheel',
+        (evento) => {
+          const direccion = -Math.sign(evento.deltaY);
+          if (direccion === 0) return;
+
+          const nuevo = Math.max(
+            ZOOM_MIN,
+            Math.min(ZOOM_MAX, nivel + direccion * ZOOM_PASO),
+          );
+
+          // En el tope se deja escrolear la página con normalidad.
+          if (nuevo === nivel) return;
+
+          evento.preventDefault();
+          nivel = Math.round(nuevo * 100) / 100;
+          aplicar();
+        },
+        { passive: false },
+      );
+
+      return () => {
+        nivel = ZOOM_MIN;
+        aplicar();
+      };
+    }
+
+    /** El origen del zoom sigue al cursor (lupa que mira donde apuntás). */
+    function seguirCursor(marco: HTMLElement) {
+      marco.addEventListener('pointermove', (evento) => {
+        if (evento.pointerType !== 'mouse') return;
+        const caja = marco.getBoundingClientRect();
+        const x = ((evento.clientX - caja.left) / caja.width) * 100;
+        const y = ((evento.clientY - caja.top) / caja.height) * 100;
+        marco.style.setProperty('--zx', `${x.toFixed(1)}%`);
+        marco.style.setProperty('--zy', `${y.toFixed(1)}%`);
+      });
+    }
+
+    document
+      .querySelectorAll<HTMLElement>('[data-visor]:not([data-listo])')
+      .forEach((raiz) => {
+        raiz.dataset.listo = 'si';
+
+        const fotos = Array.from(
+          raiz.querySelectorAll<HTMLImageElement>('[data-visor-foto]'),
+        );
+        const minis = Array.from(
+          raiz.querySelectorAll<HTMLButtonElement>('[data-visor-mini]'),
+        );
+        const marco = raiz.querySelector<HTMLElement>('[data-visor-marco]');
+        const rol = raiz.querySelector<HTMLElement>('[data-visor-rol]');
+        const cuenta = raiz.querySelector<HTMLElement>('[data-visor-cuenta]');
+        if (!marco || fotos.length === 0) return;
+
+        const luz = raiz.querySelector<HTMLElement>('[data-visor-luz]');
+        const luzMarco = raiz.querySelector<HTMLElement>(
+          '[data-visor-luz-marco]',
+        );
+        const luzFotos = Array.from(
+          raiz.querySelectorAll<HTMLImageElement>('[data-visor-luz-foto]'),
+        );
+        const luzCuenta = raiz.querySelector<HTMLElement>(
+          '[data-visor-luz-cuenta]',
+        );
+        const luzAnt =
+          raiz.querySelector<HTMLButtonElement>('[data-visor-luz-ant]');
+        const luzSig =
+          raiz.querySelector<HTMLButtonElement>('[data-visor-luz-sig]');
+        const luzCerrar = raiz.querySelector<HTMLButtonElement>(
+          '[data-visor-cerrar]',
+        );
+
+        let indice = 0;
+        let ultimoFoco: HTMLElement | null = null;
+
+        const resetMarco = conZoom ? activarRueda(marco) : () => {};
+        const resetLuz =
+          conZoom && luzMarco ? activarRueda(luzMarco) : () => {};
+        if (conMouse) {
+          seguirCursor(marco);
+          if (luzMarco) seguirCursor(luzMarco);
+        }
+
+        const irA = (nuevo: number, circular = false) => {
+          indice = circular
+            ? ((nuevo % fotos.length) + fotos.length) % fotos.length
+            : Math.max(0, Math.min(fotos.length - 1, nuevo));
+
+          fotos.forEach((img, i) => {
+            const activa = i === indice;
+            img.classList.toggle('activa', activa);
+            if (activa) img.removeAttribute('aria-hidden');
+            else img.setAttribute('aria-hidden', 'true');
+          });
+
+          luzFotos.forEach((img, i) =>
+            img.classList.toggle('activa', i === indice),
+          );
+
+          minis.forEach((mini, i) => {
+            const activa = i === indice;
+            mini.classList.toggle('activa', activa);
+            mini.setAttribute('aria-selected', activa ? 'true' : 'false');
+          });
+
+          const etiqueta = fotos[indice]?.dataset.rol ?? '';
+          if (rol) {
+            if (etiqueta) {
+              rol.textContent = etiqueta;
+              rol.hidden = false;
+            } else {
+              rol.hidden = true;
+            }
+          }
+
+          const texto = `${indice + 1} / ${fotos.length}`;
+          if (cuenta) cuenta.textContent = texto;
+          if (luzCuenta) luzCuenta.textContent = texto;
+
+          // Cada foto arranca sin zoom.
+          resetMarco();
+          resetLuz();
+        };
+
+        // ------------------------------------------------ vista completa
+
+        const abrirLuz = () => {
+          if (!luz) return;
+          ultimoFoco = document.activeElement as HTMLElement | null;
+          irA(indice);
+          luz.hidden = false;
+          document.body.style.overflow = 'hidden';
+          luzCerrar?.focus();
+        };
+
+        const cerrarLuz = () => {
+          if (!luz || luz.hidden) return;
+          luz.hidden = true;
+          document.body.style.overflow = '';
+          resetLuz();
+          ultimoFoco?.focus?.();
+        };
+
+        marco.addEventListener('click', abrirLuz);
+        marco.addEventListener('keydown', (evento) => {
+          if (evento.key === 'Enter' || evento.key === ' ') {
+            evento.preventDefault();
+            abrirLuz();
+          }
+        });
+
+        luzCerrar?.addEventListener('click', cerrarLuz);
+        luz?.addEventListener('click', (evento) => {
+          // Solo el fondo cierra: la foto y la barra no.
+          if (evento.target === luz) cerrarLuz();
+        });
+
+        luzAnt?.addEventListener('click', (evento) => {
+          evento.stopPropagation();
+          irA(indice - 1, true);
+        });
+        luzSig?.addEventListener('click', (evento) => {
+          evento.stopPropagation();
+          irA(indice + 1, true);
+        });
+
+        document.addEventListener('keydown', (evento) => {
+          if (!luz || luz.hidden) return;
+          if (evento.key === 'Escape') cerrarLuz();
+          else if (evento.key === 'ArrowLeft') irA(indice - 1, true);
+          else if (evento.key === 'ArrowRight') irA(indice + 1, true);
+          else if (evento.key === 'Tab') {
+            // El foco queda dentro de la vista completa.
+            const focos = Array.from(
+              luz.querySelectorAll<HTMLElement>('button:not([disabled])'),
+            );
+            if (focos.length === 0) return;
+            const primero = focos[0];
+            const ultimo = focos[focos.length - 1];
+            if (evento.shiftKey && document.activeElement === primero) {
+              evento.preventDefault();
+              ultimo.focus();
+            } else if (!evento.shiftKey && document.activeElement === ultimo) {
+              evento.preventDefault();
+              primero.focus();
+            }
+          }
+        });
+
+        // ------------------------------------------------ tira
+
+        minis.forEach((mini, i) => {
+          mini.addEventListener('click', () => irA(i));
+          mini.addEventListener('mouseenter', () => {
+            // Como ML: pasar por la mini ya cambia la grande (solo mouse).
+            if (conMouse) irA(i);
+          });
+        });
+
+        // Flechas del teclado dentro de la tira.
+        raiz
+          .querySelector('.visor-tira')
+          ?.addEventListener('keydown', (evento) => {
+            const key = (evento as KeyboardEvent).key;
+            let destino: number | null = null;
+            if (key === 'ArrowDown' || key === 'ArrowRight') destino = indice + 1;
+            else if (key === 'ArrowUp' || key === 'ArrowLeft') destino = indice - 1;
+            else if (key === 'Home') destino = 0;
+            else if (key === 'End') destino = fotos.length - 1;
+            if (destino === null) return;
+            evento.preventDefault();
+            irA(destino);
+            minis[Math.max(0, Math.min(fotos.length - 1, destino))]?.focus();
+          });
+      });
+  }
+
+  // Si se navega con la luz abierta, se cierra y se libera el scroll.
+  document.addEventListener('astro:page-load', () => {
+    document
+      .querySelectorAll<HTMLElement>('[data-visor-luz]:not([hidden])')
+      .forEach((luz) => {
+        luz.hidden = true;
+      });
+    document.body.style.overflow = '';
+  });
+
+  document.addEventListener('astro:page-load', iniciarVisores);
+  iniciarVisores();
+</script>
