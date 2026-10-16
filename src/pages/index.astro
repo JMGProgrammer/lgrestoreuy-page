@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Comparador from '../components/Comparador.astro';
 import FondoPortada from '../components/FondoPortada.astro';
-import AnilloPiezas from '../components/AnilloPiezas.astro';
+import CarruselPiezas from '../components/CarruselPiezas.astro';
 import TarjetaPieza from '../components/TarjetaPieza.astro';
 import TarjetaServicio from '../components/TarjetaServicio.astro';
 import {
@@ -54,14 +54,12 @@ const comparables = gallery.map((item) => ({
     <FondoPortada url={portadaUrl} />
 
     {/*
-      Texto centrado con el anillo de piezas orbitando alrededor, en
-      sentido horario. Sin piezas no hay anillo: solo el texto.
+      Texto centrado y debajo el carrusel 3D de piezas: cards
+      horizontales con perspectiva que giran en sentido horario.
     */}
     <div
-      class="relative z-10 mx-auto max-w-6xl px-4 py-14 sm:py-20 lg:min-h-[calc(100svh-var(--alto-header))] lg:py-24"
+      class="relative z-10 mx-auto max-w-6xl px-4 py-14 sm:py-20 lg:py-24"
     >
-      <AnilloPiezas piezas={orbitar} />
-
       <div class="hero-nucleo relative mx-auto max-w-2xl text-center">
         <p class="rotulo">Restauración de muebles y antigüedades</p>
         <h1
@@ -116,6 +114,10 @@ const comparables = gallery.map((item) => ({
           }
         </dl>
       </div>
+    </div>
+
+    <div class="relative z-10 pb-14 sm:pb-20">
+      <CarruselPiezas piezas={orbitar} />
     </div>
   </section>
 

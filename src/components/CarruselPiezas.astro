@@ -1,0 +1,184 @@
+---
+/**
+ * Carrusel 3D de piezas para el hero: cards horizontales en un anillo con
+ * perspectiva que gira en sentido horario. Cada card real muestra foto +
+ * título + precio y lleva a su ficha; si hay menos de 8 piezas se completa
+ * con marcos vacíos neutros (sin fotos inventadas) hasta ser 8.
+ *
+ * Puro CSS, sin JavaScript: el anillo rota en Y y las cards lo acompañan
+ * (esa es la perspectiva: las de atrás se ven de costado). Al pasar el
+ * mouse o tabular se frena para poder cliquear.
+ */
+import { formatUYU } from '../lib/whatsapp';
+import type { PieceWithPhotos } from '../lib/types';
+
+interface Props {
+  piezas: PieceWithPhotos[];
+}
+
+const TOTAL = 8;
+
+const { piezas } = Astro.props;
+const reales = piezas.filter((p) => p.fotos.length > 0).slice(0, TOTAL);
+const vacias = Math.max(0, TOTAL - reales.length);
+---
+
+<div class="carrusel3d">
+  <div class="anillo3d">
+    {reales.map((pieza, i) => {
+      const foto = pieza.fotos[0];
+      const precio = formatUYU(pieza.precio);
+      return (
+        <div class="pos3d" style={`--gi:${(i * 360) / TOTAL}deg`}>
+          <a
+            class="cara cara--foto"
+            href={`/piezas/${pieza.slug}`}
+            title={precio ? `${pieza.titulo} — ${precio}` : pieza.titulo}
+            aria-label={`Ver ficha de ${pieza.titulo}`}
+          >
+            <img src={foto.url} alt="" loading="lazy" decoding="async" />
+            <span class="cara-pie">
+              <span class="cara-titulo">{pieza.titulo}</span>
+              {precio && <span class="cara-precio">{precio}</span>}
+            </span>
+          </a>
+        </div>
+      );
+    })}
+    {Array.from({ length: vacias }, (_, k) => (
+      <div class="pos3d" style={`--gi:${(((reales.length + k) * 360) / TOTAL).toFixed(1)}deg`}>
+        <a
+          class="cara cara--vacia"
+          href="/piezas"
+          aria-label="Ver piezas en venta"
+        >
+          <span class="cara-vacia-texto">Próximamente</span>
+        </a>
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .carrusel3d {
+    --ancho-cara: 16.5rem;
+    --alto-cara: 11.5rem;
+    --rz: 20rem;
+    perspective: 87.5rem;
+    overflow: hidden;
+  }
+
+  .anillo3d {
+    position: relative;
+    height: 19rem;
+    transform-style: preserve-3d;
+    animation: giro-y 55s linear infinite;
+  }
+
+  .pos3d {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: rotateY(var(--gi)) translateZ(var(--rz));
+  }
+
+  .cara {
+    display: block;
+    width: var(--ancho-cara);
+    height: var(--alto-cara);
+    margin-left: calc(var(--ancho-cara) / -2);
+    margin-top: calc(var(--alto-cara) / -2);
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .cara--foto {
+    border: 1px solid var(--color-linea);
+    background: var(--color-papel);
+    color: inherit;
+    text-decoration: none;
+    box-shadow: 0 18px 36px -18px rgb(59 49 34 / 50%);
+  }
+
+  .cara--foto img {
+    display: block;
+    width: 100%;
+    height: calc(var(--alto-cara) - 3.2rem);
+    object-fit: cover;
+  }
+
+  .cara-pie {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.45rem 0.7rem;
+  }
+
+  .cara-titulo {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-tinta);
+  }
+
+  .cara-precio {
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--color-latón);
+  }
+
+  .cara--vacia {
+    display: grid;
+    place-items: center;
+    border: 1.5px dashed var(--color-latón);
+    background: rgb(251 247 239 / 55%);
+  }
+
+  .cara-vacia-texto {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-tinta-tenue);
+  }
+
+  @keyframes giro-y {
+    to {
+      transform: rotateY(-360deg);
+    }
+  }
+
+  /* Quietos al pasar el mouse o tabular: si no, no hay quién cliquee */
+  .carrusel3d:hover .anillo3d,
+  .carrusel3d:focus-within .anillo3d {
+    animation-play-state: paused;
+  }
+
+  @media (max-width: 40rem) {
+    .carrusel3d {
+      --ancho-cara: 12.5rem;
+      --alto-cara: 9.5rem;
+      --rz: 15.5rem;
+    }
+
+    .anillo3d {
+      height: 15rem;
+    }
+
+    .cara--foto img {
+      height: calc(var(--alto-cara) - 2.9rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .anillo3d {
+      animation: none;
+    }
+  }
+</style>
