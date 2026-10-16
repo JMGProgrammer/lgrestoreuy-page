@@ -170,13 +170,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
     }
   }
 
-  /* Quietos al pasar el mouse o tabular: si no, no hay quién cliquee */
-  .carrusel3d:hover .anillo3d,
-  .carrusel3d:focus-within .anillo3d,
-  :global(.escenario:hover) .anillo3d,
-  :global(.escenario:focus-within) .anillo3d {
-    animation-play-state: paused;
-  }
+  /* El giro no se detiene: ni hover ni foco lo frenan. */
 
   @media (max-width: 40rem) {
     .carrusel3d {
