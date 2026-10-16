@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Imagen from '../components/Imagen.astro';
 import Comparador from '../components/Comparador.astro';
 import FondoPortada from '../components/FondoPortada.astro';
+import TarjetaPieza from '../components/TarjetaPieza.astro';
 import {
   getServices,
   getPieces,
@@ -10,7 +10,7 @@ import {
   getSiteSettings,
   MODO_DEMO,
 } from '../lib/content';
-import { formatPriceRange, formatUYU } from '../lib/whatsapp';
+import { formatPriceRange } from '../lib/whatsapp';
 
 const [services, pieces, gallery, settings] = await Promise.all([
   getServices(),
@@ -22,7 +22,6 @@ const [services, pieces, gallery, settings] = await Promise.all([
 // Si la base todavía no tiene las columnas de la 0004, la web sigue
 // entrando: salen undefined y el fondo cae a la textura de CSS.
 const portadaUrl = settings.portada_url ?? null;
-
 /**
  * Pares antes/después para el comparador. Sin trabajos cargados queda vacío y
  * el comparador dibuja su propio estado vacío: dos tonos neutros, oscuro y
@@ -36,8 +35,6 @@ const comparables = gallery.map((item) => ({
   etiqueta: item.tag_servicio,
 }));
 
-const precioPieza = (p: (typeof pieces)[number]) =>
-  formatUYU(p.precio) ?? 'A consultar';
 ---
 
 <BaseLayout>
@@ -188,38 +185,11 @@ const precioPieza = (p: (typeof pieces)[number]) =>
           <div class="rule-dorada my-6"></div>
 
           <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {pieces.map((pieza) => {
-              const foto = pieza.fotos[0];
-              return (
-                <li>
-                  <a
-                    href={`/piezas/${pieza.slug}`}
-                    class="group block overflow-hidden rounded border border-linea bg-lino transition-colors hover:border-latón"
-                  >
-                    {foto ? (
-                      <Imagen
-                        src={foto.url}
-                        alt={pieza.titulo}
-                        ratio="4 / 5"
-                        class="transition-transform duration-500 group-hover:scale-[1.04]"
-                      />
-                    ) : (
-                      <div class="flex aspect-[4/5] items-center justify-center bg-papel-oscuro text-xs text-tinta-tenue">
-                        Sin foto
-                      </div>
-                    )}
-                    <div class="p-4">
-                      <h3 class="font-display text-lg text-tinta">
-                        {pieza.titulo}
-                      </h3>
-                      <p class="mt-1 text-sm text-latón">
-                        {precioPieza(pieza)}
-                      </p>
-                    </div>
-                  </a>
-                </li>
-              );
-            })}
+            {pieces.map((pieza) => (
+              <li>
+                <TarjetaPieza pieza={pieza} whatsapp={settings.whatsapp} />
+              </li>
+            ))}
           </ul>
         </div>
       </section>

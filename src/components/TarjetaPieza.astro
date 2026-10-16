@@ -1,0 +1,561 @@
+---
+/**
+ * Tarjeta de pieza para la vitrina (/piezas y home).
+ *
+ * La card anterior era solo foto + título + precio: no decía nada de la
+ * pieza (medidas, ubicación, cuántas fotos tiene) y obligaba a entrar a la
+ * ficha para cualquier acción. Esta muestra lo necesario para decidir si
+ * vale el click y deja consultar por WhatsApp sin entrar.
+ *
+ * Solo muestra datos reales: cada insignia y cada fila existen únicamente
+ * cuando la pieza trae ese dato (ver Decisions 2026-10-14, sin relleno).
+ */
+import { formatUYU, pieceInquiryMessage, whatsappLink } from '../lib/whatsapp';
+import type { PieceWithPhotos } from '../lib/types';
+
+interface Props {
+  pieza: PieceWithPhotos;
+  /** Teléfono del taller (site_settings.whatsapp). Sin número no hay botón. */
+  whatsapp: string | null | undefined;
+}
+
+const { pieza, whatsapp } = Astro.props;
+
+const totalFotos = pieza.fotos.length;
+const meta = [pieza.medidas, pieza.ubicacion].filter(Boolean).join(' · ');
+
+const waHref = whatsappLink(
+  whatsapp,
+  pieceInquiryMessage({
+    titulo: pieza.titulo,
+    precio: pieza.precio,
+    url: new URL(`/piezas/${pieza.slug}`, Astro.url.origin).toString(),
+  }),
+);
+---
+
+<article class="tarjeta-pieza textura-papel sombra-vintage">
+  {/*
+    Carrusel sin entrar a la ficha: las fotos van apiladas y las flechas
+    cambian cuál se ve. Las flechas son hermanas del enlace, no hijas: un
+    <button> dentro de un <a> navegaría igual al hacer click.
+  */}
+  <div class="foto-pieza" data-carrusel>
+    <a
+      href={`/piezas/${pieza.slug}`}
+      class="foto-enlace"
+      aria-label={`Ver ficha de ${pieza.titulo}`}
+      tabindex="0"
+    >
+      {
+        totalFotos > 0 ? (
+          pieza.fotos.map((f, i) => (
+            <img
+              src={f.url}
+              alt={i === 0 ? pieza.titulo : `${pieza.titulo} — foto ${i + 1}`}
+              class:list={['foto-pieza-img', i === 0 && 'activa']}
+              data-foto={i}
+              aria-hidden={i === 0 ? undefined : 'true'}
+              loading="lazy"
+              decoding="async"
+            />
+          ))
+        ) : (
+          <div class="foto-pieza-vacia">
+            <span>Sin foto todavía</span>
+          </div>
+        )
+      }
+
+      {
+        pieza.categoria && (
+          <span class="insignia insignia-categoria">{pieza.categoria}</span>
+        )
+      }
+      {
+        pieza.destacada && (
+          <span class="insignia insignia-destacada">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.2l7.1-.6z" />
+            </svg>
+            Destacada
+          </span>
+        )
+      }
+
+      <span class="velo-ficha" aria-hidden="true">
+        {
+          totalFotos > 1 && (
+            <span class="cuenta-fotos">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+              <span data-cuenta>{`1 / ${totalFotos}`}</span>
+            </span>
+          )
+        }
+        <span class="ver-ficha">
+          Ver ficha
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h13M12 5l7 7-7 7" />
+          </svg>
+        </span>
+      </span>
+    </a>
+
+    {
+      totalFotos > 1 && (
+        <>
+          <button
+            type="button"
+            class="flecha-carrusel flecha-carrusel--izq"
+            data-carrusel-ant
+            aria-label={`Foto anterior de ${pieza.titulo}`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="flecha-carrusel flecha-carrusel--der"
+            data-carrusel-sig
+            aria-label={`Foto siguiente de ${pieza.titulo}`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </>
+      )
+    }
+  </div>
+
+  <div class="cuerpo-pieza">
+    <h3 class="titulo-pieza">
+      <a href={`/piezas/${pieza.slug}`}>{pieza.titulo}</a>
+    </h3>
+
+    {
+      meta && (
+        <p class="meta-pieza" title={meta}>
+          {meta}
+        </p>
+      )
+    }
+
+    {
+      pieza.descripcion && (
+        <p class="desc-pieza">{pieza.descripcion}</p>
+      )
+    }
+
+    <div class="pie-pieza">
+      <p class="precio-pieza">{formatUYU(pieza.precio) ?? 'A consultar'}</p>
+      <div class="acciones-pieza">
+        {
+          waHref && (
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-wa-icono"
+              aria-label={`Consultar por ${pieza.titulo} en WhatsApp`}
+              title="Consultar por WhatsApp"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.45c.9.34 1.84.57 2.8.7A2 2 0 0 1 22 16.9z" />
+              </svg>
+            </a>
+          )
+        }
+        <a href={`/piezas/${pieza.slug}`} class="btn-ficha">
+          Ver
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h13M12 5l7 7-7 7" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</article>
+
+<style>
+  .tarjeta-pieza {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-linea);
+    border-radius: var(--radius-card);
+    transition:
+      transform 220ms cubic-bezier(0.2, 0, 0, 1),
+      border-color 180ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .tarjeta-pieza:hover,
+  .tarjeta-pieza:focus-within {
+    transform: translateY(-4px);
+    border-color: var(--color-latón);
+  }
+
+  /* Foto con velo inferior: en desktop aparece al hover, en táctil siempre */
+  .foto-pieza {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    background-color: var(--color-papel-oscuro);
+  }
+
+  .foto-enlace {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Carrusel: las fotos van apiladas, solo la activa se ve */
+  .foto-pieza-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 260ms ease,
+      transform 500ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .foto-pieza-img.activa {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .tarjeta-pieza:hover .foto-pieza-img.activa,
+  .tarjeta-pieza:focus-within .foto-pieza-img.activa {
+    transform: scale(1.05);
+  }
+
+  /* Flechas del carrusel: siempre visibles en táctil, al hover en desktop */
+  .flecha-carrusel {
+    position: absolute;
+    top: 50%;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgb(251 247 239 / 92%);
+    color: var(--color-tinta);
+    box-shadow: 0 2px 10px rgb(46 36 25 / 30%);
+    cursor: pointer;
+    opacity: 0;
+    transition:
+      opacity 180ms ease,
+      transform 140ms ease;
+  }
+
+  .flecha-carrusel--izq {
+    left: 0.6rem;
+    transform: translateY(-50%) translateX(-4px);
+  }
+
+  .flecha-carrusel--der {
+    right: 0.6rem;
+    transform: translateY(-50%) translateX(4px);
+  }
+
+  .tarjeta-pieza:hover .flecha-carrusel,
+  .tarjeta-pieza:focus-within .flecha-carrusel {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  .flecha-carrusel:hover {
+    background: var(--color-papel);
+  }
+
+  .flecha-carrusel:active {
+    transform: translateY(-50%) scale(0.92);
+  }
+
+  @media (hover: none) {
+    .flecha-carrusel {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+  }
+
+  .foto-pieza-vacia {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--color-tinta-tenue);
+  }
+
+  .insignia {
+    position: absolute;
+    top: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .insignia-categoria {
+    left: 0.75rem;
+    background-color: rgb(251 247 239 / 94%);
+    color: var(--color-tinta);
+    border: 1px solid var(--color-linea);
+  }
+
+  .insignia-destacada {
+    right: 0.75rem;
+    background-color: var(--color-latón);
+    color: #fff8ec;
+  }
+
+  .velo-ficha {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 1.6rem 0.9rem 0.7rem;
+    background: linear-gradient(transparent, rgb(46 36 25 / 78%));
+    color: var(--color-papel);
+    font-size: 0.8125rem;
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 220ms ease,
+      transform 220ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .tarjeta-pieza:hover .velo-ficha,
+  .tarjeta-pieza:focus-within .velo-ficha {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Sin hover no hay forma de verlo: en táctil va siempre visible */
+  @media (hover: none) {
+    .velo-ficha {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .cuenta-fotos {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 500;
+  }
+
+  .ver-ficha {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
+  }
+
+  .cuerpo-pieza {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 1.1rem 1.1rem 1rem;
+  }
+
+  .titulo-pieza {
+    font-size: 1.25rem;
+    line-height: 1.25;
+  }
+
+  .titulo-pieza a:hover {
+    color: var(--color-caoba);
+  }
+
+  .meta-pieza {
+    margin-top: 0.3rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--color-tinta-tenue);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .desc-pieza {
+    margin-top: 0.55rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-tinta-suave);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .pie-pieza {
+    margin-top: auto;
+    padding-top: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-top: 1px solid var(--color-linea);
+  }
+
+  /* Separa el precio del bloque de arriba cuando no hay descripción */
+  .cuerpo-pieza > .pie-pieza:first-child {
+    margin-top: 0.9rem;
+  }
+
+  .titulo-pieza + .pie-pieza,
+  .meta-pieza + .pie-pieza,
+  .desc-pieza + .pie-pieza {
+    margin-top: 0.9rem;
+  }
+
+  .precio-pieza {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    color: var(--color-latón);
+    white-space: nowrap;
+  }
+
+  .acciones-pieza {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-ficha {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--color-latón);
+    border-radius: var(--radius-card);
+    color: var(--color-caoba);
+    padding: 0.45rem 0.9rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition:
+      background-color 180ms ease,
+      transform 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .btn-ficha:hover {
+    background-color: rgb(168 118 62 / 12%);
+    transform: translateY(-1px);
+  }
+
+  .btn-wa-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: var(--radius-card);
+    background-color: #1f7a4d;
+    color: #fff;
+    transition:
+      background-color 180ms ease,
+      transform 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .btn-wa-icono:hover {
+    background-color: #196140;
+    transform: translateY(-1px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tarjeta-pieza,
+    .foto-pieza-img,
+    .velo-ficha,
+    .flecha-carrusel,
+    .btn-ficha,
+    .btn-wa-icono {
+      transition: none;
+      transform: none;
+    }
+
+    .velo-ficha,
+    .flecha-carrusel {
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  /**
+   * Carrusel de las cards: cambia la foto visible sin entrar a la ficha.
+   * Un solo handler para todas las tarjetas (Astro deduplica el script).
+   */
+  function iniciarCarruseles() {
+    document
+      .querySelectorAll<HTMLElement>('[data-carrusel]:not([data-listo])')
+      .forEach((raiz) => {
+        raiz.dataset.listo = 'si';
+
+        const fotos = Array.from(
+          raiz.querySelectorAll<HTMLImageElement>('[data-foto]'),
+        );
+        if (fotos.length < 2) return;
+
+        const anterior =
+          raiz.querySelector<HTMLButtonElement>('[data-carrusel-ant]');
+        const siguiente =
+          raiz.querySelector<HTMLButtonElement>('[data-carrusel-sig]');
+        const cuenta = raiz.querySelector<HTMLElement>('[data-cuenta]');
+        if (!anterior || !siguiente) return;
+
+        let indice = 0;
+
+        const irA = (nuevo: number) => {
+          // Vuelta completa: con 2 fotos el ida y vuelta es lo natural.
+          indice = ((nuevo % fotos.length) + fotos.length) % fotos.length;
+
+          fotos.forEach((img, i) => {
+            const activa = i === indice;
+            img.classList.toggle('activa', activa);
+            if (activa) img.removeAttribute('aria-hidden');
+            else img.setAttribute('aria-hidden', 'true');
+          });
+
+          if (cuenta) cuenta.textContent = `${indice + 1} / ${fotos.length}`;
+        };
+
+        anterior.addEventListener('click', () => irA(indice - 1));
+        siguiente.addEventListener('click', () => irA(indice + 1));
+
+        // Flechas del teclado cuando el foco está en la foto.
+        raiz.addEventListener('keydown', (evento) => {
+          if (evento.key === 'ArrowLeft') {
+            irA(indice - 1);
+            evento.preventDefault();
+          } else if (evento.key === 'ArrowRight') {
+            irA(indice + 1);
+            evento.preventDefault();
+          }
+        });
+      });
+  }
+
+  document.addEventListener('astro:page-load', iniciarCarruseles);
+  iniciarCarruseles();
+</script>

@@ -1,11 +1,14 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCategorias, getPieces } from '../../lib/content';
-import { formatUYU } from '../../lib/whatsapp';
+import TarjetaPieza from '../../components/TarjetaPieza.astro';
+import { getCategorias, getPieces, getSiteSettings } from '../../lib/content';
 
 const categoria = Astro.url.searchParams.get('categoria');
-const categorias = await getCategorias();
-const piezas = await getPieces({ categoria: categoria ?? undefined });
+const [categorias, piezas, settings] = await Promise.all([
+  getCategorias(),
+  getPieces({ categoria: categoria ?? undefined }),
+  getSiteSettings(),
+]);
 ---
 
 <BaseLayout
@@ -69,40 +72,11 @@ const piezas = await getPieces({ categoria: categoria ?? undefined });
         </div>
       ) : (
         <ul class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {piezas.map((pieza) => {
-            const foto = pieza.fotos[0];
-            return (
-              <li>
-                <a
-                  href={`/piezas/${pieza.slug}`}
-                  class="group block overflow-hidden rounded border border-linea bg-papel transition-colors hover:border-latón"
-                >
-                  <div class="aspect-[4/5] overflow-hidden bg-papel-oscuro">
-                    {foto ? (
-                      <img
-                        src={foto.url}
-                        alt={pieza.titulo}
-                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div class="flex h-full items-center justify-center text-xs text-tinta-tenue">
-                        Sin foto
-                      </div>
-                    )}
-                  </div>
-                  <div class="p-5">
-                    <h2 class="font-display text-xl text-tinta">
-                      {pieza.titulo}
-                    </h2>
-                    <p class="mt-1 font-display text-lg text-latón">
-                      {formatUYU(pieza.precio) ?? 'Consultar'}
-                    </p>
-                  </div>
-                </a>
-              </li>
-            );
-          })}
+          {piezas.map((pieza) => (
+            <li>
+              <TarjetaPieza pieza={pieza} whatsapp={settings.whatsapp} />
+            </li>
+          ))}
         </ul>
       )
     }

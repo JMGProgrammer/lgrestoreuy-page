@@ -105,6 +105,12 @@
   --radius-ui-pill: 999px;
 }
 
+/* Radio de tarjetas y botones públicos. Los .btn-* y .campo ya lo usan;
+   sin esta línea el var queda sin definir y van cuadrados. */
+@theme {
+  --radius-card: 0.375rem;
+}
+
 /* =====================================================================
    Navegación entre páginas
 
