@@ -3,6 +3,7 @@
  * Se carga una sola vez desde AdminLayout.
  */
 import Alpine from 'alpinejs';
+import { reducirInput } from './imagen';
 
 export { Alpine };
 
@@ -222,6 +223,61 @@ function instalarGuardNavegacion() {
 }
 
 /**
+ * Compresión de fotos del panel antes de enviar el formulario.
+ *
+ * Los formularios del admin son POST multipart clásicos al servidor: sin
+ * esto, la foto viaja en crudo (3840 px / 3,7 MB) y el servidor la guarda
+ * tal cual. Al interceptar el submit y achicar en el dispositivo, el servidor
+ * recibe ~300 KB y no hay que cambiar nada del lado de Supabase.
+ *
+ * Si la compresión falla por lo que sea, el formulario se manda igual con
+ * los archivos originales: el servidor valida tipo y tamaño como siempre.
+ */
+function instalarCompresionImagenes() {
+  const MAX_LADO = 1920;
+  const CALIDAD = 0.82;
+
+  document.addEventListener('submit', async (evento) => {
+    const form = evento.target as HTMLFormElement | null;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (form.dataset.comprimiendo === '1') return;
+
+    const inputs = Array.from(
+      form.querySelectorAll<HTMLInputElement>('input[type="file"]'),
+    ).filter((input) => input.files && input.files.length > 0);
+
+    if (inputs.length === 0) return;
+
+    evento.preventDefault();
+    form.dataset.comprimiendo = '1';
+
+    const boton = form.querySelector<HTMLButtonElement>(
+      'button[type="submit"]',
+    );
+    const textoOriginal = boton?.textContent ?? '';
+    if (boton) {
+      boton.disabled = true;
+      boton.textContent = 'Achicando fotos…';
+    }
+
+    try {
+      for (const input of inputs) {
+        await reducirInput(input, MAX_LADO, CALIDAD);
+      }
+    } catch {
+      // Se manda el formulario igual con los originales.
+    } finally {
+      if (boton) {
+        boton.disabled = false;
+        boton.textContent = textoOriginal;
+      }
+      delete form.dataset.comprimiendo;
+      form.submit();
+    }
+  });
+}
+
+/**
  * Alpine arranca recién en DOMContentLoaded. Los scripts de Astro son módulos
  * diferidos: se ejecutan todos antes de ese evento, así que cada página
  * registra sus componentes en el orden que quiera.
@@ -230,6 +286,7 @@ document.addEventListener(
   'DOMContentLoaded',
   () => {
     instalarGuardNavegacion();
+    instalarCompresionImagenes();
     Alpine.start();
   },
   { once: true },

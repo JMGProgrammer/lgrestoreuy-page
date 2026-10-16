@@ -118,7 +118,7 @@ const tiposMueble = [
               </svg>
               <span class="text-sm text-tinta-suave">Tocá para elegir fotos</span>
               <span class="text-xs text-tinta-tenue">
-                JPG o PNG. Se suben junto con la solicitud.
+                JPG, PNG o WebP. Se achican solas antes de subir.
               </span>
             </label>
             <input
@@ -228,6 +228,7 @@ const tiposMueble = [
 
 <script>
   import { getSupabase } from '../lib/supabase/browser';
+  import { reducirImagen } from '../scripts/imagen';
 
   const form = document.getElementById('form-cotizacion') as HTMLFormElement | null;
   const aviso = document.getElementById('aviso');
@@ -334,10 +335,20 @@ async function subirFotos(): Promise<string[]> {
       throw new Error('Solo se aceptan imágenes JPG, PNG, WebP o GIF de hasta 8 MB.');
     }
 
+    // Las fotos del celular salen en 4000 px y pesan varios MB: se achican
+    // a 1600 px en el dispositivo antes de subir, para no quemar los datos
+    // de quien cotiza. Si alguna falla, se sube la original.
+    const reducidos = await Promise.all(
+      validos.map(async (archivo) => {
+        const { archivo: final } = await reducirImagen(archivo, 1600, 0.8);
+        return final;
+      }),
+    );
+
     const supabase = getSupabase();
     const rutas: string[] = [];
 
-    for (const archivo of validos) {
+    for (const archivo of reducidos) {
       const nombreLimpio = archivo.name.replace(/[^\w.-]/g, '_');
       const ruta = `pendientes/${crypto.randomUUID()}-${nombreLimpio}`;
 
