@@ -24,6 +24,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
 ---
 
 <div class="carrusel3d" data-carrusel3d>
+  <div class="inclinacion">
   <div class="anillo3d" data-anillo3d>
     {reales.map((pieza, i) => {
       const foto = pieza.fotos[0];
@@ -61,6 +62,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
       </div>
     ))}
   </div>
+  </div>
 </div>
 
 <style>
@@ -74,9 +76,19 @@ const vacias = Math.max(0, TOTAL - reales.length);
 
   .anillo3d {
     position: relative;
-    height: 21rem;
+    height: 34rem;
     transform-style: preserve-3d;
     animation: giro-y 55s linear infinite;
+  }
+
+  /*
+    Inclinación de noria: el frente baja y el fondo sube, así las cards
+    enmarcan el texto (arriba, costados, abajo) en vez de cruzarlo por
+    el medio. Va en un envoltorio porque la animación pisa el transform.
+  */
+  .inclinacion {
+    transform: rotateX(-16deg);
+    transform-style: preserve-3d;
   }
 
   .pos3d {
@@ -174,7 +186,11 @@ const vacias = Math.max(0, TOTAL - reales.length);
     }
 
     .anillo3d {
-      height: 16rem;
+      height: 18rem;
+    }
+
+    .inclinacion {
+      transform: rotateX(-10deg);
     }
 
     .cara--foto img {
