@@ -59,7 +59,7 @@ const comparables = gallery.map((item) => ({
       (lo hace el script del carrusel) para no tapar la info.
     */}
     <div class="escenario relative">
-      <div class="relative py-10 sm:py-14">
+      <div class="marco-carrusel relative py-10 sm:py-14">
         <CarruselPiezas piezas={orbitar} />
       </div>
 
@@ -314,6 +314,13 @@ const comparables = gallery.map((item) => ({
     flex-direction: column;
     justify-content: center;
     min-height: calc(100svh - var(--alto-header));
+    /* Compensa la subida del contenido: la sección mide lo mismo. */
+    padding-bottom: 3rem;
+  }
+
+  /* Todo el contenido sube junto: anillo por margen, texto por translate. */
+  .marco-carrusel {
+    margin-top: -3rem;
   }
 
   .velo-texto {
@@ -324,6 +331,7 @@ const comparables = gallery.map((item) => ({
     place-items: center;
     padding-block: 1rem;
     pointer-events: none;
+    translate: 0 -3rem;
   }
 
   .velo-texto a,
