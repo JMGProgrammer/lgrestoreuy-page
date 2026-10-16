@@ -82,8 +82,11 @@ const vacias = Math.max(0, TOTAL - reales.length);
     --ancho-cara: 22rem;
     --alto-cara: 14.5rem;
     --rz: 34rem;
+    --tilt: -24deg;
     perspective: 150rem;
     overflow: hidden;
+    /* El anillo sube un poco para que abajo no se corte. */
+    translate: 0 -2rem;
   }
 
   .anillo3d {
@@ -99,7 +102,7 @@ const vacias = Math.max(0, TOTAL - reales.length);
     el medio. Va en un envoltorio porque la animación pisa el transform.
   */
   .inclinacion {
-    transform: rotateX(-28deg);
+    transform: rotateX(var(--tilt));
     transform-style: preserve-3d;
   }
 
@@ -235,14 +238,11 @@ const vacias = Math.max(0, TOTAL - reales.length);
       --ancho-cara: 13.5rem;
       --alto-cara: 10.5rem;
       --rz: 19rem;
+      --tilt: -10deg;
     }
 
     .anillo3d {
       height: 18rem;
-    }
-
-    .inclinacion {
-      transform: rotateX(-10deg);
     }
 
     .cara-frente--foto img {
