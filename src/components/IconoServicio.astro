@@ -1,0 +1,90 @@
+---
+/**
+ * Icono de oficio para las tarjetas de servicios.
+ *
+ * El servicio trae `icono` como texto libre (lo carga el cliente en /admin).
+ * Se reconoce el vocabulario conocido y todo lo demás cae a un mueble
+ * genérico: nunca se rompe por un valor inesperado.
+ */
+interface Props {
+  nombre: string | null | undefined;
+}
+
+const { nombre } = Astro.props;
+
+const clave = (nombre ?? '').trim().toLowerCase();
+
+const esMartillo = ['hammer', 'martillo', 'maza', 'estructura'].includes(clave);
+const esBrillo = ['sparkles', 'brillo', 'lustre', 'barniz'].includes(clave);
+const esPincel = ['paintbrush', 'pincel', 'pintura', 'laca'].includes(clave);
+const esReloj = ['clock', 'reloj', 'antiguedad', 'época', 'epoca'].includes(clave);
+---
+
+<span class="medallon" aria-hidden="true">
+  {
+    esMartillo ? (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6.5" y="2.5" width="11" height="6" rx="1" />
+        <path d="M12 8.5V21" />
+        <path d="M9.5 21h5" />
+      </svg>
+    ) : esBrillo ? (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l1.9 5.4L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.6z" />
+        <path d="M19 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" />
+      </svg>
+    ) : esPincel ? (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.5 3.5l6 6-2.2 2.2-6-6z" />
+        <path d="M12.3 7.7 3.5 16.5l4 4 8.8-8.8" />
+        <path d="M3.5 16.5 2 22l5.5-1.5" />
+      </svg>
+    ) : esReloj ? (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="13" r="8" />
+        <path d="M12 9.5V13l3 2" />
+        <path d="M9.5 2.5h5" />
+      </svg>
+    ) : (
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 3v8h10" />
+        <path d="M7 11v9M17 11v9" />
+        <path d="M7 15.5h10" />
+      </svg>
+    )
+  }
+</span>
+
+<style>
+  .medallon {
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    flex: 0 0 auto;
+    border: 1.5px solid var(--color-latón);
+    border-radius: 999px;
+    background: var(--color-papel);
+    color: var(--color-nogal);
+    transition:
+      background-color 200ms ease,
+      color 200ms ease,
+      transform 220ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  :global(.tarjeta-servicio:hover) .medallon {
+    background: var(--color-nogal);
+    color: var(--color-papel);
+    transform: rotate(-6deg) scale(1.05);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .medallon {
+      transition: none;
+    }
+
+    :global(.tarjeta-servicio:hover) .medallon {
+      transform: none;
+    }
+  }
+</style>
