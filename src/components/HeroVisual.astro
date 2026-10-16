@@ -1,36 +1,15 @@
 ---
 /**
- * Visual del hero: cómoda flotante con fondo recortado, como un PNG
- * de producto sobre el resplandor cálido.
+ * Contenedor del visual del hero.
  *
- * La foto base es CC0 (Rawpixel/Openverse, uso comercial permitido) y el
- * recorte se hizo en el repo (ver /tmp/opencode/recorte.py): fondo de
- * estudio propio, sin depender de bancos de PNG con licencia NC.
- * PROVISORIA: se reemplaza por trabajos reales del taller cuando el
- * cliente suba fotos. Fuente en la memoria del proyecto.
- *
- * Fuente: https://www.rawpixel.com/image/14264777/commode (CC0).
+ * La foto provisoria se sacó a pedido: queda solo el halo cálido como
+ * ambiente, manteniendo la estructura de dos columnas del hero. Cuando el
+ * cliente suba fotos reales, acá va una pieza destacada del taller.
  */
 ---
 
-<div class="hero-flota">
-  <span class="hero-halo" aria-hidden="true"></span>
-  <img
-    class="hero-pieza"
-    src="/hero-comoda.webp"
-    alt="Cómoda antigua de madera con marquetería, tapa de mármol y bronces dorados"
-    width="1024"
-    height="853"
-    loading="eager"
-    decoding="async"
-    fetchpriority="high"
-  />
-  <svg class="chispa chispa--a" width="22" height="22" viewBox="0 0 24 24" fill="#c79a5e" aria-hidden="true">
-    <path d="M12 3l1.9 5.4 5.6 1.6-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.6z" />
-  </svg>
-  <svg class="chispa chispa--b" width="14" height="14" viewBox="0 0 24 24" fill="#a8763e" aria-hidden="true">
-    <path d="M12 3l1.9 5.4 5.6 1.6-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.6z" />
-  </svg>
+<div class="hero-flota" aria-hidden="true">
+  <span class="hero-halo"></span>
 </div>
 
 <style>
@@ -38,10 +17,11 @@
     position: relative;
     width: 100%;
     max-width: 28rem;
+    min-height: 12rem;
     margin-inline: auto;
   }
 
-  /* Resplandor cálido detrás de la pieza */
+  /* Resplandor cálido de ambiente */
   .hero-halo {
     position: absolute;
     inset: -10% -14%;
@@ -54,52 +34,10 @@
     pointer-events: none;
   }
 
-  /* La sombra sigue la silueta (no un rectángulo) y la asienta */
-  .hero-pieza {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: auto;
-    filter: drop-shadow(0 2.2rem 2rem rgb(46 36 25 / 35%));
-    animation: flotar 7s ease-in-out infinite;
-  }
-
-  .chispa {
-    position: absolute;
-    animation: flotar 6s ease-in-out infinite;
-  }
-
-  .chispa--a {
-    top: 12%;
-    left: 4%;
-  }
-
-  .chispa--b {
-    right: 8%;
-    bottom: 18%;
-    animation-delay: -3s;
-  }
-
-  @keyframes flotar {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
   @media (min-width: 1024px) {
     .hero-flota {
       max-width: none;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hero-pieza,
-    .chispa {
-      animation: none;
+      min-height: 20rem;
     }
   }
 </style>
