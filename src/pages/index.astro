@@ -116,7 +116,12 @@ const comparables = gallery.map((item) => ({
       </div>
     </div>
 
-    <div class="relative z-10 pb-14 sm:pb-20">
+    {/*
+      El carrusel se mete debajo del texto: sube con margen negativo y pasa
+      por detrás del bloque (que va por encima), así las cards quedan a la
+      altura de las garantías en vez de perdidas abajo del todo.
+    */}
+    <div class="tira-carrusel relative pb-14 sm:pb-20">
       <CarruselPiezas piezas={orbitar} />
     </div>
   </section>
@@ -302,6 +307,23 @@ const comparables = gallery.map((item) => ({
 
   .rejilla-oficios .tarjeta-servicio {
     flex: 1;
+  }
+
+  /* La tira sube y se mete debajo del texto (que va por encima): las
+     cards quedan a la altura de las garantías. */
+  .tira-carrusel {
+    z-index: 0;
+    margin-top: clamp(-10rem, -16vw, -5rem);
+  }
+
+  /* Núcleo legible sobre las cards que pasan por detrás */
+  .hero-nucleo {
+    background: radial-gradient(
+      closest-side,
+      rgb(251 247 239 / 94%) 55%,
+      rgb(251 247 239 / 72%) 78%,
+      transparent 100%
+    );
   }
 
 
