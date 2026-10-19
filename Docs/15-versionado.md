@@ -13,7 +13,7 @@ Semver `v0.x` mientras no exista versión estable:
 | `fix:` nuevo | **patch** → `v0.N.(z+1)` | `v0.14.1` |
 | `feat:` chico, polish, iteración del mismo feature | sin tag | queda dentro del minor vigente |
 | `docs:` / `chore:` | sin tag | infra o especificación |
-| Primera versión estable | convertirse en `v1.0` al despachar con el cliente | los fixes pasan a `v1.0.x`, features grandes a `v1.1` |
+| Primera versión estable | **aplazada** — el sitio sigue en perfeccionamiento; `v1.0` se corta cuando esté a punto | los fixes pasan a `v1.0.x`, features grandes a `v1.1` |
 
 El tag se crea **sobre el commit** que introduce el cambio (no sobre últimos commits sueltos), así `git tag --sort=version:refname` reconstituye todo el recorrido.
 
@@ -63,6 +63,6 @@ El script se niega a tagear dos veces el mismo HEAD y a crear tags que no encaje
 
 Sigue en `v0.15`: **sin fixes después del último minor**, HEAD pendiente de tag en el próximo feature grande (`v0.16`) o fix (`v0.15.1`).
 
-## Pendiente para la primera estable
+## v1.0, aplazado (2026-10-19)
 
-Cuando el deploy a Vercel + dominio `.uy` se despache con el cliente, se corta la versión `v1.0` sobre ese commit y todo lo posterior usa el mismo esquema con major 1.
+El sitio está en fase de perfeccionamiento: **deploy y dominio no son el disparador de `v1.0`** ni desbloquean nada. La estable se corta cuando la calidad del sitio esté a punto. La planificación de refinamiento sigue en 0.x (`v0.16` en adelante) con el mismo mecanismo.
