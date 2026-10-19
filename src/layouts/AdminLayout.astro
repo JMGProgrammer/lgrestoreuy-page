@@ -3,7 +3,7 @@
  * Layout del panel. Herramienta de trabajo: barra superior fija, navegación
  * lateral en desktop y una barra inferior en el celular (el pulgar llega ahí).
  */
-import { getCurrentUser } from '../lib/supabase/server';
+import { getCurrentUser, getSupabaseConSesion } from '../lib/supabase/server';
 import Icon from '../components/admin/Icon.astro';
 import Toasts from '../components/admin/Toasts.astro';
 import '../styles/global.css';
@@ -19,13 +19,32 @@ interface Props {
 const { titulo, subtitulo, saludo: conSaludo = false } = Astro.props;
 const usuario = await getCurrentUser(Astro.request, Astro.cookies);
 
+/**
+ * La papelera vive en el nav, como cualquier sección: una vez que el
+ * cliente descartó algo por accidente, tiene que encontrarla sin pasar
+ * por Cotizaciones. El badge cuenta lo que espera ser purgado.
+ */
+let papeleraPendiente = 0;
+if (usuario) {
+  try {
+    const supabaseParaNav = getSupabaseConSesion(Astro.request, Astro.cookies);
+    const { count } = await supabaseParaNav
+      .from('quotes_borradas')
+      .select('id', { count: 'exact', head: true });
+    papeleraPendiente = count ?? 0;
+  } catch {
+    // El nav no puede caerse por el badge: sin count queda sin número y listo.
+  }
+}
+
 const secciones = [
-  { href: '/admin', label: 'Resumen', icono: 'resumen', movil: false },
+  { href: '/admin', label: 'Resumen', icono: 'resumen', movil: true },
   { href: '/admin/cotizaciones', label: 'Cotizaciones', icono: 'cotizaciones', movil: true },
   { href: '/admin/piezas', label: 'Piezas', icono: 'piezas', movil: true },
-  { href: '/admin/servicios', label: 'Servicios', icono: 'servicios', movil: false },
-  { href: '/admin/galeria', label: 'Galería', icono: 'galeria', movil: false },
-  { href: '/admin/contenido', label: 'Contenido', icono: 'contenido', movil: false },
+  { href: '/admin/servicios', label: 'Servicios', icono: 'servicios', movil: true },
+  { href: '/admin/galeria', label: 'Galería', icono: 'galeria', movil: true },
+  { href: '/admin/contenido', label: 'Contenido', icono: 'contenido', movil: true },
+  { href: '/admin/papelera', label: 'Papelera', icono: 'papelera', movil: true },
 ];
 
 /** Saludo con la hora: el taller trabaja de día, el panel se usa de día. */
@@ -53,6 +72,8 @@ const iconoNav: Record<string, string> = {
     '<rect x="3" y="5" width="8" height="14" rx="1.5" /><rect x="13" y="5" width="8" height="14" rx="1.5" />',
   contenido:
     '<rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" />',
+  papelera:
+    '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
 };
 ---
 
@@ -92,13 +113,10 @@ const iconoNav: Record<string, string> = {
         </a>
 
         <div class="ml-auto flex items-center gap-2">
-          <a
-            href="/"
-            target="_blank"
-            class="ui-btn ui-btn-fantasma ui-btn-sm hidden sm:inline-flex"
-          >
-            Ver la web
-            <Icon nombre="flecha" clase="size-3.5" />
+          <a href="/" target="_blank" rel="noopener" class="ui-btn ui-btn-fantasma ui-btn-sm" aria-label="Ver la web">
+            <Icon nombre="ojo" clase="size-4 sm:hidden" />
+            <span class="hidden sm:inline">Ver la web</span>
+            <Icon nombre="flecha" clase="hidden size-3.5 sm:block" />
           </a>
 
           {
@@ -148,6 +166,11 @@ const iconoNav: Record<string, string> = {
                     set:html={iconoNav[seccion.icono]}
                   />
                   {seccion.label}
+                  {seccion.href === '/admin/papelera' && papeleraPendiente > 0 && (
+                    <span class="ml-auto rounded-full bg-ui-peligro/15 px-1.5 py-0.5 text-[0.625rem] font-semibold text-ui-peligro">
+                      {papeleraPendiente > 9 ? '9+' : papeleraPendiente}
+                    </span>
+                  )}
                 </a>
               </li>
             ))
@@ -170,12 +193,12 @@ const iconoNav: Record<string, string> = {
       </main>
     </div>
 
-    <!-- Barra inferior (celular): lo que más se usa, al alcance del pulgar -->
+    <!-- Barra inferior (celular): las 7 secciones, una fila de pulgar. -->
     <nav
       class="fixed inset-x-0 bottom-0 z-30 border-t border-ui-borde bg-ui-panel/95 backdrop-blur md:hidden"
       aria-label="Secciones"
     >
-      <ul class="mx-auto grid max-w-lg grid-cols-3">
+      <ul class="mx-auto grid max-w-lg grid-cols-7">
         {
           secciones
             .filter((s) => s.movil)
@@ -185,7 +208,7 @@ const iconoNav: Record<string, string> = {
                   href={seccion.href}
                   aria-current={esActiva(seccion.href) ? 'page' : undefined}
                   class:list={[
-                    'flex flex-col items-center gap-0.5 py-2.5 text-[0.6875rem] transition-colors',
+                    'relative flex flex-col items-center gap-0.5 px-0.5 py-2.5 text-[0.5625rem] leading-tight transition-colors',
                     esActiva(seccion.href)
                       ? 'text-ui-acento'
                       : 'text-ui-texto-3',
@@ -204,6 +227,10 @@ const iconoNav: Record<string, string> = {
                     set:html={iconoNav[seccion.icono]}
                   />
                   {seccion.label}
+                  {seccion.href === '/admin/papelera' && papeleraPendiente > 0 && (
+                    <span class="absolute right-3 top-2 inline-block h-1.5 w-1.5 rounded-full bg-ui-peligro" aria-hidden="true"></span>
+                    <span class="sr-only">Hay algo esperando en la papelera</span>
+                  )}
                 </a>
               </li>
             ))

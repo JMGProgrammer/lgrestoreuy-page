@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import Icon from '../../../components/admin/Icon.astro';
 import { adminContext, ESTADOS_PIEZA, listarPiezas } from '../../../lib/admin';
 import { formatUYU } from '../../../lib/whatsapp';
 import type { EstadoPieza } from '../../../lib/types';
@@ -27,7 +28,10 @@ const colorEstado: Record<EstadoPieza, string> = {
       Solo las <strong class="font-medium text-tinta">disponibles</strong> se ven
       en la web.
     </p>
-    <a href="/admin/piezas/nueva" class="btn-principal">Nueva pieza</a>
+    <a href="/admin/piezas/nueva" class="ui-btn ui-btn-acento">
+      <Icon nombre="mas" clase="size-4" />
+      Nueva pieza
+    </a>
   </div>
 
   <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtrar por estado">
@@ -83,21 +87,26 @@ const colorEstado: Record<EstadoPieza, string> = {
               {pieza.destacada ? ' · destacada' : ''}
             </p>
           </div>
-          <div class="flex shrink-0 gap-3">
+          <div class="flex shrink-0 gap-2">
             {pieza.estado === 'disponible' && (
               <a
                 href={`/piezas/${pieza.slug}`}
                 target="_blank"
-                class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+                rel="noopener"
+                class="ui-btn ui-btn-fantasma ui-btn-icono ui-btn-sm"
+                title="Ver en la web"
+                aria-label={`Ver ${pieza.titulo} en la web`}
               >
-                Ver
+                <Icon nombre="ojo" clase="size-4" />
               </a>
             )}
             <a
               href={`/admin/piezas/${pieza.id}`}
-              class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+              class="ui-btn ui-btn-neutro ui-btn-icono ui-btn-sm"
+              title="Editar pieza"
+              aria-label={`Editar ${pieza.titulo}`}
             >
-              Editar
+              <Icon nombre="lapiz" clase="size-4" />
             </a>
           </div>
         </li>
@@ -114,7 +123,8 @@ const colorEstado: Record<EstadoPieza, string> = {
           </p>
           {
             piezas.length === 0 && (
-              <a href="/admin/piezas/nueva" class="btn-principal mt-4">
+              <a href="/admin/piezas/nueva" class="ui-btn ui-btn-acento mt-4">
+                <Icon nombre="mas" clase="size-4" />
                 Cargar la primera
               </a>
             )

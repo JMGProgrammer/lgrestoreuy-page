@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import Icon from '../../components/admin/Icon.astro';
 import {
   adminContext,
   errorLegible,
@@ -72,19 +73,19 @@ const wa = whatsappLink(contenido.whatsapp, 'Hola');
     ok && (
       <div class="mt-4 rounded border border-[#4f6b46] bg-[#4f6b46]/10 px-4 py-3 text-sm text-[#33472e]">
         <p>Guardado.</p>
-        <p class="mt-1.5 text-[#4f5f48]">
+        <div class="mt-1.5 flex flex-wrap items-center gap-2 text-[#4f5f48]">
           La web pública se cachea un minuto, así que el cambio puede tardar
-          hasta eso en verse.{' '}
+          hasta eso en verse. Acá lo podés verificar.
           <a
             href="/"
             target="_blank"
             rel="noopener"
-            class="underline underline-offset-4"
+            class="ui-btn ui-btn-fantasma ui-btn-sm"
           >
+            <Icon nombre="ojo" clase="size-4" />
             Abrir la web
-          </a>{' '}
-          para verlo.
-        </p>
+          </a>
+        </div>
       </div>
     )
   }
@@ -136,17 +137,18 @@ const wa = whatsappLink(contenido.whatsapp, 'Hola');
         </p>
         {
           normalizePhone(contenido.whatsapp) ? (
-            <p class="mt-2 text-xs text-[#4f6b46]">
-              El botón flotante ya está activo →{' '}
+            <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#4f6b46]">
+              El botón flotante ya está activo. Podés probarlo con el mensaje de prueba:
               <a
                 href={wa ?? '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="underline underline-offset-4"
+                class="ui-btn ui-btn-fantasma ui-btn-sm"
               >
-                probarlo
+                <Icon nombre="whatsapp" clase="size-4" />
+                Probarlo
               </a>
-            </p>
+            </div>
           ) : (
             <p class="mt-2 text-xs text-caoba">
               Sin número no se muestra el botón de consulta.

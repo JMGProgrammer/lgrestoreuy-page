@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import Icon from '../../components/admin/Icon.astro';
 import { adminContext, listarCotizaciones, resumen } from '../../lib/admin';
 import { formatUYU } from '../../lib/whatsapp';
 
@@ -8,6 +9,31 @@ const [datos, cotizaciones] = await Promise.all([
   resumen(ctx),
   listarCotizaciones(ctx, 5),
 ]);
+
+// Próximos pasos como acción visible: cada fila tiene icono y un botón
+// real que lleva a donde se hace el paso. Sin links subrayados escondidos
+// entre texto, que son la única cosa del panel que no se ve.
+const pasos = [
+  {
+    icono: 'whatsapp' as const,
+    texto:
+      'Cargar tus datos (WhatsApp, dirección, horarios) y activar el botón de consulta.',
+    href: '/admin/contenido',
+    boton: 'Ir a Contenido',
+  },
+  {
+    icono: 'mas' as const,
+    texto: 'Revisar los servicios y completar los rangos de precio.',
+    href: '/admin/servicios',
+    boton: 'Ir a Servicios',
+  },
+  {
+    icono: 'imagen' as const,
+    texto: 'Publicar piezas con fotos antes y después.',
+    href: '/admin/piezas',
+    boton: 'Ir a Piezas',
+  },
+];
 
 // Cada tarjeta lleva a la sección donde ese número se trabaja. Sin destino,
 // el hover sería un efecto mentiroso.
@@ -67,9 +93,10 @@ const tarjetas = [
       <h2 class="text-lg text-tinta">Últimas cotizaciones</h2>
       <a
         href="/admin/cotizaciones"
-        class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+        class="ui-btn ui-btn-fantasma ui-btn-sm"
       >
         Ver todas
+        <Icon nombre="flecha" clase="size-3.5" />
       </a>
     </div>
 
@@ -95,9 +122,10 @@ const tarjetas = [
                 <span class="rotulo">{c.estado}</span>
                 <a
                   href={`/admin/cotizaciones/${c.id}`}
-                  class="text-xs text-tinta-suave underline decoration-latón underline-offset-4 hover:text-tinta"
+                  class="ui-btn ui-btn-neutro ui-btn-sm"
                 >
                   Abrir
+                  <Icon nombre="flecha" clase="size-3.5" />
                 </a>
               </div>
             </li>
@@ -109,34 +137,23 @@ const tarjetas = [
 
   <section class="mt-10">
     <h2 class="text-lg text-tinta">Próximos pasos</h2>
-    <ul class="mt-4 space-y-2 text-sm text-tinta-suave">
-      <li>
-        <a
-          href="/admin/contenido"
-          class="underline decoration-latón underline-offset-4 hover:text-tinta"
-        >
-          Cargar tus datos
-        </a>{' '}
-        (WhatsApp, dirección, horarios) y así se activa el botón de consulta.
-      </li>
-      <li>
-        <a
-          href="/admin/servicios"
-          class="underline decoration-latón underline-offset-4 hover:text-tinta"
-        >
-          Revisar servicios
-        </a>{' '}
-        y completar los rangos de precio.
-      </li>
-      <li>
-        <a
-          href="/admin/piezas"
-          class="underline decoration-latón underline-offset-4 hover:text-tinta"
-        >
-          Publicar piezas
-        </a>{' '}
-        con fotos antes/después.
-      </li>
+    <ul class="mt-4 space-y-2">
+      {
+        pasos.map((paso) => (
+          <li class="flex flex-wrap items-center justify-between gap-2 rounded border border-linea bg-papel px-4 py-3">
+            <span class="flex min-w-0 items-center gap-2.5 text-sm text-tinta-suave">
+              <span class="grid size-7 shrink-0 place-items-center rounded-full bg-[#9a6b2f]/15 text-caoba">
+                <Icon nombre={paso.icono} clase="size-4" />
+              </span>
+              <span class="min-w-0">{paso.texto}</span>
+            </span>
+            <a href={paso.href} class="ui-btn ui-btn-neutro ui-btn-sm ml-auto">
+              {paso.boton}
+              <Icon nombre="flecha" clase="size-3.5" />
+            </a>
+          </li>
+        ))
+      }
     </ul>
   </section>
 </AdminLayout>
