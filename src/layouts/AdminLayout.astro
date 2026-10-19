@@ -198,7 +198,14 @@ const iconoNav: Record<string, string> = {
       class="fixed inset-x-0 bottom-0 z-30 border-t border-ui-borde bg-ui-panel/95 backdrop-blur md:hidden"
       aria-label="Secciones"
     >
-      <ul class="mx-auto grid max-w-lg grid-cols-7">
+      {/*
+        Cinta horizontal: repite el reparto en partes iguales mientras entra
+        (flex-basis 0 + grow) y ancla cada ítem a 4.25rem como mínimo para
+        que "Cotizaciones" quepa (una sola palabra, sin corte posible). En
+        pantallas de menos de 476px no entra todo y la cinta desliza: el
+        ítem cortado al borde anuncia que hay más.
+      */}
+      <ul class="nav-cinta mx-auto flex w-full max-w-lg overflow-x-auto">
         {
           secciones
             .filter((s) => s.movil)
@@ -208,7 +215,7 @@ const iconoNav: Record<string, string> = {
                   href={seccion.href}
                   aria-current={esActiva(seccion.href) ? 'page' : undefined}
                   class:list={[
-                    'relative flex flex-col items-center gap-0.5 px-0.5 py-2.5 text-[0.5625rem] leading-tight transition-colors',
+                    'relative flex min-w-[4.25rem] basis-0 grow flex-col items-center gap-0.5 px-1 py-2.5 text-[0.5rem] leading-tight transition-colors',
                     esActiva(seccion.href)
                       ? 'text-ui-acento'
                       : 'text-ui-texto-3',
@@ -228,7 +235,7 @@ const iconoNav: Record<string, string> = {
                   />
                   {seccion.label}
                   {seccion.href === '/admin/papelera' && papeleraPendiente > 0 && (
-                    <span class="absolute right-3 top-2 inline-block h-1.5 w-1.5 rounded-full bg-ui-peligro" aria-hidden="true"></span>
+                    <span class="absolute right-2 top-2 inline-block h-1.5 w-1.5 rounded-full bg-ui-peligro" aria-hidden="true"></span>
                     <span class="sr-only">Hay algo esperando en la papelera</span>
                   )}
                 </a>

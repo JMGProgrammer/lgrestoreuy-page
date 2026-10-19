@@ -29,6 +29,13 @@
     font-size: 0.9375rem;
     line-height: 1.5;
     -webkit-tap-highlight-color: transparent;
+
+    /* El panel es un shell fijo: nada de su contenido tiene sentido
+       desplazándose de lado. Cualquier elemento que un día quede más ancho
+       que la pantalla se recorta acá en vez de abrir un scroll lateral que
+       arruina el header sticky. `hidden` por si `clip` no existe. */
+    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   body.admin [x-cloak] {
@@ -554,6 +561,20 @@ select.ui-campo {
 
 .ui-toast-accion:hover {
   background: rgb(255 255 255 / 12%);
+}
+
+/* ---------------------------------------------------------------- barra inferior (celular)
+
+   Cinta deslizable: sin scrollbars visibles; el anuncio de que hay más es
+   el ítem cortado en el borde, no una barra que roba alto. */
+
+.nav-cinta {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav-cinta::-webkit-scrollbar {
+  display: none;
 }
 
 /* ---------------------------------------------------------------- diálogo */
