@@ -530,7 +530,7 @@ function etiquetaDe(foto: { rol: string }): string {
                             </span>
                           ))}
                         </div>
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                        <div class="flex items-center justify-end gap-1 text-xs">
                           <form method="post" class="contents">
                             <input type="hidden" name="_accion" value="mover_foto" />
                             <input type="hidden" name="pieza_id" value={piezaSel.id} />
@@ -540,12 +540,15 @@ function etiquetaDe(foto: { rol: string }): string {
                                 type="submit"
                                 name="direccion"
                                 value="arriba"
-                                class="text-ui-texto-2 underline underline-offset-4 hover:text-ui-texto"
-                                title="Mover a portada"
+                                class="ui-btn ui-btn-fantasma ui-btn-icono ui-btn-sm"
+                                title="Subir una posición: la de arriba es la portada de la pieza"
+                                aria-label="Mover la foto una posición arriba"
                               >
-                                ↑ arriba
+                                <Icon nombre="arriba" clase="size-4" />
                               </button>
-                            ) : null}
+                            ) : (
+                              <span class="ui-btn-icono ui-btn-sm"></span>
+                            )}
                           </form>
                           <form method="post" class="contents">
                             <input type="hidden" name="_accion" value="mover_foto" />
@@ -555,23 +558,28 @@ function etiquetaDe(foto: { rol: string }): string {
                             {indice < piezaSel.fotos.length - 1 ? (
                               <button
                                 type="submit"
-                                class="text-ui-texto-2 underline underline-offset-4 hover:text-ui-texto"
+                                class="ui-btn ui-btn-fantasma ui-btn-icono ui-btn-sm"
                                 title="Bajar una posición"
+                                aria-label="Mover la foto una posición abajo"
                               >
-                                ↓ abajo
+                                <Icon nombre="abajo" clase="size-4" />
                               </button>
-                            ) : null}
+                            ) : (
+                              <span class="ui-btn-icono ui-btn-sm"></span>
+                            )}
                           </form>
-                          <form method="post" class="ml-auto contents">
+                          <form method="post" class="contents">
                             <input type="hidden" name="_accion" value="borrar_foto" />
                             <input type="hidden" name="pieza_id" value={piezaSel.id} />
                             <input type="hidden" name="foto_id" value={foto.id} />
                             <button
                               type="submit"
-                              class="text-[#a03328] underline underline-offset-4"
+                              class="ui-btn ui-btn-peligro ui-btn-icono ui-btn-sm"
+                              title="Quitar esta foto de la pieza"
+                              aria-label="Quitar esta foto de la pieza"
                               onclick="return confirm('¿Quitar esta foto de la pieza?')"
                             >
-                              Quitar
+                              <Icon nombre="tacho" clase="size-4" />
                             </button>
                           </form>
                         </div>
@@ -597,15 +605,27 @@ function etiquetaDe(foto: { rol: string }): string {
                       <option value="despues">Después</option>
                     </select>
                   </div>
-                  <div>
-                    <label class="ui-label" for="archivo">Imagen</label>
-                    <input
-                      class="ui-campo"
-                      id="archivo"
-                      name="archivo"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                    />
+                  <div class="min-w-0">
+                    <label class="ui-label" for="archivo-foto">Imagen</label>
+                    <div class="ui-subida" data-subida>
+                      <input
+                        id="archivo-foto"
+                        name="archivo"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        class="sr-only"
+                        data-subida-input
+                      />
+                      <label
+                        for="archivo-foto"
+                        class="ui-btn ui-btn-neutro shrink-0"
+                        title="Elegir una imagen del dispositivo"
+                      >
+                        <Icon nombre="subir" clase="size-4" />
+                        Elegir imagen
+                      </label>
+                      <span class="ui-subida-nombre" data-subida-nombre></span>
+                    </div>
                   </div>
                 </div>
                 <p class="ui-ayuda">
@@ -1145,14 +1165,26 @@ function etiquetaDe(foto: { rol: string }): string {
                 <form method="post" enctype="multipart/form-data" class="space-y-3 border-t border-ui-borde pt-4">
                   <input type="hidden" name="_accion" value="subir_fondo" />
                   <div>
-                    <label class="ui-label" for="archivo">O subila ahora (queda en la Librería)</label>
-                    <input
-                      class="ui-campo"
-                      id="archivo"
-                      name="archivo"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                    />
+                    <label class="ui-label" for="archivo-fondo">O subila ahora (queda en la Librería)</label>
+                    <div class="ui-subida" data-subida>
+                      <input
+                        id="archivo-fondo"
+                        name="archivo"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="sr-only"
+                        data-subida-input
+                      />
+                      <label
+                        for="archivo-fondo"
+                        class="ui-btn ui-btn-neutro shrink-0"
+                        title="Elegir una imagen del dispositivo"
+                      >
+                        <Icon nombre="subir" clase="size-4" />
+                        Elegir foto
+                      </label>
+                      <span class="ui-subida-nombre" data-subida-nombre></span>
+                    </div>
                   </div>
                   <div>
                     <label class="ui-label" for="portada_alt">Descripción (opcional)</label>
@@ -1229,13 +1261,25 @@ function etiquetaDe(foto: { rol: string }): string {
             </div>
             <div>
               <label class="ui-label" for="archivo-asset">Imagen</label>
-              <input
-                class="ui-campo"
-                id="archivo-asset"
-                name="archivo"
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-              />
+              <div class="ui-subida" data-subida>
+                <input
+                  id="archivo-asset"
+                  name="archivo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  class="sr-only"
+                  data-subida-input
+                />
+                <label
+                  for="archivo-asset"
+                  class="ui-btn ui-btn-neutro shrink-0"
+                  title="Elegir una imagen del dispositivo"
+                >
+                  <Icon nombre="subir" clase="size-4" />
+                  Elegir imagen
+                </label>
+                <span class="ui-subida-nombre" data-subida-nombre></span>
+              </div>
               <p class="ui-ayuda">
                 JPG, PNG, WebP o GIF. Hasta 8 MB. Se achica sola antes de subir.
               </p>

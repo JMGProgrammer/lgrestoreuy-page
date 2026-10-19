@@ -278,6 +278,50 @@ function instalarCompresionImagenes() {
 }
 
 /**
+ * Subida de archivos con cara del panel: el input nativo queda oculto y
+ * hablamos a través de un label-botón con icono + el nombre del archivo.
+ *
+ * Convención de markup (la usa Galeria, Piezas y cualquier formulario nuevo):
+ *
+ *   <div data-subida>
+ *     <input type="file" data-subida-input ...>   ← oculto (clase sr-only)
+ *     <label for="..." >…</label>                  ← el botón visible
+ *     <span data-subida-nombre>…</span>            ← el nombre elegido
+ *   </div>
+ *
+ * Sin esto, el navegador muestra la fila de siempre ("Examinar… No se ha
+ * seleccionado ningún archivo"), que es la única parte del panel que no
+ * habla el idioma del resto.
+ */
+function instalarEtiquetasDeSubida() {
+  const TEXTO_VACIO = 'Ninguna imagen elegida';
+
+  document
+    .querySelectorAll<HTMLInputElement>('input[type="file"][data-subida-input]')
+    .forEach((input) => {
+      const contenedor = input.closest('[data-subida]');
+      const destino = contenedor?.querySelector('[data-subida-nombre]');
+      if (!destino) return;
+
+      // El span arranca vacío en el markup; el texto por defecto va acá
+      // para que quede igual después de un cambio de archivo fallido.
+      destino.textContent = TEXTO_VACIO;
+
+      input.addEventListener('change', () => {
+        const archivo = input.files?.[0];
+        const nombres = input.files?.length ?? 0;
+
+        // Con selección múltiple el nombre no alcanza: se cuenta.
+        destino.textContent =
+          input.multiple && nombres > 1
+            ? `${nombres} imágenes elegidas`
+            : (archivo ? archivo.name : TEXTO_VACIO);
+        destino.classList.toggle('ui-subida-nombre-lleno', nombres > 0);
+      });
+    });
+}
+
+/**
  * Alpine arranca recién en DOMContentLoaded. Los scripts de Astro son módulos
  * diferidos: se ejecutan todos antes de ese evento, así que cada página
  * registra sus componentes en el orden que quiera.
@@ -287,6 +331,7 @@ document.addEventListener(
   () => {
     instalarGuardNavegacion();
     instalarCompresionImagenes();
+    instalarEtiquetasDeSubida();
     Alpine.start();
   },
   { once: true },

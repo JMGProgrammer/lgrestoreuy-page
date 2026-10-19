@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import Icon from '../../../components/admin/Icon.astro';
 import {
   adminContext,
   ESTADOS_PIEZA,
@@ -261,13 +262,25 @@ const wa = whatsappLink(
 
       <div>
         <label class="campo-label" for="archivo">Imagen</label>
-        <input
-          class="campo"
-          id="archivo"
-          name="archivo"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-        />
+        <div class="ui-subida" data-subida>
+          <input
+            id="archivo"
+            name="archivo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            class="sr-only"
+            data-subida-input
+          />
+          <label
+            for="archivo"
+            class="btn-secundario shrink-0"
+            title="Elegir una imagen del dispositivo"
+          >
+            <Icon nombre="subir" clase="size-4" />
+            Elegir imagen
+          </label>
+          <span class="ui-subida-nombre" data-subida-nombre></span>
+        </div>
       </div>
 
       <button type="submit" class="btn-secundario">Subir foto</button>

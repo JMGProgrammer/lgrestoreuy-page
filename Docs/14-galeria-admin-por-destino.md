@@ -1,7 +1,7 @@
 # 14 — Galería admin por destino de uso + librería de assets
 
-> Estado: **PLAN CERRADO (2026-10-19), pendiente de implementar.**
-> Migración única del plan: `0006_hero-anillo-assets.sql` (`pieces.en_anillo` + tabla `assets` + bucket `assets` + policy de lectura).
+> Estado: **IMPLEMENTADO 2026-10-19** (la migración `0006` la aplicó el cliente ese mismo día). Código: commit `3f0bc8f`. Falta solo la prueba del circuito de fotos con datos reales del cliente.
+> Migración del plan: `0006_hero-anillo-assets.sql` (`pieces.en_anillo` + tabla `assets` + bucket `assets` + policy de lectura).
 > Origen: la prueba pendiente del circuito de fotos lanzó la pregunta "¿dónde termina cada foto que el cliente sube?" — hoy no hay forma de verlo ni controlarlo por sección.
 
 ## 1. Cómo viaja una foto hoy (vista del administrador)
@@ -97,13 +97,14 @@ Quedó huérfano desde 0003 (la galería sale de piezas). Congelado hasta revisa
 
 Fuera de scope: `CarruselPiezas.astro` (recibe las piezas armadas), RLS de lectura, resto de la web pública.
 
-## 5. Orden de implementación
+## 5. Orden de implementación (cumplido)
 
-1. Migración `0006` + query del anillo en la home (con fallback)
-2. Pestaña `hero` + chips "dónde se usa"
-3. Pestaña `libreria` + conexión fondo ↔ assets
-4. Pestaña `piezas` (manager compacto) + pulido del comparador
-5. En el proceso: prueba punta a punta del circuito de fotos con una foto real de 3000+ px
+1. ✅ Migración `0006` + query del anillo en la home (con fallback — `getPiezasAnillo`)
+2. ✅ Pestaña `hero` + chips "dónde se usa" (derivados, sin guardar nada)
+3. ✅ Pestaña `libreria` + conexión fondo ↔ assets (elegir de la librería o subir directo, que registra el asset)
+4. ✅ Pestaña `piezas` (manager compacto con chips, subir, reordenar, quitar) + comparador intacto en su pestaña
+5. ⏳ Prueba punta a punta del circuito de fotos con una foto real de 3000+ px
+   (el panel quedó listo: subida desde la pestaña Piezas o desde la ficha)
 
 ---
 

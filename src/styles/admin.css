@@ -250,6 +250,37 @@ select.ui-campo {
   color: var(--color-ui-texto-3);
 }
 
+/* ---------------------------------------------------------------- subida
+
+   El input de archivo nativo es la única esquina del panel que habla
+   idioma navegador ("Examinar… No se ha seleccionado ningún archivo").
+   Se oculta el input y se habla a través de un label-botón con icono;
+   el nombre del archivo elegido lo muestra el span de al lado.
+   --------------------------------------------------------------------- */
+
+.ui-subida {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.ui-subida-nombre {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--color-ui-texto-3);
+}
+
+/* Con archivo elegido el nombre se destaca: pasa de tenue a señalado. */
+.ui-subida-nombre-lleno {
+  color: var(--color-ui-texto);
+  font-weight: 500;
+}
+
 .ui-error {
   margin-top: 0.3125rem;
   font-size: 0.75rem;
@@ -863,18 +894,28 @@ select.ui-campo {
 }
 
 /* =====================================================================
-   Fondo de ondas del panel
+   Fondo de olas del panel
 
-   Tres capas de latón muy tenues que se desplazan en direcciones y a
-   velocidades distintas. El efecto tiene que estar por debajo del umbral de
-   atención: es lo que se percibe al entrar y se deja de ver enseguida, como
-   un papel de fondo con relieve.
+   Tres capas de latón ancladas al borde inferior de la pantalla, como un
+   mar que se mira al entrar y se deja de ver enseguida. Rework 2026-10-19,
+   tres decisiones:
+
+   1. Se VEÍA poco: las alphas subieron (0.10 / 0.075 / 0.055 sobre el
+      papel) y el halo ganó presencia. Sigo lejos del umbral de atención,
+      pero ya no son invisibles.
+   2. La base era PLANA: cada SVG terminaba en un borde recto que quedaba
+      flotando a media altura. Ahora el borde inferior de cada baldosa
+      coincide con el borde inferior de la pantalla (la capa es fixed con
+      inset: 0): el corte queda siempre fuera de la vista y lo único que
+      se ve es el contorno de la ola.
+   3. Paralaje de verdad: cresta alta adelante (la que tapa), media atrás
+      de esa, baja al fondo; cada una con su velocidad y su sentido.
 
    Cada capa se mueve con una variable de custom property propia en vez de
    con background-position directo, porque background-position solo puede
    animarse con una única duración para todas las capas. El recorrido de
    cada una equivale a un ancho de baldosa, que es lo que hace que el ciclo
-   no se vea: la onda que sale por la derecha es la misma que entra por la
+   no se vea: la ola que sale por la derecha es la misma que entra por la
    izquierda.
 
    La capa div es un único elemento detrás de todo (z-index: -1). Va en el
@@ -901,19 +942,19 @@ select.ui-campo {
 
 @keyframes ui-ola-a {
   to {
-    --ui-ola-a: 1600px;
+    --ui-ola-a: 1440px;
   }
 }
 
 @keyframes ui-ola-b {
   to {
-    --ui-ola-b: 980px;
+    --ui-ola-b: 960px;
   }
 }
 
 @keyframes ui-ola-c {
   to {
-    --ui-ola-c: 2400px;
+    --ui-ola-c: 1920px;
   }
 }
 
@@ -924,29 +965,31 @@ select.ui-campo {
   overflow: hidden;
   pointer-events: none;
 
-  /* Cada SVG es una media onda de latón con la misma altura de arranque y
-     de llegada, así que al repetirse no se nota dónde está el empalme. */
+  /* Orden: la primera capa pinta encima de la siguiente. Van las tres olas
+     de cresta alta a baja y el halo al fondo. Cada path alterna valle y
+     cresta (la curva baja donde la anterior sube), así el perfil ondula de
+     verdad en vez de dibujar cuatro jorobas iguales. */
   background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240' preserveAspectRatio='none'%3E%3Cpath d='M0 96 C120 36 240 36 360 96 C480 156 600 156 720 96 C840 36 960 36 1080 96 C1200 156 1320 156 1440 96 L1440 240 L0 240 Z' fill='%23a8763e' fill-opacity='0.10'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 180' preserveAspectRatio='none'%3E%3Cpath d='M0 92 C80 48 160 48 240 92 C320 136 400 136 480 92 C560 48 640 48 720 92 C800 136 880 136 960 92 L960 180 L0 180 Z' fill='%23a8763e' fill-opacity='0.075'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 140' preserveAspectRatio='none'%3E%3Cpath d='M0 96 C160 62 320 62 480 96 C640 130 800 130 960 96 C1120 62 1280 62 1440 96 C1600 130 1760 130 1920 96 L1920 140 L0 140 Z' fill='%23a8763e' fill-opacity='0.055'/%3E%3C/svg%3E"),
     radial-gradient(
-      1200px 620px at 76% -12%,
-      rgb(168 118 62 / 9%),
+      1200px 620px at 72% -10%,
+      rgb(168 118 62 / 12%),
       transparent 70%
-    ),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 180' preserveAspectRatio='none'%3E%3Cpath d='M0 90 Q200 34 400 90 T800 90 T1200 90 T1600 90 V180 H0 Z' fill='%23a8763e' fill-opacity='0.05'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 980 220' preserveAspectRatio='none'%3E%3Cpath d='M0 110 Q122 48 245 110 T490 110 T735 110 T980 110 V220 H0 Z' fill='%23a8763e' fill-opacity='0.045'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2400 300' preserveAspectRatio='none'%3E%3Cpath d='M0 150 Q300 72 600 150 T1200 150 T1800 150 T2400 150 V300 H0 Z' fill='%23a8763e' fill-opacity='0.035'/%3E%3C/svg%3E");
+    );
 
-  background-repeat: no-repeat, repeat-x, repeat-x, repeat-x;
+  background-repeat: repeat-x, repeat-x, repeat-x, no-repeat;
   background-size:
-    auto,
-    1600px 180px,
-    980px 220px,
-    2400px 300px;
+    1440px 240px,
+    960px 180px,
+    1920px 140px,
+    auto;
   background-position:
-    0 0,
-    var(--ui-ola-a, 0px) -30px,
-    var(--ui-ola-b, 0px) 38%,
-    var(--ui-ola-c, 0px) 74%;
+    var(--ui-ola-a, 0px) 100%,
+    var(--ui-ola-b, 0px) 100%,
+    var(--ui-ola-c, 0px) 100%,
+    0 0;
 
   animation:
     ui-ola-a 52s linear infinite,

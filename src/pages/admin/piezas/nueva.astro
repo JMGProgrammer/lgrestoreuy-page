@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import Icon from '../../../components/admin/Icon.astro';
 
 const error = Astro.url.searchParams.get('error');
 
@@ -77,14 +78,26 @@ const categorias = [
 
     <div>
       <span class="campo-label">Fotos</span>
-      <input
-        class="campo"
-        id="fotos"
-        name="fotos"
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple
-      />
+      <div class="ui-subida" data-subida>
+        <input
+          id="fotos"
+          name="fotos"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          multiple
+          class="sr-only"
+          data-subida-input
+        />
+        <label
+          for="fotos"
+          class="btn-secundario shrink-0"
+          title="Elegir varias imágenes del dispositivo"
+        >
+          <Icon nombre="subir" clase="size-4" />
+          Elegir fotos
+        </label>
+        <span class="ui-subida-nombre" data-subida-nombre></span>
+      </div>
       <p class="mt-1 text-xs text-tinta-tenue">
         JPG, PNG, WebP o GIF. Hasta 8 MB cada una. Se achican solas antes de subir. La primera es la portada.
       </p>
