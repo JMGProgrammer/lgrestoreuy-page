@@ -96,6 +96,10 @@ Dos cosas que confunden la primera vez:
 | `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Build de producción (verifica tipos) |
 | `npm run preview` | Previsualiza el build |
+| `./scripts/versionar.sh fix` | Crea y empuja el próximo `v0.N.z` sobre HEAD |
+| `./scripts/versionar.sh minor` | Feature grande: crea y empuja el próximo `v0.N` |
+
+Detalle y tabla del recorrido: [`Docs/15-versionado.md`](./Docs/15-versionado.md).
 
 ## Decisiones técnicas
 
