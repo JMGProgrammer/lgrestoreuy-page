@@ -1,39 +1,50 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import Icon from '../../components/admin/Icon.astro';
-import { adminContext, listarCotizaciones, resumen } from '../../lib/admin';
-import { formatUYU } from '../../lib/whatsapp';
+import {
+  adminContext,
+  listarCotizaciones,
+  leerContenido,
+  resumen,
+} from '../../lib/admin';
+import { formatUYU, normalizePhone } from '../../lib/whatsapp';
 
 const ctx = adminContext(Astro.request, Astro.cookies);
-const [datos, cotizaciones] = await Promise.all([
+const [datos, cotizaciones, contenido] = await Promise.all([
   resumen(ctx),
   listarCotizaciones(ctx, 5),
+  leerContenido(ctx),
 ]);
 
 // Próximos pasos como acción visible: cada fila tiene icono y un botón
-// real que lleva a donde se hace el paso. Sin links subrayados escondidos
-// entre texto, que son la única cosa del panel que no se ve.
-const pasos = [
+// real que lleva a donde se hace el paso. Los pasos que ya están hechos
+// no aparecen: el resumen se convierte en un dashboard vivo.
+const TODOS_LOS_PASOS = [
   {
     icono: 'whatsapp' as const,
     texto:
       'Cargar tus datos (WhatsApp, dirección, horarios) y activar el botón de consulta.',
     href: '/admin/contenido',
     boton: 'Ir a Contenido',
+    pendiente: !normalizePhone(contenido.whatsapp),
   },
   {
     icono: 'mas' as const,
     texto: 'Revisar los servicios y completar los rangos de precio.',
     href: '/admin/servicios',
     boton: 'Ir a Servicios',
+    pendiente: datos.serviciosSinPrecio > 0,
   },
   {
     icono: 'imagen' as const,
     texto: 'Publicar piezas con fotos antes y después.',
     href: '/admin/piezas',
     boton: 'Ir a Piezas',
+    pendiente:
+      datos.piezasDisponibles === 0 && datos.piezasEnProceso === 0,
   },
 ];
+const pasos = TODOS_LOS_PASOS.filter((paso) => paso.pendiente);
 
 // Cada tarjeta lleva a la sección donde ese número se trabaja. Sin destino,
 // el hover sería un efecto mentiroso.
@@ -137,23 +148,32 @@ const tarjetas = [
 
   <section class="mt-10">
     <h2 class="text-lg text-tinta">Próximos pasos</h2>
-    <ul class="mt-4 space-y-2">
-      {
-        pasos.map((paso) => (
-          <li class="flex flex-wrap items-center justify-between gap-2 rounded border border-linea bg-papel px-4 py-3">
-            <span class="flex min-w-0 items-center gap-2.5 text-sm text-tinta-suave">
-              <span class="grid size-7 shrink-0 place-items-center rounded-full bg-[#9a6b2f]/15 text-caoba">
-                <Icon nombre={paso.icono} clase="size-4" />
-              </span>
-              <span class="min-w-0">{paso.texto}</span>
-            </span>
-            <a href={paso.href} class="ui-btn ui-btn-neutro ui-btn-sm ml-auto">
-              {paso.boton}
-              <Icon nombre="flecha" clase="size-3.5" />
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    {
+      pasos.length === 0 ? (
+        <p class="mt-4 flex items-center gap-3 rounded border border-[#4f6b46]/40 bg-[#4f6b46]/10 px-4 py-3 text-sm text-[#33472e]">
+          <Icon nombre="check" clase="size-4 shrink-0" />
+          Datos, servicios y piezas al día. Nada colgado acá.
+        </p>
+      ) : (
+        <ul class="mt-4 space-y-2">
+          {
+            pasos.map((paso) => (
+              <li class="flex flex-wrap items-center justify-between gap-2 rounded border border-linea bg-papel px-4 py-3">
+                <span class="flex min-w-0 items-center gap-2.5 text-sm text-tinta-suave">
+                  <span class="grid size-7 shrink-0 place-items-center rounded-full bg-[#9a6b2f]/15 text-caoba">
+                    <Icon nombre={paso.icono} clase="size-4" />
+                  </span>
+                  <span class="min-w-0">{paso.texto}</span>
+                </span>
+                <a href={paso.href} class="ui-btn ui-btn-neutro ui-btn-sm ml-auto">
+                  {paso.boton}
+                  <Icon nombre="flecha" clase="size-3.5" />
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      )
+    }
   </section>
 </AdminLayout>

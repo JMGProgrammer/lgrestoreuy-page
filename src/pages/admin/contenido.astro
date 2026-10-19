@@ -94,6 +94,7 @@ const wa = whatsappLink(contenido.whatsapp, 'Hola');
     method="post"
     enctype="multipart/form-data"
     class="mt-6 max-w-2xl space-y-8"
+    data-contenido-form
   >
     {/*
       La portada ya no se edita acá: vive junto al anillo y la librería,
@@ -238,6 +239,57 @@ const wa = whatsappLink(contenido.whatsapp, 'Hola');
       </div>
     </fieldset>
 
-    <button type="submit" class="btn-principal">Guardar</button>
+    <div class="sticky bottom-20 z-20 mt-8 rounded border border-linea bg-papel/95 p-3 sombra-vintage backdrop-blur md:bottom-4">
+      <button type="submit" class="ui-btn ui-btn-acento w-full justify-center sm:w-auto">
+        Guardar todo
+      </button>
+    </div>
   </form>
 </AdminLayout>
+
+<script>
+  /**
+   * Red de protección del form de Contenido: es el más largo del panel y el
+   * único sin el guard de borradores. Marca los campos que cambiaron, avisa
+   * al irse con cambios sin guardar y arriba el botón Guardar sigue a la
+   * vista aunque el form largo baje.
+   */
+  const form = document.querySelector<HTMLFormElement>('[data-contenido-form]');
+  if (form) {
+    const campos = Array.from(
+      form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+        'input, textarea',
+      ),
+    ).filter((el) => el.type !== 'hidden');
+
+    let cambiado = false;
+
+    const revisar = () => {
+      cambiado = campos.some(
+        (el) => el.value !== (el.dataset.valorInicial ?? ''),
+      );
+      campos.forEach((el) => {
+        el.classList.toggle(
+          'ui-campo-cambiado',
+          el.value !== (el.dataset.valorInicial ?? ''),
+        );
+      });
+    };
+
+    campos.forEach((el) => {
+      el.dataset.valorInicial = el.value;
+      el.addEventListener('input', revisar);
+    });
+
+    // El guardado real apaga el aviso antes de que corra beforeunload.
+    form.addEventListener('submit', () => {
+      cambiado = false;
+    });
+
+    window.addEventListener('beforeunload', (evento) => {
+      if (!cambiado) return;
+      evento.preventDefault();
+      evento.returnValue = '';
+    });
+  }
+</script>

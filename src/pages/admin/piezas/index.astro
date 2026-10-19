@@ -1,15 +1,27 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import Icon from '../../../components/admin/Icon.astro';
-import { adminContext, ESTADOS_PIEZA, listarPiezas } from '../../../lib/admin';
+import { adminContext, ESTADOS_PIEZA, listarPiezasConTodasLasFotos } from '../../../lib/admin';
 import { formatUYU } from '../../../lib/whatsapp';
 import type { EstadoPieza } from '../../../lib/types';
 
 const ctx = adminContext(Astro.request, Astro.cookies);
-const piezas = await listarPiezas(ctx);
+// Con fotos incluidas: la lista muesta la miniatura de portada de cada
+// pieza, que en un panel de fotos es lo primero que el ojo busca.
+const piezas = await listarPiezasConTodasLasFotos(ctx);
 
 const filtro = Astro.url.searchParams.get('estado');
-const visibles = filtro ? piezas.filter((p) => p.estado === filtro) : piezas;
+const q = Astro.url.searchParams.get('q')?.trim().toLowerCase() ?? '';
+
+const visibles = piezas.filter((p) => {
+  if (filtro && p.estado !== filtro) return false;
+  if (!q) return true;
+  return (
+    p.titulo.toLowerCase().includes(q) ||
+    (p.categoria?.toLowerCase().includes(q) ?? false) ||
+    (p.ubicacion?.toLowerCase().includes(q) ?? false)
+  );
+});
 
 const colorEstado: Record<EstadoPieza, string> = {
   disponible: 'bg-[#4f6b46]/15 text-[#33472e]',
@@ -36,7 +48,7 @@ const colorEstado: Record<EstadoPieza, string> = {
 
   <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtrar por estado">
     <a
-      href="/admin/piezas"
+      href={q ? `/admin/piezas?q=${encodeURIComponent(q)}` : '/admin/piezas'}
       class:list={[
         'rounded border px-3 py-1.5 text-sm',
         !filtro
@@ -49,9 +61,12 @@ const colorEstado: Record<EstadoPieza, string> = {
     {
       ESTADOS_PIEZA.map((estado) => {
         const total = piezas.filter((p) => p.estado === estado.valor).length;
+        const href = new URLSearchParams(
+          q ? { estado: estado.valor, q } : { estado: estado.valor },
+        ).toString();
         return (
           <a
-            href={`/admin/piezas?estado=${estado.valor}`}
+            href={`/admin/piezas?${href}`}
             class:list={[
               'rounded border px-3 py-1.5 text-sm',
               filtro === estado.valor
@@ -66,51 +81,98 @@ const colorEstado: Record<EstadoPieza, string> = {
     }
   </nav>
 
+  <form method="get" class="mt-3 flex flex-wrap gap-2">
+    {
+      filtro && <input type="hidden" name="estado" value={filtro} />
+    }
+    <input
+      type="search"
+      name="q"
+      value={Astro.url.searchParams.get('q') ?? ''}
+      placeholder="Buscar por título, categoría o ubicación…"
+      class="campo max-w-md w-full sm:w-auto sm:min-w-[18rem]"
+      aria-label="Buscar piezas"
+    />
+    <button type="submit" class="ui-btn ui-btn-neutro ui-btn-sm self-stretch">
+      Buscar
+    </button>
+    {
+      q && (
+        <a href="/admin/piezas" class="ui-btn ui-btn-fantasma ui-btn-sm self-stretch">
+          Quitar la búsqueda
+        </a>
+      )
+    }
+  </form>
+
   <ul class="mt-6 divide-y divide-linea rounded border border-linea bg-papel">
     {
-      visibles.map((pieza) => (
-        <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div class="min-w-0">
-            <p class="text-sm text-tinta">{pieza.titulo}</p>
-            <p class="mt-0.5 flex items-center gap-2 text-xs text-tinta-tenue">
-              <span
-                class:list={[
-                  'rounded px-2 py-0.5',
-                  colorEstado[pieza.estado],
-                ]}
-              >
-                {ESTADOS_PIEZA.find((e) => e.valor === pieza.estado)?.etiqueta ??
-                  pieza.estado}
-              </span>
-              {formatUYU(pieza.precio) ?? 'sin precio'}
-              {pieza.categoria ? ` · ${pieza.categoria}` : ''}
-              {pieza.destacada ? ' · destacada' : ''}
-            </p>
-          </div>
-          <div class="flex shrink-0 gap-2">
-            {pieza.estado === 'disponible' && (
+      visibles.map((pieza) => {
+        const portada = pieza.fotos[0];
+        return (
+          <li class="flex items-center justify-between gap-3 px-4 py-3">
+            <div class="flex min-w-0 items-center gap-3">
+              {
+                portada ? (
+                  <img
+                    src={portada.url}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    class="size-11 shrink-0 rounded border border-linea object-cover"
+                  />
+                ) : (
+                  <span
+                    class="grid size-11 shrink-0 place-items-center rounded border border-dashed border-linea bg-papel-oscuro text-tinta-tenue"
+                    aria-hidden="true"
+                  >
+                    <Icon nombre="imagen" clase="size-5" />
+                  </span>
+                )
+              }
+              <div class="min-w-0">
+                <p class="truncate text-sm text-tinta">{pieza.titulo}</p>
+                <p class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-tinta-tenue">
+                  <span
+                    class:list={[
+                      'rounded px-2 py-0.5',
+                      colorEstado[pieza.estado],
+                    ]}
+                  >
+                    {ESTADOS_PIEZA.find((e) => e.valor === pieza.estado)?.etiqueta ??
+                      pieza.estado}
+                  </span>
+                  {formatUYU(pieza.precio) ?? 'sin precio'}
+                  {pieza.categoria ? ` · ${pieza.categoria}` : ''}
+                  {pieza.destacada ? ' · destacada' : ''}
+                </p>
+              </div>
+            </div>
+            <div class="flex shrink-0 gap-2">
+              {pieza.estado === 'disponible' && (
+                <a
+                  href={`/piezas/${pieza.slug}`}
+                  target="_blank"
+                  rel="noopener"
+                  class="ui-btn ui-btn-fantasma ui-btn-icono ui-btn-sm"
+                  title="Ver en la web"
+                  aria-label={`Ver ${pieza.titulo} en la web`}
+                >
+                  <Icon nombre="ojo" clase="size-4" />
+                </a>
+              )}
               <a
-                href={`/piezas/${pieza.slug}`}
-                target="_blank"
-                rel="noopener"
-                class="ui-btn ui-btn-fantasma ui-btn-icono ui-btn-sm"
-                title="Ver en la web"
-                aria-label={`Ver ${pieza.titulo} en la web`}
+                href={`/admin/piezas/${pieza.id}`}
+                class="ui-btn ui-btn-neutro ui-btn-icono ui-btn-sm"
+                title="Editar pieza"
+                aria-label={`Editar ${pieza.titulo}`}
               >
-                <Icon nombre="ojo" clase="size-4" />
+                <Icon nombre="lapiz" clase="size-4" />
               </a>
-            )}
-            <a
-              href={`/admin/piezas/${pieza.id}`}
-              class="ui-btn ui-btn-neutro ui-btn-icono ui-btn-sm"
-              title="Editar pieza"
-              aria-label={`Editar ${pieza.titulo}`}
-            >
-              <Icon nombre="lapiz" clase="size-4" />
-            </a>
-          </div>
-        </li>
-      ))
+            </div>
+          </li>
+        );
+      })
     }
 
     {
@@ -119,7 +181,7 @@ const colorEstado: Record<EstadoPieza, string> = {
           <p class="text-sm text-tinta-suave">
             {piezas.length === 0
               ? 'Todavía no publicaste ninguna pieza.'
-              : 'Ninguna pieza con ese estado.'}
+              : 'Ninguna con ese estado o en esa búsqueda.'}
           </p>
           {
             piezas.length === 0 && (

@@ -2,15 +2,33 @@
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import Icon from '../../../components/admin/Icon.astro';
 import { adminContext, ESTADOS_QUOTE, listarCotizaciones } from '../../../lib/admin';
-import type { EstadoQuote } from '../../../lib/types';
+import type { EstadoQuote, Quote } from '../../../lib/types';
+import { whatsappLink } from '../../../lib/whatsapp';
 
 const ctx = adminContext(Astro.request, Astro.cookies);
 const cotizaciones = await listarCotizaciones(ctx, 100);
 
 const filtro = Astro.url.searchParams.get('estado');
-const visibles = filtro
-  ? cotizaciones.filter((c) => c.estado === filtro)
-  : cotizaciones;
+const q = Astro.url.searchParams.get('q')?.trim().toLowerCase() ?? '';
+
+const visibles = cotizaciones.filter((c) => {
+  if (filtro && c.estado !== filtro) return false;
+  if (!q) return true;
+  return (
+    c.nombre.toLowerCase().includes(q) ||
+    c.telefono.includes(q) ||
+    (c.tipo_mueble?.toLowerCase().includes(q) ?? false) ||
+    (c.comuna?.toLowerCase().includes(q) ?? false)
+  );
+});
+
+/** WhatsApp directo con quien pidió: la fila no obliga a copiar a mano. */
+const waDeCotizacion = (c: Quote): string | null => {
+  const mensaje = `Hola ${c.nombre}, te escribo desde el taller por la cotización de ${
+    c.tipo_mueble ?? 'la pieza que consultaste'
+  }. ¿Coordinamos?`;
+  return whatsappLink(c.telefono, mensaje);
+};
 
 const color: Record<EstadoQuote, string> = {
   nueva: 'bg-[#3f5a8a]/15 text-[#2c3f60]',
@@ -49,7 +67,7 @@ const fecha = (iso: string) =>
 
   <nav class="mt-4 flex flex-wrap gap-2" aria-label="Filtrar por estado">
     <a
-      href="/admin/cotizaciones"
+      href={q ? `/admin/cotizaciones?q=${encodeURIComponent(q)}` : '/admin/cotizaciones'}
       class:list={[
         'rounded border px-3 py-1.5 text-sm',
         !filtro
@@ -63,9 +81,12 @@ const fecha = (iso: string) =>
       ESTADOS_QUOTE.map((estado) => {
         const total = cotizaciones.filter((c) => c.estado === estado.valor).length;
         if (total === 0 && estado.valor !== 'nueva') return null;
+        const query = new URLSearchParams(
+          q ? { estado: estado.valor, q } : { estado: estado.valor },
+        ).toString();
         return (
           <a
-            href={`/admin/cotizaciones?estado=${estado.valor}`}
+            href={`/admin/cotizaciones?${query}`}
             class:list={[
               'rounded border px-3 py-1.5 text-sm',
               filtro === estado.valor
@@ -79,6 +100,39 @@ const fecha = (iso: string) =>
       })
     }
   </nav>
+
+  <form method="get" class="mt-3 flex flex-wrap gap-2">
+    {
+      filtro && <input type="hidden" name="estado" value={filtro} />
+    }
+    <input
+      type="search"
+      name="q"
+      value={Astro.url.searchParams.get('q') ?? ''}
+      placeholder="Buscar por nombre, teléfono, comuna…"
+      class="campo w-full sm:w-auto sm:min-w-[18rem] max-w-md"
+      aria-label="Buscar cotizaciones"
+    />
+    <button type="submit" class="ui-btn ui-btn-neutro ui-btn-sm self-stretch">
+      Buscar
+    </button>
+    {
+      q && (
+        <a href="/admin/cotizaciones" class="ui-btn ui-btn-fantasma ui-btn-sm self-stretch">
+          Quitar la búsqueda
+        </a>
+      )
+    }
+  </form>
+
+  {
+    cotizaciones.length >= 100 && (
+      <p class="mt-4 rounded border border-[#9a6b2f] bg-[#9a6b2f]/10 px-4 py-3 text-sm text-caoba">
+        Hay más de 100 pedidos: este listado muestra los 100 más recientes.
+        Usá el filtro por estado para llegar a lo que buscás.
+      </p>
+    )
+  }
 
   <ul class="mt-6 divide-y divide-linea rounded border border-linea bg-papel">
     {
@@ -100,11 +154,25 @@ const fecha = (iso: string) =>
               {cotizacion.fotos.length > 0 && ` · ${cotizacion.fotos.length} foto(s)`}
             </p>
           </div>
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
             <span class:list={['rounded px-2 py-0.5 text-xs', color[cotizacion.estado]]}>
               {ESTADOS_QUOTE.find((e) => e.valor === cotizacion.estado)?.etiqueta ??
                 cotizacion.estado}
             </span>
+            {
+              waDeCotizacion(cotizacion) && (
+                <a
+                  href={waDeCotizacion(cotizacion) ?? '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="ui-btn ui-btn-fantasma ui-btn-icono ui-btn-sm text-[#1f7a4d] hover:bg-[#1f7a4d]/10"
+                  title={`Abrir el chat de WhatsApp con ${cotizacion.nombre}`}
+                  aria-label={`Abrir el chat de WhatsApp con ${cotizacion.nombre}`}
+                >
+                  <Icon nombre="whatsapp" clase="size-4" />
+                </a>
+              )
+            }
             <a
               href={`/admin/cotizaciones/${cotizacion.id}`}
               class="ui-btn ui-btn-neutro ui-btn-sm"
