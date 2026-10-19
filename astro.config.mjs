@@ -13,6 +13,14 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
 
+    // Solo dev: Vite 6+ bloquea cualquier Host que no sea localhost, así
+    // que los túneles (trycloudflare, localtunnel, ngrok) para mostrar
+    // avances al cliente devuelven "Blocked request". En producción no
+    // existe `astro dev`, así que esto no abre nada afuera.
+    server: {
+      allowedHosts: true,
+    },
+
     build: {
       // Los <script> chicos se inlinan por defecto en el HTML. Acá no sirve:
       // la CSP pública es `script-src 'self'` (sin unsafe-inline), así que
