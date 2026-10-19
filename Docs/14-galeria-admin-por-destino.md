@@ -111,12 +111,10 @@ Fuera de scope: `CarruselPiezas.astro` (recibe las piezas armadas), RLS de lectu
 
 ### 6.1 Supabase — SQL Editor y Storage (dashboard del proyecto)
 
-> ⚠️ **Antes de 0006**: verificar si `0005_papelera-cotizaciones` ya está aplicado — según memoria del 16/10 **no lo estaba**. Test rápido en el SQL Editor:
-> `select 'existe' from information_schema.tables where table_schema='public' and table_name='quotes_borradas';`
-> Si no devuelve fila, falta 0005.
+> ⚠️ Estado 2026-10-19: **0005 verificada como aplicada** (la tabla `quotes_borradas` existe; el header `?column?` del SQL Editor es solo una columna sin alias, no un error).
 
-1. **Aplicar 0005** si falta: pegar el contenido de `supabase/migrations/0005_papelera-cotizaciones.sql` en el SQL Editor → Run.
-2. **Aplicar 0006** cuando el código esté listo: pegar `supabase/migrations/0006_hero-anillo-assets.sql` → Run. En un paso crea la columna `en_anillo`, la tabla `assets` y el bucket `assets` con su policy.
+1. ~~Aplicar 0005~~ — ya está aplicada.
+2. **Aplicar 0006** (`supabase/migrations/0006_hero-anillo-assets.sql`): ya escrita y **idempotente** (se puede correr sin riesgo, incluso dos veces). Es aditiva: la home no cambia mientras nadie marque `en_anillo`. Puede aplicarse ya, aunque lo natural es la misma visita que el deploy del código del plan.
 3. Verificar en **Storage → Policies** que la regla de lectura pública incluye los buckets `piezas / galeria / servicios / portada / assets` — la lista `in (...)` está escrita a mano en 0001 y 0004.
 4. **Tope por archivo en `cotizaciones`** (pendiente del audit del doc 13): Storage → bucket `cotizaciones` → limitar tamaño de archivo a **10 MB**.
 5. **Borrar la cotización de prueba** (otro pendiente del audit): SQL `delete from public.quotes where nombre = 'Test';` — el rol anon no puede, lo hace el dueño.
