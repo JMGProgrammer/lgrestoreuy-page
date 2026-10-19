@@ -80,6 +80,7 @@ if (Astro.request.method === 'POST' && usuario) {
         ubicacion: textoONull(form.get('ubicacion')),
         estado,
         destacada: form.get('destacada') === 'on',
+        en_anillo: form.get('en_anillo') === 'on',
       })
       .eq('id', id);
 
@@ -195,6 +196,12 @@ const wa = whatsappLink(
     <label class="flex items-center gap-2 text-sm text-tinta-suave">
       <input type="checkbox" name="destacada" checked={pieza.destacada} class="accent-[#a8763e]" />
       Destacada en la home
+    </label>
+
+    <!-- 0006: el anillo 3D del hero. También se marca en Galería → Hero. -->
+    <label class="flex items-center gap-2 text-sm text-tinta-suave">
+      <input type="checkbox" name="en_anillo" checked={pieza.en_anillo === true} class="accent-[#a8763e]" />
+      Girando en el anillo 3D del hero
     </label>
 
     <button type="submit" class="btn-principal">Guardar</button>

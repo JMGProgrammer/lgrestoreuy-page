@@ -6,6 +6,8 @@ import type { AstroCookies } from 'astro';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseConSesion } from './supabase/server';
 import type {
+  Asset,
+  TagAsset,
   GalleryItem,
   Piece,
   PiecePhoto,
@@ -489,6 +491,57 @@ export async function listarPiezasConFotos(
   }));
 }
 
+export interface PiezaParaAnillo {
+  pieza: PiezaConFotos;
+  /** La foto que sale en el anillo: la portada (primera por orden). */
+  foto: PiecePhoto;
+}
+
+/**
+ * Todas las piezas con sus fotos — incluidas las que no tienen ninguna.
+ * La galería la usa para el manager de fotos por pieza, para el anillo del
+ * hero y para armar el par del comparador, así que un solo query alcanza.
+ */
+export async function listarPiezasConTodasLasFotos(
+  ctx: AdminContext,
+): Promise<PiezaConFotos[]> {
+  const { data, error } = await ctx.supabase
+    .from('pieces')
+    .select('*, fotos:piece_photos(*)')
+    .order('destacada', { ascending: false })
+    .order('updated_at', { ascending: false });
+
+  if (error) throw new Error(`piezas: ${error.message}`);
+
+  return ((data ?? []) as unknown as PiezaConFotos[]).map((pieza) => ({
+    ...pieza,
+    fotos: [...(pieza.fotos ?? [])].sort((a, b) => a.orden - b.orden),
+  }));
+}
+
+/**
+ * Los 8 slots del anillo del hero, mirados igual que la web los mira:
+ * piezas marcadas con en_anillo (0006) y cae al de siempre (primeras con
+ * foto) mientras nadie marcó. Cambiar acá es cambiar el orden de la web.
+ */
+export function armarAnillo(
+  piezas: PiezaConFotos[],
+  limite = 8,
+): PiezaParaAnillo[] {
+  const conFoto = piezas
+    .filter((p) => p.fotos.length > 0)
+    .map((pieza) => ({ pieza, foto: pieza.fotos[0] }));
+
+  const marcadas = piezas.filter((p) => p.en_anillo);
+
+  if (marcadas.length === 0) return conFoto.slice(0, limite);
+
+  return marcadas
+    .filter((p) => p.fotos.length > 0)
+    .map((pieza) => ({ pieza, foto: pieza.fotos[0] }))
+    .slice(0, limite);
+}
+
 // ------------------------------------------------------------------- imágenes
 
 /** Solo formatos de imagen. Nada de .php, .html ni executables. */
@@ -597,8 +650,161 @@ export async function agregarFotoPieza(
 }
 
 export async function borrarFotoPieza(ctx: AdminContext, id: string) {
+  const { data: foto, error: errorLectura } = await ctx.supabase
+    .from('piece_photos')
+    .select('id, storage_path, url')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (errorLectura) throw new Error(`fotos: ${errorLectura.message}`);
+  if (!foto) return;
+
   const { error } = await ctx.supabase.from('piece_photos').delete().eq('id', id);
   if (error) throw new Error(error.message);
+
+  // El archivo de Storage se borra solo si nadie más lo está mostrando.
+  // El comparador guarda una copia de la URL en cada par (0003): si un par
+  // apunta a esta foto, el archivo tiene que seguir vivo o el par se
+  // rompería en silencio. Consulta por id y por copia de URL, por si acaso.
+  const [porAntes, porDespues, porUrl] = await Promise.all([
+    ctx.supabase
+      .from('gallery_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('antes_photo_id', id),
+    ctx.supabase
+      .from('gallery_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('despues_photo_id', id),
+    ctx.supabase
+      .from('gallery_items')
+      .select('id', { count: 'exact', head: true })
+      .or(`antes_url.eq.${foto.url},despues_url.eq.${foto.url}`),
+  ]);
+
+  const usada =
+    (porAntes.count ?? 0) + (porDespues.count ?? 0) + (porUrl.count ?? 0) > 0;
+
+  if (!usada && foto.storage_path) {
+    // Best effort: la fila ya se fue, así que la web ya no muestra la foto.
+    // Si Storage falla, el archivo caído es un problema de higiene menor.
+    await ctx.supabase.storage.from('piezas').remove([foto.storage_path]);
+  }
+}
+
+/**
+ * Reordena una foto intercambiándola con la vecina de arriba o de abajo.
+ * Reenumerar en bloque (y no solo hacer swap de dos `orden`) evita los
+ * empates: dos fotos con el mismo `orden` se pelean por la posición.
+ */
+export async function moverFotoPieza(
+  ctx: AdminContext,
+  fotoId: string,
+  direccion: 1 | -1,
+) {
+  const { data: foto } = await ctx.supabase
+    .from('piece_photos')
+    .select('piece_id')
+    .eq('id', fotoId)
+    .maybeSingle();
+
+  if (!foto) return;
+
+  const { data: lista } = await ctx.supabase
+    .from('piece_photos')
+    .select('id')
+    .eq('piece_id', (foto as { piece_id: string }).piece_id)
+    .order('orden', { ascending: true });
+
+  const ids = (lista ?? []).map((f) => String((f as { id: string }).id));
+  const desde = ids.indexOf(fotoId);
+  const hasta = desde + (direccion > 0 ? 1 : -1);
+
+  if (desde < 0 || hasta < 0 || hasta >= ids.length) return;
+
+  ids.splice(desde, 1);
+  ids.splice(hasta, 0, fotoId);
+
+  await Promise.all(
+    ids.map((id, indice) =>
+      ctx.supabase.from('piece_photos').update({ orden: indice }).eq('id', id),
+    ),
+  );
+}
+
+// ------------------------------------------------------------------- assets
+
+export async function listarAssets(ctx: AdminContext): Promise<Asset[]> {
+  const { data, error } = await ctx.supabase
+    .from('assets')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(`assets: ${error.message}`);
+  return (data ?? []) as Asset[];
+}
+
+export interface AssetInput {
+  archivo: File;
+  tag: TagAsset;
+  alt: string | null;
+}
+
+/** Sube el archivo al bucket y registra la fila: las dos cosas juntas. */
+export async function crearAsset(ctx: AdminContext, input: AssetInput): Promise<Asset> {
+  const subida = await subirImagen(ctx, 'assets', input.archivo, 'libreria');
+
+  const { data, error } = await ctx.supabase
+    .from('assets')
+    .insert({
+      storage_path: subida.storage_path,
+      url: subida.url,
+      tag: input.tag,
+      alt: input.alt,
+    })
+    .select('*')
+    .single();
+
+  if (error) throw new Error(`assets: ${error.message}`);
+  return data as Asset;
+}
+
+/**
+ * Borrar un asset es borrar también el archivo (patrón papelera): sin eso
+ * queda huérfano en Storage para siempre. Se niega si el asset es hoy el
+ * fondo del hero: sacarlo rompería la home sin que el cliente se dé cuenta.
+ */
+export async function borrarAsset(
+  ctx: AdminContext,
+  id: string,
+): Promise<'borrado' | 'en_uso'> {
+  const { data: asset, error } = await ctx.supabase
+    .from('assets')
+    .select('storage_path, url')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw new Error(`assets: ${error.message}`);
+  if (!asset) return 'borrado';
+
+  const { data: settings } = await ctx.supabase
+    .from('site_settings')
+    .select('portada_url')
+    .eq('id', 1)
+    .maybeSingle();
+
+  if (settings?.portada_url && settings.portada_url === asset.url) {
+    return 'en_uso';
+  }
+
+  await ctx.supabase.storage.from('assets').remove([asset.storage_path]);
+
+  const { error: errorBorrado } = await ctx.supabase
+    .from('assets')
+    .delete()
+    .eq('id', id);
+
+  if (errorBorrado) throw new Error(`assets: ${errorBorrado.message}`);
+  return 'borrado';
 }
 
 export const ESTADOS_PIEZA: { valor: EstadoPieza; etiqueta: string }[] = [

@@ -76,6 +76,8 @@ export interface Piece {
   costo_compra: number | null;
   estado: EstadoPieza;
   destacada: boolean;
+  /** 0006: marcada por el cliente para entrar al anillo 3D del hero */
+  en_anillo?: boolean;
   medidas: string | null;
   ubicacion: string | null;
   created_by: string | null;
@@ -129,4 +131,18 @@ export interface Quote {
 /** Pieza con sus fotos, para las páginas públicas */
 export interface PieceWithPhotos extends Piece {
   fotos: PiecePhoto[];
+}
+
+/** Etiquetas de la librería de assets (0006). */
+export type TagAsset = 'ambiente' | 'textura' | 'personal' | 'logo' | 'otro';
+
+/** 0006: foto suelta de la librería — no pertenece a ninguna pieza. */
+export interface Asset {
+  id: string;
+  storage_path: string;
+  url: string;
+  alt: string | null;
+  tag: TagAsset;
+  created_by: string | null;
+  created_at: string;
 }

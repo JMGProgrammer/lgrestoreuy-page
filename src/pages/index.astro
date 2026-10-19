@@ -8,6 +8,7 @@ import TarjetaServicio from '../components/TarjetaServicio.astro';
 import {
   getServices,
   getPieces,
+  getPiezasAnillo,
   getGalleryHighlights,
   getSiteSettings,
   MODO_DEMO,
@@ -18,7 +19,7 @@ const [services, pieces, gallery, settings, orbitar] = await Promise.all([
   getPieces({ soloDestacadas: true, limit: 4 }),
   getGalleryHighlights(6),
   getSiteSettings(),
-  getPieces({ limit: 8 }),
+  getPiezasAnillo(8),
 ]);
 
 // Si la base todavía no tiene las columnas de la 0004, la web sigue

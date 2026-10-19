@@ -1,20 +1,63 @@
 ---
+/**
+ * Galería del panel, organizada por destino de uso (plan Docs/14).
+ *
+ * Antes esta página era solo el comparador antes/después. Ahora es la casa
+ * de "¿dónde termina cada foto que subo?": cuatro pestañas, una por lugar
+ * donde una foto aparece en la web.
+ *
+ * - piezas      → manager compacto de fotos por pieza (chips de dónde se usa)
+ * - comparador  → los pares que muestran la home, con fotografía y su foto
+ * - hero        → el anillo 3D (bajo control del cliente) y el fondo de portada
+ * - libreria    → assets sueltos: no son piezas, quedan disponibles para todo
+ */
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import {
   adminContext,
   agregarFotoPieza,
+  armarAnillo,
+  borrarAsset,
+  borrarFotoPieza,
+  crearAsset,
   errorLegible,
+  guardarContenido,
+  listarAssets,
   listarGaleria,
-  listarPiezasConFotos,
+  listarPiezasConTodasLasFotos,
+  moverFotoPieza,
   numeroONull,
   subirImagen,
   textoONull,
 } from '../../lib/admin';
+import type { TagAsset } from '../../lib/types';
 import { getCurrentUser } from '../../lib/supabase/server';
 import Icon from '../../components/admin/Icon.astro';
 
 const ctx = adminContext(Astro.request, Astro.cookies);
 const usuario = await getCurrentUser(Astro.request, Astro.cookies);
+
+const TABS = ['piezas', 'comparador', 'hero', 'libreria'] as const;
+type Tab = (typeof TABS)[number];
+
+const ok = Astro.url.searchParams.get('ok');
+const tab = (TABS as readonly string[]).includes(
+  Astro.url.searchParams.get('tab') ?? '',
+)
+  ? (Astro.url.searchParams.get('tab') as Tab)
+  : 'piezas';
+
+const MENSAJES_OK: Record<string, string> = {
+  agregado: 'Par agregado a la galería.',
+  foto: 'Foto subida.',
+  foto_borrada: 'Foto quitada.',
+  foto_movida: 'Orden de fotos actualizado.',
+  anillo: 'Anillo guardado: mirá la web para verlo girando.',
+  fondo: 'Fondo de portada actualizado. La web se cachea un minuto.',
+  fondo_quitado:
+    'Fondo de portada quitado: vuelve la textura de madera del repo.',
+  asset: 'Asset agregado a la librería.',
+  asset_borrado: 'Asset borrado, junto con su archivo en Storage.',
+};
 
 let error = '';
 
@@ -22,12 +65,14 @@ if (Astro.request.method === 'POST' && usuario) {
   const form = await Astro.request.formData();
   const accion = String(form.get('_accion') ?? '');
 
+  // ----- comparador: existente, intacta de siempre ------------------------
+
   if (accion === 'borrar') {
     await ctx.supabase
       .from('gallery_items')
       .delete()
       .eq('id', String(form.get('id') ?? ''));
-    return Astro.redirect('/admin/galeria');
+    return Astro.redirect('/admin/galeria?tab=comparador');
   }
 
   if (accion === 'destacar') {
@@ -35,7 +80,7 @@ if (Astro.request.method === 'POST' && usuario) {
       .from('gallery_items')
       .update({ destacada_home: form.get('valor') === 'on' })
       .eq('id', String(form.get('id') ?? ''));
-    return Astro.redirect('/admin/galeria');
+    return Astro.redirect('/admin/galeria?tab=comparador');
   }
 
   if (accion === 'agregar') {
@@ -43,11 +88,11 @@ if (Astro.request.method === 'POST' && usuario) {
     const antesId = String(form.get('antes_photo_id') ?? '');
     const despuesId = String(form.get('despues_photo_id') ?? '');
 
-    const piezas = await listarPiezasConFotos(ctx);
+    const piezas = await listarPiezasConTodasLasFotos(ctx);
     const pieza = piezas.find((p) => p.id === pieceId);
 
-    if (!pieza) {
-      error = 'Elegí una pieza.';
+    if (!pieza || pieza.fotos.length === 0) {
+      error = 'Elegí una pieza que tenga fotos.';
     } else {
       // Cada lado puede venir de una foto ya subida a la pieza, o de un
       // archivo nuevo subido desde el dispositivo en este mismo formulario.
@@ -115,26 +160,252 @@ if (Astro.request.method === 'POST' && usuario) {
         if (err) {
           error = errorLegible(err) || 'No se pudo guardar el par.';
         } else {
-          return Astro.redirect('/admin/galeria?ok=agregado');
+          return Astro.redirect('/admin/galeria?tab=comparador&ok=agregado');
         }
       }
     }
   }
+
+  // ----- piezas: manager compacto ------------------------------------------
+
+  if (accion === 'subir_foto') {
+    const piezaId = String(form.get('pieza_id') ?? '');
+    const rol = String(form.get('rol') ?? 'general');
+    const archivo = form.get('archivo');
+    const pieza = (await listarPiezasConTodasLasFotos(ctx)).find(
+      (p) => p.id === piezaId,
+    );
+
+    if (archivo instanceof File && archivo.size > 0 && pieza) {
+      try {
+        const subida = await subirImagen(ctx, 'piezas', archivo, pieza.id);
+        await agregarFotoPieza(
+          ctx,
+          pieza.id,
+          subida,
+          rol === 'antes' || rol === 'despues' ? rol : 'general',
+          pieza.fotos.length,
+        );
+        return Astro.redirect(
+          `/admin/galeria?tab=piezas&pieza=${pieza.id}&ok=foto`,
+        );
+      } catch (e) {
+        error = e instanceof Error ? e.message : 'No se pudo subir la foto.';
+      }
+    } else {
+      error = 'Elegí una pieza y una imagen para subir.';
+    }
+  }
+
+  if (accion === 'borrar_foto') {
+    const piezaId = String(form.get('pieza_id') ?? '');
+    const fotoId = String(form.get('foto_id') ?? '');
+    if (fotoId) await borrarFotoPieza(ctx, fotoId);
+    return Astro.redirect(`/admin/galeria?tab=piezas&pieza=${piezaId}&ok=foto_borrada`);
+  }
+
+  if (accion === 'mover_foto') {
+    const fotoId = String(form.get('foto_id') ?? '');
+    const direccion = String(form.get('direccion') ?? 'abajo') === 'arriba' ? -1 : 1;
+    const piezaId = String(form.get('pieza_id') ?? '');
+    if (fotoId) await moverFotoPieza(ctx, fotoId, direccion);
+    return Astro.redirect(`/admin/galeria?tab=piezas&pieza=${piezaId}&ok=foto_movida`);
+  }
+
+  // ----- hero: anillo del cliente ------------------------------------------
+
+  if (accion === 'guardar_anillo') {
+    const marcadas = new Set(
+      form.getAll('anillo').map((valor) => String(valor)),
+    );
+    const piezas = await listarPiezasConTodasLasFotos(ctx);
+
+    for (const pieza of piezas) {
+      await ctx.supabase
+        .from('pieces')
+        .update({ en_anillo: marcadas.has(pieza.id) })
+        .eq('id', pieza.id);
+    }
+    return Astro.redirect('/admin/galeria?tab=hero&ok=anillo');
+  }
+
+  // ----- hero: fondo de portada --------------------------------------------
+
+  if (accion === 'usar_fondo') {
+    const assetId = String(form.get('asset_id') ?? '');
+    const asset = (await listarAssets(ctx)).find((a) => a.id === assetId);
+
+    if (!asset) {
+      error = 'Ese asset ya no está en la librería.';
+    } else {
+      try {
+        await guardarContenido(ctx, {
+          portada_url: asset.url,
+          portada_alt: asset.alt ?? null,
+        });
+        return Astro.redirect('/admin/galeria?tab=hero&ok=fondo');
+      } catch (e) {
+        error =
+          e instanceof Error
+            ? (errorLegible({ message: e.message }) ?? 'No se pudo actualizar el fondo.')
+            : 'No se pudo actualizar el fondo.';
+      }
+    }
+  }
+
+  /**
+   * Subir directo: la foto entra a la librería con etiqueta `ambiente`
+   * y pasa a ser el fondo en un solo paso. Así el fondo no pierde el rastro
+   * en la librería: se puede volver a usar después.
+   */
+  if (accion === 'subir_fondo') {
+    const archivo = form.get('archivo');
+    const alt = textoONull(form.get('portada_alt'), 300);
+
+    if (archivo instanceof File && archivo.size > 0) {
+      try {
+        const asset = await crearAsset(ctx, {
+          archivo,
+          tag: 'ambiente',
+          alt,
+        });
+        await guardarContenido(ctx, { portada_url: asset.url, portada_alt: alt });
+        return Astro.redirect('/admin/galeria?tab=hero&ok=fondo');
+      } catch (e) {
+        error = e instanceof Error ? e.message : 'No se pudo subir la foto.';
+      }
+    } else {
+      error = 'Elegí una imagen para el fondo.';
+    }
+  }
+
+  if (accion === 'quitar_fondo') {
+    try {
+      await guardarContenido(ctx, { portada_url: null, portada_alt: null });
+      return Astro.redirect('/admin/galeria?tab=hero&ok=fondo_quitado');
+    } catch (e) {
+      error =
+        e instanceof Error
+          ? (errorLegible({ message: e.message }) ?? 'No se pudo quitar el fondo.')
+          : 'No se pudo quitar el fondo.';
+    }
+  }
+
+  // ----- librería ------------------------------------------------------------
+
+  if (accion === 'subir_asset') {
+    const archivo = form.get('archivo');
+    const tagPedido = String(form.get('tag') ?? 'otro');
+    const tag: TagAsset = (
+      ['ambiente', 'textura', 'personal', 'logo', 'otro'] as const
+    ).includes(tagPedido as never)
+      ? (tagPedido as TagAsset)
+      : 'otro';
+
+    if (archivo instanceof File && archivo.size > 0) {
+      try {
+        await crearAsset(ctx, { archivo, tag, alt: textoONull(form.get('alt'), 300) });
+        return Astro.redirect('/admin/galeria?tab=libreria&ok=asset');
+      } catch (e) {
+        error = e instanceof Error ? e.message : 'No se pudo subir la imagen.';
+      }
+    } else {
+      error = 'Elegí una imagen para subir.';
+    }
+  }
+
+  if (accion === 'borrar_asset') {
+    const resultado = await borrarAsset(ctx, String(form.get('id') ?? ''));
+
+    if (resultado === 'en_uso') {
+      error =
+        'Ese asset es el fondo del hero de hoy. Quitá el fondo primero (pestaña Hero) y volvé a borrarlo.';
+    } else {
+      return Astro.redirect('/admin/galeria?tab=libreria&ok=asset_borrado');
+    }
+  }
 }
 
-const galeria = await listarGaleria(ctx);
-const piezas = await listarPiezasConFotos(ctx);
-const ok = Astro.url.searchParams.get('ok');
+// --------------------------------------------------------------------------
+// Datos
+// --------------------------------------------------------------------------
 
+const piezas = await listarPiezasConTodasLasFotos(ctx);
+const galeria = await listarGaleria(ctx);
+const assets = await listarAssets(ctx);
+
+/* Solo portada_url: el resto de site_settings lo maneja /admin/contenido. */
+const { data: settingsRes } = await ctx.supabase
+  .from('site_settings')
+  .select('portada_url')
+  .eq('id', 1)
+  .maybeSingle();
+const portadaUrl =
+  (settingsRes as { portada_url: string | null } | null)?.portada_url ?? null;
+
+/* Pieza elegida en la pestaña Piezas (por GET); nada si no existe. */
+const piezaIdElegida = Astro.url.searchParams.get('pieza') ?? '';
+const piezaSel = piezas.find((p) => p.id === piezaIdElegida) ?? null;
+
+/** Los 8 slots del anillo, con el mismo ojo que la home (armarAnillo). */
+const anilloSlots = armarAnillo(piezas, 8);
+const anilloNadamarco = piezas.filter((p) => p.en_anillo).length === 0;
+
+/** IDs de fotos que aparecen en el anillo hoy (la portada de cada slot). */
+const anilloIds = new Set(
+  anilloSlots.map((slot) => slot.foto.id),
+);
+
+/** IDs de fotos que algún par del comparador usa (por lado). */
+const comparadorIds = new Set(
+  galeria.flatMap((item) =>
+    [item.antes_photo_id, item.despues_photo_id].filter(
+      (v): v is string => Boolean(v),
+    ),
+  ),
+);
+
+const assetsAmbiente = assets.filter((a) => a.tag === 'ambiente');
+
+/**
+ * Chips "dónde se usa": derivados de la data ya cargada, no guardan nada.
+ * `ficha` lo tiene toda foto de pieza. `fondo` no puede pasar para fotos de
+ * pieza (viven en otro bucket), pero el check es barato y cubre casos raros.
+ */
+function chipsDe(foto: { id: string; url: string }): string[] {
+  const usos = ['ficha'];
+  if (anilloIds.has(foto.id)) usos.push('anillo');
+  if (comparadorIds.has(foto.id)) usos.push('comparador');
+  if (portadaUrl && foto.url === portadaUrl) usos.push('fondo');
+  return usos;
+}
+
+const ETIQUETAS_ROL: Record<string, string> = {
+  general: 'General',
+  antes: 'Antes',
+  despues: 'Después',
+};
+
+const ETIQUETAS_TAG: Record<TagAsset, string> = {
+  ambiente: 'Ambiente',
+  textura: 'Textura',
+  personal: 'Personal',
+  logo: 'Logo',
+  otro: 'Otro',
+};
+
+/* Para el formulario Alpine del comparador (piesa con fotos, como siempre). */
 const jsonPiezas = JSON.stringify(
-  piezas.map((p) => ({
-    id: p.id,
-    titulo: p.titulo,
-    fotos: p.fotos.map((f) => ({ id: f.id, url: f.url, rol: f.rol })),
-  })),
+  piezas
+    .filter((p) => p.fotos.length > 0)
+    .map((p) => ({
+      id: p.id,
+      titulo: p.titulo,
+      fotos: p.fotos.map((f) => ({ id: f.id, url: f.url, rol: f.rol })),
+    })),
 ).replace(/</g, '\\u003c');
 
-/** Texto de la etiqueta de cada foto, para los <option>. */
+/** Texto de la etiqueta de cada foto, para los <option> del comparador. */
 function etiquetaDe(foto: { rol: string }): string {
   if (foto.rol === 'antes') return 'Antes';
   if (foto.rol === 'despues') return 'Después';
@@ -143,12 +414,12 @@ function etiquetaDe(foto: { rol: string }): string {
 ---
 
 <AdminLayout
-  titulo="Galería antes/después"
-  subtitulo="Elegí una pieza y marcá qué foto es el antes y cuál el después. La web muestra hasta 3 pares."
+  titulo="Galería"
+  subtitulo="Cada foto subida aparece en una sección. Acá se ve y se controla dónde: fichas, comparador de la home, anillo del hero y fondo de portada."
 >
   <script type="application/json" id="datos-piezas" set:html={jsonPiezas} />
 
-  <div x-data="galeria()" x-cloak class="space-y-4">
+  <div class="space-y-4" x-data="galeria()" x-cloak>
     {
       error && (
         <p class="rounded border border-[#a03328] bg-[#f9e5e2] px-4 py-3 text-sm text-[#7d2c23]">
@@ -158,367 +429,867 @@ function etiquetaDe(foto: { rol: string }): string {
     }
 
     {
-      ok && (
+      ok && MENSAJES_OK[ok] && (
         <p class="rounded border border-[#37603f] bg-[#e2efe3] px-4 py-3 text-sm text-[#2a4a30]">
-          Par agregado a la galería.
+          {MENSAJES_OK[ok]}
         </p>
       )
     }
 
-    <!-- ============ Pares actuales ============ -->
-    {
-      galeria.length === 0 ? (
-        <div class="ui-panel">
-          <div class="ui-vacio">
-            <p class="ui-vacio-titulo">Todavía no hay pares</p>
-            <p class="ui-vacio-texto">
-              {piezas.length === 0
-                ? 'Primero publicá una pieza con fotos en /admin/piezas. Después volvé acá a armar el par.'
-                : 'Armá el primero con el formulario de abajo.'}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {galeria.map((item) => (
-            <li class="ui-panel overflow-hidden">
-              <div class="grid grid-cols-2">
-                <img
-                  src={item.antes_url}
-                  alt={`${item.titulo ?? 'Pieza'} antes`}
-                  class="aspect-square w-full object-cover"
-                  loading="lazy"
-                />
-                <img
-                  src={item.despues_url}
-                  alt={`${item.titulo ?? 'Pieza'} después`}
-                  class="aspect-square w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-              <div class="p-3">
-                <p class="ui-truncate text-sm font-medium text-ui-texto">
-                  {item.titulo ?? 'Sin título'}
-                </p>
-                <p class="text-xs text-ui-texto-3">
-                  {item.tag_servicio ?? 'Sin etiqueta'}
-                </p>
-                <div class="mt-3 flex items-center justify-between gap-2">
-                  <form method="post">
-                    <input type="hidden" name="_accion" value="destacar" />
-                    <input type="hidden" name="id" value={item.id} />
-                    <input
-                      type="hidden"
-                      name="valor"
-                      value={item.destacada_home ? 'off' : 'on'}
-                    />
-                    <button type="submit" class="text-xs text-ui-acento underline underline-offset-4">
-                      {item.destacada_home ? 'Quitar de la home' : 'Destacar en la home'}
-                    </button>
-                  </form>
-                  <form method="post">
-                    <input type="hidden" name="_accion" value="borrar" />
-                    <input type="hidden" name="id" value={item.id} />
-                    <button
-                      type="submit"
-                      class="text-xs text-[#a03328] underline underline-offset-4"
-                      onclick="return confirm('¿Quitar este par de la galería?')"
-                    >
-                      Quitar
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )
-    }
-
-    <!-- ============ Armar un par ============ -->
-    <h2 class="pt-2 text-lg font-semibold text-ui-texto">Armar un par</h2>
-
-    {
-      piezas.length === 0 ? (
-        <p class="rounded border border-dashed border-ui-borde-fuerte px-4 py-8 text-center text-sm text-ui-texto-2">
-          No hay piezas con fotos todavía. Publicá una en
-          <span class="font-medium text-ui-texto">/admin → Piezas</span> y volvé acá.
-        </p>
-      ) : (
-        <form
-          method="post"
-          enctype="multipart/form-data"
-          class="ui-panel max-w-3xl space-y-5 p-5"
-        >
-          <input type="hidden" name="_accion" value="agregar" />
-
-          <!-- 1. Que pieza -->
-          <div>
-            <label class="ui-label" for="piece_id">1. ¿De qué pieza es el par?</label>
-            <select
-              class="ui-campo"
-              id="piece_id"
-              name="piece_id"
-              x-model="pieceId"
-              x-on:change="alCambiarPieza()"
-            >
-              <option value="">Elegí una pieza…</option>
-              {piezas.map((p) => (
-                <option value={p.id}>
-                  {p.titulo} ({p.fotos.length} {p.fotos.length === 1 ? 'foto' : 'fotos'})
-                </option>
-              ))}
-            </select>
-            <p class="ui-ayuda" x-show="faltanFotos">
-              Esta pieza tiene una sola foto. Podés subir la que falta con el
-              botón de arriba, sin salir de esta pantalla.
-            </p>
-          </div>
-
-          <!-- Con la misma foto en los dos lados el comparador no muestra
-               diferencia. Se avisa, pero no se bloquea. -->
-          <p
-            class="ui-aviso ui-aviso-info"
-            x-show="mismaFoto()"
-            x-cloak
-            x-text="mismaFoto()"
+    <!-- ==================== Pestañas ==================== -->
+    <nav class="flex flex-wrap gap-2" aria-label="Secciones de la galería">
+      {
+        (
+          [
+            { tab: 'piezas', label: 'Piezas' },
+            { tab: 'comparador', label: 'Antes / después' },
+            { tab: 'hero', label: 'Hero' },
+            { tab: 'libreria', label: 'Librería' },
+          ] as { tab: Tab; label: string }[]
+        ).map((pestaña) => (
+          <a
+            href={`/admin/galeria?tab=${pestaña.tab}`}
+            aria-current={tab === pestaña.tab ? 'page' : undefined}
+            class:list={[
+              'rounded-lg px-3 py-1.5 text-sm transition-colors',
+              tab === pestaña.tab
+                ? 'bg-ui-texto font-medium text-ui-panel'
+                : 'text-ui-texto-2 hover:bg-ui-panel-2 hover:text-ui-texto',
+            ]}
           >
+            {pestaña.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <!-- =========================================================
+         PESTAÑA PIEZAS — manager compacto + chips dónde se usa
+         ========================================================= -->
+    {
+      tab === 'piezas' && (
+        <div class="space-y-4">
+          <p class="text-sm text-ui-texto-2">
+            Fotos de piezas. Los chips te dicen dónde está apareciendo cada una
+            hoy. La ficha completa de cada pieza sigue en{' '}
+            <span class="font-medium text-ui-texto">/admin → Piezas</span>.
           </p>
 
-          <!-- 2. Que foto es cada una. Cada lado tiene su select con las
-               fotos de la pieza y un boton de subida al costado: desde el
-               celular se adjunta la foto ahi mismo, sin pasar por Piezas. -->
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <span class="ui-label">2. Foto "antes"</span>
-              <div class="flex items-center gap-2">
-                <select
-                  class="ui-campo"
-                  id="antes_photo_id"
-                  name="antes_photo_id"
-                  x-model="fotoAntes"
-                  x-bind:disabled="!piezaActual || archivoAntes"
-                >
-                  <option value="">Sin elegir</option>
-                  {
-                    piezas.flatMap((pieza) =>
-                      pieza.fotos.map((foto) => (
-                        <option
-                          value={foto.id}
-                          data-pieza={pieza.id}
-                          x-show="$el.dataset.pieza === pieceId"
-                        >
-                          {etiquetaDe(foto)} · {pieza.titulo}
-                        </option>
-                      )),
-                    )
-                  }
-                </select>
-
-                <button
-                  type="button"
-                  class="ui-btn ui-btn-icono shrink-0"
-                  x-bind:class="archivoAntes ? 'ui-btn-acento' : 'ui-btn-neutro'"
-                  x-on:click="$refs.inputAntes.click()"
-                  x-bind:disabled="!piezaActual"
-                  title="Subir una foto desde el dispositivo"
-                  aria-label="Subir una foto desde el dispositivo para el antes"
-                >
-                  <Icon nombre="subir" clase="size-4" />
-                </button>
-              </div>
-
-              <input
-                class="sr-only"
-                type="file"
-                name="foto_antes_archivo"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                x-ref="inputAntes"
-                x-on:change="elegirArchivo($event, 'antes')"
-              />
-
-              <div class="mt-2 flex items-center gap-2" x-show="archivoAntes" x-cloak>
-                <img
-                  x-bind:src="vistaPreviaAntes"
-                  alt="Vista previa"
-                  class="h-12 w-12 rounded border border-ui-borde object-cover"
-                />
-                <span class="truncate text-xs text-ui-texto-2" x-text="nombreAntes"></span>
-                <button
-                  type="button"
-                  class="ml-auto text-xs text-[#a03328] underline underline-offset-4"
-                  x-on:click="quitarArchivo('antes')"
-                >
-                  Quitar
-                </button>
-              </div>
+          <form method="get" class="ui-panel flex flex-wrap items-end gap-3 p-4">
+            <input type="hidden" name="tab" value="piezas" />
+            <div class="min-w-0 grow">
+              <label class="ui-label" for="pieza">¿De qué pieza?</label>
+              <select class="ui-campo" id="pieza" name="pieza">
+                <option value="">Elegí una pieza…</option>
+                {piezas.map((p) => (
+                  <option value={p.id} selected={p.id === piezaIdElegida}>
+                    {p.titulo} · {p.fotos.length === 1 ? '1 foto' : `${p.fotos.length} fotos`}
+                  </option>
+                ))}
+              </select>
             </div>
+            <button type="submit" class="ui-btn ui-btn-neutro">Ver fotos</button>
+          </form>
 
-            <div>
-              <span class="ui-label">3. Foto "después"</span>
-              <div class="flex items-center gap-2">
-                <select
-                  class="ui-campo"
-                  id="despues_photo_id"
-                  name="despues_photo_id"
-                  x-model="fotoDespues"
-                  x-bind:disabled="!piezaActual || archivoDespues"
+          {piezaSel && (
+            <div class="space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="text-sm font-medium text-ui-texto">{piezaSel.titulo}</p>
+                <a
+                  href={`/admin/piezas/${piezaSel.id}`}
+                  class="text-xs text-ui-acento underline underline-offset-4"
                 >
-                  <option value="">Sin elegir</option>
-                  {
-                    piezas.flatMap((pieza) =>
-                      pieza.fotos.map((foto) => (
-                        <option
-                          value={foto.id}
-                          data-pieza={pieza.id}
-                          x-show="$el.dataset.pieza === pieceId"
-                        >
-                          {etiquetaDe(foto)} · {pieza.titulo}
-                        </option>
-                      )),
-                    )
-                  }
-                </select>
+                  Editar la pieza
+                  <Icon nombre="flecha" clase="inline size-3.5" />
+                </a>
+              </div>
 
-                <button
-                  type="button"
-                  class="ui-btn ui-btn-icono shrink-0"
-                  x-bind:class="archivoDespues ? 'ui-btn-acento' : 'ui-btn-neutro'"
-                  x-on:click="$refs.inputDespues.click()"
-                  x-bind:disabled="!piezaActual"
-                  title="Subir una foto desde el dispositivo"
-                  aria-label="Subir una foto desde el dispositivo para el despues"
-                >
+              {piezaSel.fotos.length === 0 ? (
+                <p class="rounded border border-dashed border-ui-borde-fuerte px-4 py-6 text-center text-sm text-ui-texto-2">
+                  Sin fotos todavía. La primera que subas con rol “General” es
+                  la portada de la pieza.
+                </p>
+              ) : (
+                <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {piezaSel.fotos.map((foto, indice) => (
+                    <li class="ui-panel overflow-hidden">
+                      <img
+                        src={foto.url}
+                        alt=""
+                        class="aspect-square w-full object-cover"
+                        loading="lazy"
+                      />
+                      <div class="space-y-2 p-2.5">
+                        <p class="text-[0.6875rem] tracking-wide text-ui-texto-3">
+                          {ETIQUETAS_ROL[foto.rol]}{indice === 0 ? ' · PORTADA' : ''}
+                        </p>
+                        <div class="flex flex-wrap gap-1">
+                          {chipsDe(foto).map((uso) => (
+                            <span class="rounded-full border border-ui-borde bg-ui-panel-2 px-1.5 py-0.5 text-[0.625rem] tracking-wider text-ui-texto-2 uppercase">
+                              {uso}
+                            </span>
+                          ))}
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                          <form method="post" class="contents">
+                            <input type="hidden" name="_accion" value="mover_foto" />
+                            <input type="hidden" name="pieza_id" value={piezaSel.id} />
+                            <input type="hidden" name="foto_id" value={foto.id} />
+                            {indice > 0 ? (
+                              <button
+                                type="submit"
+                                name="direccion"
+                                value="arriba"
+                                class="text-ui-texto-2 underline underline-offset-4 hover:text-ui-texto"
+                                title="Mover a portada"
+                              >
+                                ↑ arriba
+                              </button>
+                            ) : null}
+                          </form>
+                          <form method="post" class="contents">
+                            <input type="hidden" name="_accion" value="mover_foto" />
+                            <input type="hidden" name="pieza_id" value={piezaSel.id} />
+                            <input type="hidden" name="foto_id" value={foto.id} />
+                            <input type="hidden" name="direccion" value="abajo" />
+                            {indice < piezaSel.fotos.length - 1 ? (
+                              <button
+                                type="submit"
+                                class="text-ui-texto-2 underline underline-offset-4 hover:text-ui-texto"
+                                title="Bajar una posición"
+                              >
+                                ↓ abajo
+                              </button>
+                            ) : null}
+                          </form>
+                          <form method="post" class="ml-auto contents">
+                            <input type="hidden" name="_accion" value="borrar_foto" />
+                            <input type="hidden" name="pieza_id" value={piezaSel.id} />
+                            <input type="hidden" name="foto_id" value={foto.id} />
+                            <button
+                              type="submit"
+                              class="text-[#a03328] underline underline-offset-4"
+                              onclick="return confirm('¿Quitar esta foto de la pieza?')"
+                            >
+                              Quitar
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <form
+                method="post"
+                enctype="multipart/form-data"
+                class="ui-panel max-w-2xl space-y-4 p-4"
+              >
+                <input type="hidden" name="_accion" value="subir_foto" />
+                <input type="hidden" name="pieza_id" value={piezaSel.id} />
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label class="ui-label" for="rol">Tipo (rol)</label>
+                    <select class="ui-campo" id="rol" name="rol">
+                      <option value="general">General (portada)</option>
+                      <option value="antes">Antes</option>
+                      <option value="despues">Después</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="ui-label" for="archivo">Imagen</label>
+                    <input
+                      class="ui-campo"
+                      id="archivo"
+                      name="archivo"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                    />
+                  </div>
+                </div>
+                <p class="ui-ayuda">
+                  JPG, PNG, WebP o GIF. Hasta 8 MB cada una. Se achica sola
+                  antes de subir.
+                </p>
+                <button type="submit" class="ui-btn ui-btn-acento">
                   <Icon nombre="subir" clase="size-4" />
+                  Subir foto
                 </button>
-              </div>
-
-              <input
-                class="sr-only"
-                type="file"
-                name="foto_despues_archivo"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                x-ref="inputDespues"
-                x-on:change="elegirArchivo($event, 'despues')"
-              />
-
-              <div class="mt-2 flex items-center gap-2" x-show="archivoDespues" x-cloak>
-                <img
-                  x-bind:src="vistaPreviaDespues"
-                  alt="Vista previa"
-                  class="h-12 w-12 rounded border border-ui-borde object-cover"
-                />
-                <span class="truncate text-xs text-ui-texto-2" x-text="nombreDespues"></span>
-                <button
-                  type="button"
-                  class="ml-auto text-xs text-[#a03328] underline underline-offset-4"
-                  x-on:click="quitarArchivo('despues')"
-                >
-                  Quitar
-                </button>
-              </div>
+              </form>
             </div>
-          </div>
+          )}
 
-          <!-- Vista previa: siempre visible, con marcador donde falte la
-               foto. Asi nunca se ve una imagen rota ni un hueco raro. -->
-          <div class="overflow-hidden rounded border border-ui-borde">
-            <div class="grid grid-cols-2">
-              <figure>
-                <img
-                  x-show="urlAntes"
-                  x-bind:src="urlAntes"
-                  alt="Foto antes"
-                  class="aspect-square w-full bg-ui-panel-2 object-cover"
-                />
+          {!piezaSel && (
+            <p class="rounded border border-dashed border-ui-borde-fuerte px-4 py-6 text-center text-sm text-ui-texto-2">
+              Elegí una pieza arriba para ver sus fotos y dónde aparecen.
+            </p>
+          )}
+        </div>
+      )
+    }
+
+    <!-- =========================================================
+         PESTAÑA COMPARADOR — los pares que salen en la home
+         ========================================================= -->
+    {
+      tab === 'comparador' && (
+        <div class="space-y-4">
+          <!-- ============ Pares actuales ============ -->
+          {
+            galeria.length === 0 ? (
+              <div class="ui-panel">
+                <div class="ui-vacio">
+                  <p class="ui-vacio-titulo">Todavía no hay pares</p>
+                  <p class="ui-vacio-texto">
+                    {piezas.filter((p) => p.fotos.length > 0).length === 0
+                      ? 'Primero publicá una pieza con fotos en /admin/piezas. Después volvé acá a armar el par.'
+                      : 'Armá el primero con el formulario de abajo.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {galeria.map((item) => (
+                  <li class="ui-panel overflow-hidden">
+                    <div class="grid grid-cols-2">
+                      <img
+                        src={item.antes_url}
+                        alt={`${item.titulo ?? 'Pieza'} antes`}
+                        class="aspect-square w-full object-cover"
+                        loading="lazy"
+                      />
+                      <img
+                        src={item.despues_url}
+                        alt={`${item.titulo ?? 'Pieza'} después`}
+                        class="aspect-square w-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div class="p-3">
+                      <p class="ui-truncate text-sm font-medium text-ui-texto">
+                        {item.titulo ?? 'Sin título'}
+                      </p>
+                      <p class="text-xs text-ui-texto-3">
+                        {item.tag_servicio ?? 'Sin etiqueta'}
+                      </p>
+                      <div class="mt-3 flex items-center justify-between gap-2">
+                        <form method="post">
+                          <input type="hidden" name="_accion" value="destacar" />
+                          <input type="hidden" name="id" value={item.id} />
+                          <input
+                            type="hidden"
+                            name="valor"
+                            value={item.destacada_home ? 'off' : 'on'}
+                          />
+                          <button type="submit" class="text-xs text-ui-acento underline underline-offset-4">
+                            {item.destacada_home ? 'Quitar de la home' : 'Destacar en la home'}
+                          </button>
+                        </form>
+                        <form method="post">
+                          <input type="hidden" name="_accion" value="borrar" />
+                          <input type="hidden" name="id" value={item.id} />
+                          <button
+                            type="submit"
+                            class="text-xs text-[#a03328] underline underline-offset-4"
+                            onclick="return confirm('¿Quitar este par de la galería?')"
+                          >
+                            Quitar
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+
+          <!-- ============ Armar un par ============ -->
+          <h2 class="pt-2 text-lg font-semibold text-ui-texto">Armar un par</h2>
+
+          {
+            piezas.filter((p) => p.fotos.length > 0).length === 0 ? (
+              <p class="rounded border border-dashed border-ui-borde-fuerte px-4 py-8 text-center text-sm text-ui-texto-2">
+                No hay piezas con fotos todavía. Publicá una en
+                <span class="font-medium text-ui-texto"> /admin → Piezas</span> y volvé acá.
+              </p>
+            ) : (
+              <form
+                method="post"
+                enctype="multipart/form-data"
+                class="ui-panel max-w-3xl space-y-5 p-5"
+              >
+                <input type="hidden" name="_accion" value="agregar" />
+
+                <!-- 1. Que pieza -->
+                <div>
+                  <label class="ui-label" for="piece_id">1. ¿De qué pieza es el par?</label>
+                  <select
+                    class="ui-campo"
+                    id="piece_id"
+                    name="piece_id"
+                    x-model="pieceId"
+                    x-on:change="alCambiarPieza()"
+                  >
+                    <option value="">Elegí una pieza…</option>
+                    {piezas.filter((p) => p.fotos.length > 0).map((p) => (
+                      <option value={p.id}>
+                        {p.titulo} ({p.fotos.length} {p.fotos.length === 1 ? 'foto' : 'fotos'})
+                      </option>
+                    ))}
+                  </select>
+                  <p class="ui-ayuda" x-show="faltanFotos">
+                    Esta pieza tiene una sola foto. Podés subir la que falta con el
+                    botón de arriba, sin salir de esta pantalla.
+                  </p>
+                </div>
+
+                <!-- Con la misma foto en los dos lados el comparador no muestra
+                     diferencia. Se avisa, pero no se bloquea. -->
+                <p
+                  class="ui-aviso ui-aviso-info"
+                  x-show="mismaFoto()"
+                  x-cloak
+                  x-text="mismaFoto()"
+                >
+                </p>
+
+                <!-- 2. Que foto es cada una. Cada lado tiene su select con las
+                     fotos de la pieza y un boton de subida al costado: desde el
+                     celular se adjunta la foto ahi mismo, sin pasar por Piezas. -->
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <span class="ui-label">2. Foto "antes"</span>
+                    <div class="flex items-center gap-2">
+                      <select
+                        class="ui-campo"
+                        id="antes_photo_id"
+                        name="antes_photo_id"
+                        x-model="fotoAntes"
+                        x-bind:disabled="!piezaActual || archivoAntes"
+                      >
+                        <option value="">Sin elegir</option>
+                        {
+                          piezas.flatMap((pieza) =>
+                            pieza.fotos.map((foto) => (
+                              <option
+                                value={foto.id}
+                                data-pieza={pieza.id}
+                                x-show="$el.dataset.pieza === pieceId"
+                              >
+                                {etiquetaDe(foto)} · {pieza.titulo}
+                              </option>
+                            )),
+                          )
+                        }
+                      </select>
+
+                      <button
+                        type="button"
+                        class="ui-btn ui-btn-icono shrink-0"
+                        x-bind:class="archivoAntes ? 'ui-btn-acento' : 'ui-btn-neutro'"
+                        x-on:click="$refs.inputAntes.click()"
+                        x-bind:disabled="!piezaActual"
+                        title="Subir una foto desde el dispositivo"
+                        aria-label="Subir una foto desde el dispositivo para el antes"
+                      >
+                        <Icon nombre="subir" clase="size-4" />
+                      </button>
+                    </div>
+
+                    <input
+                      class="sr-only"
+                      type="file"
+                      name="foto_antes_archivo"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      x-ref="inputAntes"
+                      x-on:change="elegirArchivo($event, 'antes')"
+                    />
+
+                    <div class="mt-2 flex items-center gap-2" x-show="archivoAntes" x-cloak>
+                      <img
+                        x-bind:src="vistaPreviaAntes"
+                        alt="Vista previa"
+                        class="h-12 w-12 rounded border border-ui-borde object-cover"
+                      />
+                      <span class="truncate text-xs text-ui-texto-2" x-text="nombreAntes"></span>
+                      <button
+                        type="button"
+                        class="ml-auto text-xs text-[#a03328] underline underline-offset-4"
+                        x-on:click="quitarArchivo('antes')"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span class="ui-label">3. Foto "después"</span>
+                    <div class="flex items-center gap-2">
+                      <select
+                        class="ui-campo"
+                        id="despues_photo_id"
+                        name="despues_photo_id"
+                        x-model="fotoDespues"
+                        x-bind:disabled="!piezaActual || archivoDespues"
+                      >
+                        <option value="">Sin elegir</option>
+                        {
+                          piezas.flatMap((pieza) =>
+                            pieza.fotos.map((foto) => (
+                              <option
+                                value={foto.id}
+                                data-pieza={pieza.id}
+                                x-show="$el.dataset.pieza === pieceId"
+                              >
+                                {etiquetaDe(foto)} · {pieza.titulo}
+                              </option>
+                            )),
+                          )
+                        }
+                      </select>
+
+                      <button
+                        type="button"
+                        class="ui-btn ui-btn-icono shrink-0"
+                        x-bind:class="archivoDespues ? 'ui-btn-acento' : 'ui-btn-neutro'"
+                        x-on:click="$refs.inputDespues.click()"
+                        x-bind:disabled="!piezaActual"
+                        title="Subir una foto desde el dispositivo"
+                        aria-label="Subir una foto desde el dispositivo para el despues"
+                      >
+                        <Icon nombre="subir" clase="size-4" />
+                      </button>
+                    </div>
+
+                    <input
+                      class="sr-only"
+                      type="file"
+                      name="foto_despues_archivo"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      x-ref="inputDespues"
+                      x-on:change="elegirArchivo($event, 'despues')"
+                    />
+
+                    <div class="mt-2 flex items-center gap-2" x-show="archivoDespues" x-cloak>
+                      <img
+                        x-bind:src="vistaPreviaDespues"
+                        alt="Vista previa"
+                        class="h-12 w-12 rounded border border-ui-borde object-cover"
+                      />
+                      <span class="truncate text-xs text-ui-texto-2" x-text="nombreDespues"></span>
+                      <button
+                        type="button"
+                        class="ml-auto text-xs text-[#a03328] underline underline-offset-4"
+                        x-on:click="quitarArchivo('despues')"
+                      >
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Vista previa: siempre visible, con marcador donde falte la
+                     foto. Asi nunca se ve una imagen rota ni un hueco raro. -->
+                <div class="overflow-hidden rounded border border-ui-borde">
+                  <div class="grid grid-cols-2">
+                    <figure>
+                      <img
+                        x-show="urlAntes"
+                        x-bind:src="urlAntes"
+                        alt="Foto antes"
+                        class="aspect-square w-full bg-ui-panel-2 object-cover"
+                      />
+                      <div
+                        class="flex aspect-square items-center justify-center bg-ui-panel-2"
+                        x-show="!urlAntes"
+                        x-cloak
+                      >
+                        <span class="text-xs tracking-[0.2em] text-ui-texto-3 uppercase">
+                          Antes
+                        </span>
+                      </div>
+                      <figcaption class="bg-ui-panel-2 py-1 text-center text-[0.65rem] tracking-[0.2em] text-ui-texto-2 uppercase">
+                        Antes
+                      </figcaption>
+                    </figure>
+
+                    <figure class="border-l border-ui-borde">
+                      <img
+                        x-show="urlDespues"
+                        x-bind:src="urlDespues"
+                        alt="Foto después"
+                        class="aspect-square w-full bg-ui-panel-2 object-cover"
+                      />
+                      <div
+                        class="flex aspect-square items-center justify-center bg-ui-panel-2"
+                        x-show="!urlDespues"
+                        x-cloak
+                      >
+                        <span class="text-xs tracking-[0.2em] text-ui-texto-3 uppercase">
+                          Después
+                        </span>
+                      </div>
+                      <figcaption class="bg-ui-panel-2 py-1 text-center text-[0.65rem] tracking-[0.2em] text-ui-texto-2 uppercase">
+                        Después
+                      </figcaption>
+                    </figure>
+                  </div>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label class="ui-label" for="tag_servicio">Etiqueta (opcional)</label>
+                    <input
+                      class="ui-campo"
+                      id="tag_servicio"
+                      name="tag_servicio"
+                      placeholder="Ej: Lustre"
+                      x-model="tag"
+                    />
+                  </div>
+                  <div>
+                    <label class="ui-label" for="orden">Orden</label>
+                    <input
+                      class="ui-campo ui-num"
+                      id="orden"
+                      name="orden"
+                      type="number"
+                      min="0"
+                      x-model="orden"
+                    />
+                  </div>
+                </div>
+
+                <label class="flex items-center gap-2 text-sm text-ui-texto-2">
+                  <input type="checkbox" name="destacada_home" class="accent-[#96652a]" checked />
+                  Mostrar en la home
+                </label>
+
                 <div
-                  class="flex aspect-square items-center justify-center bg-ui-panel-2"
-                  x-show="!urlAntes"
+                  class="flex items-start gap-2 rounded border border-ui-borde-fuerte bg-ui-panel-2 px-3 py-2.5 text-sm"
+                  x-show="!puedeGuardar()"
                   x-cloak
                 >
-                  <span class="text-xs tracking-[0.2em] text-ui-texto-3 uppercase">
-                    Antes
-                  </span>
+                  <Icon nombre="atras" clase="mt-0.5 size-4 shrink-0 text-ui-texto-3" />
+                  <div>
+                    <p class="font-medium text-ui-texto" x-text="motivoBloqueo()"></p>
+                    <p class="mt-0.5 text-xs text-ui-texto-2">
+                      Elegí una foto de la pieza o subí una nueva con el botón de
+                      arriba.
+                    </p>
+                  </div>
                 </div>
-                <figcaption class="bg-ui-panel-2 py-1 text-center text-[0.65rem] tracking-[0.2em] text-ui-texto-2 uppercase">
-                  Antes
-                </figcaption>
-              </figure>
 
-              <figure class="border-l border-ui-borde">
-                <img
-                  x-show="urlDespues"
-                  x-bind:src="urlDespues"
-                  alt="Foto después"
-                  class="aspect-square w-full bg-ui-panel-2 object-cover"
-                />
-                <div
-                  class="flex aspect-square items-center justify-center bg-ui-panel-2"
-                  x-show="!urlDespues"
-                  x-cloak
-                >
-                  <span class="text-xs tracking-[0.2em] text-ui-texto-3 uppercase">
-                    Después
-                  </span>
-                </div>
-                <figcaption class="bg-ui-panel-2 py-1 text-center text-[0.65rem] tracking-[0.2em] text-ui-texto-2 uppercase">
-                  Después
-                </figcaption>
-              </figure>
+                <button type="submit" class="ui-btn ui-btn-acento" x-bind:disabled="!puedeGuardar()">
+                  <Icon nombre="mas" clase="size-4" />
+                  Agregar a la galería
+                </button>
+              </form>
+            )
+          }
+        </div>
+      )
+    }
+
+    <!-- =========================================================
+         PESTAÑA HERO — el anillo 3D y el fondo de portada
+         ========================================================= -->
+    {
+      tab === 'hero' && (
+        <div class="space-y-6">
+          <!-- ============ Anillo ============ -->
+          <section class="ui-panel p-5">
+            <h2 class="text-lg font-semibold text-ui-texto">Anillo 3D del hero</h2>
+            <p class="mt-1 max-w-2xl text-sm text-ui-texto-2">
+              Marcá las piezas que querés ver girando en la home (hasta 8, en
+              orden). El anillo muestra de cada una la foto de portada: si
+              querés otra, cambiá el orden en
+              <span class="font-medium text-ui-texto">Galería → Piezas</span>.
+            </p>
+
+            {
+              anilloNadamarco && (
+                <p class="ui-aviso ui-aviso-info mt-3">
+                  Todavía no marcaste ninguna: el anillo muestra las primeras 8
+                  piezas con foto, como hasta ahora. Marcá abajo para tomar el
+                  control.
+                </p>
+              )
+            }
+
+            <!-- Vista previa: los mismos 8 slots que calcula la web -->
+            <div class="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-8">
+              {Array.from({ length: 8 }, (_, i) => {
+                const slot = anilloSlots[i];
+                return (
+                  <div
+                    class="aspect-square overflow-hidden rounded border border-ui-borde bg-ui-panel-2"
+                    title={slot ? slot.pieza.titulo : 'Libre'}
+                  >
+                    {slot ? (
+                      <img
+                        src={slot.foto.url}
+                        alt={slot.pieza.titulo}
+                        class="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="flex h-full items-center justify-center text-[0.625rem] tracking-[0.2em] text-ui-texto-3 uppercase">
+                        libre
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </div>
+            <p class="mt-2 text-xs text-ui-texto-3">
+              Así se ve el anillo hoy:
+              {' '}{anilloSlots.length} de 8.
+            </p>
 
-          <div class="grid gap-4 sm:grid-cols-2">
+            <form method="post" class="mt-5">
+              <input type="hidden" name="_accion" value="guardar_anillo" />
+              <ul class="grid gap-1.5 sm:grid-cols-2">
+                {piezas.map((pieza) => (
+                  <li>
+                    <label class="flex items-center gap-2 rounded border border-ui-borde px-3 py-2 text-sm text-ui-texto-2 hover:bg-ui-panel-2">
+                      <input
+                        type="checkbox"
+                        name="anillo"
+                        value={pieza.id}
+                        checked={Boolean(pieza.en_anillo)}
+                        class="accent-[#96652a]"
+                      />
+                      <span class="min-w-0 truncate">
+                        {pieza.titulo}
+                        <span class="text-xs text-ui-texto-3">
+                          {' '}
+                          · {pieza.fotos.length === 0
+                            ? 'sin fotos (no se muestra hasta tener)'
+                            : `portada: ${ETIQUETAS_ROL[pieza.fotos[0].rol]}`}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <button type="submit" class="ui-btn ui-btn-acento mt-4">
+                <Icon nombre="check" clase="size-4" />
+                Guardar anillo
+              </button>
+            </form>
+          </section>
+
+          <!-- ============ Fondo de portada ============ -->
+          <section class="ui-panel p-5">
+            <h2 class="text-lg font-semibold text-ui-texto">Fondo de portada</h2>
+            <p class="mt-1 max-w-2xl text-sm text-ui-texto-2">
+              Se ve detrás del anillo, muy difusa y con poca luz para no
+              pelar el texto. Una foto de ambiente del taller queda bien.
+            </p>
+
+            <div class="mt-4 grid gap-4 lg:grid-cols-2">
+              <div class="space-y-3">
+                <img
+                  src={portadaUrl ?? '/portada.svg'}
+                  alt=""
+                  class="aspect-video w-full rounded border border-ui-borde bg-ui-panel-2 object-cover"
+                  loading="lazy"
+                />
+                <p class="text-xs text-ui-texto-3">
+                  {portadaUrl
+                    ? 'Foto cargada por vos (también existe en la Librería).'
+                    : 'Textura de madera del repo: lo que se ve sin foto cargada.'}
+                </p>
+
+                {portadaUrl && (
+                  <form method="post">
+                    <input type="hidden" name="_accion" value="quitar_fondo" />
+                    <button type="submit" class="text-xs text-[#a03328] underline underline-offset-4">
+                      Quitar el fondo (volver a la textura)
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              <div class="space-y-5">
+                <form method="post" class="space-y-3">
+                  <input type="hidden" name="_accion" value="usar_fondo" />
+                  <div>
+                    <label class="ui-label" for="asset_id">Usar un ambiente de la Librería</label>
+                    <select class="ui-campo" id="asset_id" name="asset_id">
+                      <option value="">Elegí un ambiente…</option>
+                      {assetsAmbiente.map((asset) => (
+                        <option value={asset.id}>{asset.alt ?? 'Sin descripción'}</option>
+                      ))}
+                    </select>
+                    {assetsAmbiente.length === 0 && (
+                      <p class="ui-ayuda">
+                        Todavía no hay ninguno con etiqueta Ambiente. Subilo
+                        abajo o desde la Librería.
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    class="ui-btn ui-btn-neutro"
+                    disabled={assetsAmbiente.length === 0}
+                  >
+                    <Icon nombre="imagen" clase="size-4" />
+                    Usar esta foto
+                  </button>
+                </form>
+
+                <form method="post" enctype="multipart/form-data" class="space-y-3 border-t border-ui-borde pt-4">
+                  <input type="hidden" name="_accion" value="subir_fondo" />
+                  <div>
+                    <label class="ui-label" for="archivo">O subila ahora (queda en la Librería)</label>
+                    <input
+                      class="ui-campo"
+                      id="archivo"
+                      name="archivo"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                    />
+                  </div>
+                  <div>
+                    <label class="ui-label" for="portada_alt">Descripción (opcional)</label>
+                    <input
+                      class="ui-campo"
+                      id="portada_alt"
+                      name="portada_alt"
+                      placeholder="Ej: El taller con una cómoda en restauración"
+                    />
+                  </div>
+                  <button type="submit" class="ui-btn ui-btn-acento">
+                    <Icon nombre="subir" clase="size-4" />
+                    Subir y usar como fondo
+                  </button>
+                </form>
+              </div>
+            </div>
+          </section>
+        </div>
+      )
+    }
+
+    <!-- =========================================================
+         PESTAÑA LIBRERÍA — assets sueltos, reutilizables
+         ========================================================= -->
+    {
+      tab === 'libreria' && (
+        <div class="space-y-4">
+          <p class="max-w-2xl text-sm text-ui-texto-2">
+            Imágenes sueltas que no son piezas: ambiente del taller, texturas,
+            personal, logo. Quedan disponibles para cualquier sección. Hoy la
+            usa el{' '}
+            <a href="/admin/galeria?tab=hero" class="text-ui-acento underline underline-offset-4">
+              fondo del hero
+            </a>.
+          </p>
+
+          {
+            assets.length === 0 && (
+              <div class="ui-panel">
+                <div class="ui-vacio">
+                  <p class="ui-vacio-titulo">La librería empieza vacía</p>
+                  <p class="ui-vacio-texto">
+                    No metemos imágenes de relleno: todo lo que se ve en la web
+                    lo cargás vos. Subí la primera abajo.
+                  </p>
+                </div>
+              </div>
+            )
+          }
+
+          <form method="post" enctype="multipart/form-data" class="ui-panel max-w-2xl space-y-4 p-4">
+            <input type="hidden" name="_accion" value="subir_asset" />
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label class="ui-label" for="tag">Etiqueta (para qué sirve)</label>
+                <select class="ui-campo" id="tag" name="tag">
+                  <option value="ambiente">Ambiente (fondo del hero)</option>
+                  <option value="textura">Textura / detalle</option>
+                  <option value="personal">Personal / taller</option>
+                  <option value="logo">Logo</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div>
+                <label class="ui-label" for="alt">Descripción</label>
+                <input
+                  class="ui-campo"
+                  id="alt"
+                  name="alt"
+                  placeholder="Ej: La mesa del taller con las herramientas"
+                />
+              </div>
+            </div>
             <div>
-              <label class="ui-label" for="tag_servicio">Etiqueta (opcional)</label>
+              <label class="ui-label" for="archivo-asset">Imagen</label>
               <input
                 class="ui-campo"
-                id="tag_servicio"
-                name="tag_servicio"
-                placeholder="Ej: Lustre"
-                x-model="tag"
+                id="archivo-asset"
+                name="archivo"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
               />
-            </div>
-            <div>
-              <label class="ui-label" for="orden">Orden</label>
-              <input
-                class="ui-campo ui-num"
-                id="orden"
-                name="orden"
-                type="number"
-                min="0"
-                x-model="orden"
-              />
-            </div>
-          </div>
-
-          <label class="flex items-center gap-2 text-sm text-ui-texto-2">
-            <input type="checkbox" name="destacada_home" class="accent-[#96652a]" checked />
-            Mostrar en la home
-          </label>
-
-          <!-- Por qué el botón está deshabilitado: un control apagado sin
-               explicación hace que el usuario busque el error en otro lado. -->
-          <div
-            class="flex items-start gap-2 rounded border border-ui-borde-fuerte bg-ui-panel-2 px-3 py-2.5 text-sm"
-            x-show="!puedeGuardar()"
-            x-cloak
-          >
-            <Icon nombre="atras" clase="mt-0.5 size-4 shrink-0 text-ui-texto-3" />
-            <div>
-              <p class="font-medium text-ui-texto" x-text="motivoBloqueo()"></p>
-              <p class="mt-0.5 text-xs text-ui-texto-2">
-                Elegí una foto de la pieza o subí una nueva con el botón de
-                arriba.
+              <p class="ui-ayuda">
+                JPG, PNG, WebP o GIF. Hasta 8 MB. Se achica sola antes de subir.
               </p>
             </div>
-          </div>
+            <button type="submit" class="ui-btn ui-btn-acento">
+              <Icon nombre="mas" clase="size-4" />
+              Subir a la librería
+            </button>
+          </form>
 
-          <button type="submit" class="ui-btn ui-btn-acento" x-bind:disabled="!puedeGuardar()">
-            <Icon nombre="mas" clase="size-4" />
-            Agregar a la galería
-          </button>
-        </form>
+          {
+            assets.length > 0 && (
+              <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {assets.map((asset) => (
+                  <li class="ui-panel overflow-hidden">
+                    <img
+                      src={asset.url}
+                      alt={asset.alt ?? ''}
+                      class="aspect-square w-full object-cover"
+                      loading="lazy"
+                    />
+                    <div class="space-y-2 p-2.5">
+                      <p class="text-[0.6875rem] tracking-wide text-ui-texto-3 uppercase">
+                        {ETIQUETAS_TAG[asset.tag]}
+                      </p>
+                      <div class="flex flex-wrap gap-1">
+                        <span class="rounded-full border border-ui-borde bg-ui-panel-2 px-1.5 py-0.5 text-[0.625rem] tracking-wider text-ui-texto-2 uppercase">
+                          {portadaUrl === asset.url ? 'fondo del hero' : 'sin uso aún'}
+                        </span>
+                      </div>
+                      {asset.alt && (
+                        <p class="ui-truncate text-xs text-ui-texto-2" title={asset.alt}>
+                          {asset.alt}
+                        </p>
+                      )}
+                      <form method="post">
+                        <input type="hidden" name="_accion" value="borrar_asset" />
+                        <input type="hidden" name="id" value={asset.id} />
+                        <button
+                          type="submit"
+                          class="text-xs text-[#a03328] underline underline-offset-4"
+                          onclick="return confirm('¿Borrar este asset? También se borra el archivo.')"
+                        >
+                          <Icon nombre="tacho" clase="inline size-3.5" />
+                          Borrar
+                        </button>
+                      </form>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </div>
       )
     }
   </div>

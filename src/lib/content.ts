@@ -20,6 +20,15 @@ import type {
   SiteSettings,
 } from './types';
 
+function sortFotos(piece: PieceWithPhotos): PieceWithPhotos {
+  return {
+    ...piece,
+    fotos: [...(piece.fotos ?? [])].sort(
+      (a: PiecePhoto, b: PiecePhoto) => a.orden - b.orden,
+    ),
+  };
+}
+
 /** ¿Estamos sin configurar? Entonces se muestran los datos de demostración. */
 export const MODO_DEMO =
   !import.meta.env.PUBLIC_SUPABASE_URL || !import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
@@ -146,6 +155,43 @@ export async function getPieces(
   return ((data ?? []) as unknown as PieceWithPhotos[]).map(sortFotos);
 }
 
+/**
+ * Piezas del anillo 3D del hero (0006).
+ *
+ * El cliente marca qué piezas van (pieces.en_anillo). Mientras no haya
+ * ninguna marcada, y también si la migración todavía no está aplicada,
+ * cae al comportamiento de siempre: primeras N disponibles con foto.
+ * Así la home nunca depende de haber completado la configuración nueva.
+ */
+export async function getPiezasAnillo(limit = 8): Promise<PieceWithPhotos[]> {
+  const supabase = cliente();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('pieces')
+    .select('*, fotos:piece_photos(*)')
+    .eq('estado', 'disponible')
+    .eq('en_anillo', true)
+    .order('destacada', { ascending: false })
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error(
+      '[content] anillo marcado no disponible, cae al de siempre:',
+      error.message,
+    );
+    return getPieces({ limit });
+  }
+
+  const marcadas = ((data ?? []) as unknown as PieceWithPhotos[])
+    .map(sortFotos)
+    .filter((p) => p.fotos.length > 0);
+
+  if (marcadas.length === 0) return getPieces({ limit });
+
+  return marcadas.slice(0, limit);
+}
+
 export async function getPieceBySlug(
   slug: string,
 ): Promise<PieceWithPhotos | null> {
@@ -169,8 +215,7 @@ export async function getPieceBySlug(
 
 export async function getGalleryHighlights(
   limit = 6,
-): Promise<GalleryItem[]> {
-  const supabase = cliente();
+): Promise<GalleryItem[]> {  const supabase = cliente();
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -211,13 +256,4 @@ export async function getCategorias(): Promise<string[]> {
   );
 
   return [...unique].sort((a, b) => a.localeCompare(b, 'es'));
-}
-
-function sortFotos(piece: PieceWithPhotos): PieceWithPhotos {
-  return {
-    ...piece,
-    fotos: [...(piece.fotos ?? [])].sort(
-      (a: PiecePhoto, b: PiecePhoto) => a.orden - b.orden,
-    ),
-  };
 }

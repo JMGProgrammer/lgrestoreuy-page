@@ -6,7 +6,6 @@ import {
   guardarContenido,
   leerContenido,
   limpiarTelefono,
-  subirImagen,
   textoONull,
 } from '../../lib/admin';
 import { whatsappLink, normalizePhone } from '../../lib/whatsapp';
@@ -24,19 +23,6 @@ if (Astro.request.method === 'POST') {
       'El WhatsApp no parece un número válido. Formato: 59890123456 (sin espacios ni +).';
   } else {
     try {
-      // La portada se sube antes de guardar el resto: si la imagen falla,
-      // el texto no se guarda a medias y el cliente puede reintentar sin
-      // haber perdido nada.
-      let portadaUrl = textoONull(form.get('portada_url_actual'));
-      const archivoPortada = form.get('portada');
-
-      if (archivoPortada instanceof File && archivoPortada.size > 0) {
-        portadaUrl = (await subirImagen(ctx, 'portada', archivoPortada, 'portada'))
-          .url;
-      } else if (form.get('portada_borrar')) {
-        portadaUrl = null;
-      }
-
       await guardarContenido(ctx, {
         nombre_taller: String(form.get('nombre_taller') ?? '').trim() || 'L&G Restore',
         whatsapp: telefono,
@@ -50,7 +36,6 @@ if (Astro.request.method === 'POST') {
         texto_proceso: textoONull(form.get('texto_proceso')),
         texto_garantia: textoONull(form.get('texto_garantia')),
         texto_legal: textoONull(form.get('texto_legal')),
-        portada_url: portadaUrl,
       });
       return Astro.redirect('/admin/contenido?ok=guardado');
     } catch (e) {
@@ -110,50 +95,17 @@ const wa = whatsappLink(contenido.whatsapp, 'Hola');
     class="mt-6 max-w-2xl space-y-8"
   >
     {/*
-      La portada va primera: es lo que más se ve de todo el sitio y lo que
-      más conviene tener a mano. El input de archivo es invisible y lo
-      dispara un botón, para poder elegir la foto desde la cámara del
-      celular.
+      La portada ya no se edita acá: vive junto al anillo y la librería,
+      porque es "dónde aparece una foto", no identidad textual. Un solo
+      editor por dato evita dos formularios que se pisan.
     */}
-    <fieldset class="space-y-3">
-      <legend class="rotulo mb-2">Foto de portada</legend>
-
-      {
-        contenido.portada_url && (
-          <div class="flex items-center gap-3">
-            <img
-              src={contenido.portada_url}
-              alt=""
-              class="h-16 w-24 shrink-0 rounded border border-linea object-cover"
-            />
-            <label class="flex items-center gap-2 text-sm text-caoba">
-              <input type="checkbox" name="portada_borrar" class="accent-[#96652a]" />
-              Sacarla del sitio
-            </label>
-          </div>
-        )
-      }
-
-      <div>
-        <label class="campo-label" for="portada">Subir una foto</label>
-        <div class="flex items-center gap-2">
-          <input
-            class="campo"
-            id="portada"
-            name="portada"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-          />
-        </div>
-        <p class="mt-1.5 text-xs text-tinta-tenue">
-          Se ve de fondo en la portada, muy difusa y con poca luz para no
-          pelar el texto. Sirve una foto del taller, de una pieza en
-          restauración o de las dos. JPG, PNG o WebP, hasta 8 MB. Se achica sola antes de subir.
-        </p>
-      </div>
-
-      <input type="hidden" name="portada_url_actual" value={contenido.portada_url ?? ''} />
-    </fieldset>
+    <p class="ui-aviso ui-aviso-info">
+      La <span class="font-medium">foto de fondo del hero</span> se carga ahora
+      en <a
+        href="/admin/galeria?tab=hero"
+        class="underline underline-offset-4 font-medium"
+      >Galería → Hero</a>, junto con el anillo 3D de la home.
+    </p>
 
     <fieldset class="space-y-4">
       <legend class="rotulo mb-2">Identidad</legend>
