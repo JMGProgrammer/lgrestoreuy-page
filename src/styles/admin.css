@@ -900,9 +900,13 @@ select.ui-campo {
    mar que se mira al entrar y se deja de ver enseguida. Rework 2026-10-19,
    tres decisiones:
 
-   1. Se VEÍA poco: las alphas subieron (0.10 / 0.075 / 0.055 sobre el
-      papel) y el halo ganó presencia. Sigo lejos del umbral de atención,
-      pero ya no son invisibles.
+   1. Se VEÍA poco (y se siguió viendo poco): alphas 0.16 / 0.12 / 0.085
+      sobre el papel y el halo en 18 %. El color pasó de latón claro
+      (#a8763e) a un caoba más profundo (#96682f). Tuning rápido: se ajusta
+      el fill-opacity de los tres SVG de acá abajo.
+   1b. Altura (feedback 19/10 "hacelas casi hasta la mitad"): la cresta de
+      la capa delantera queda ~410px sobre el borde inferior (media
+      pantalla en un viewport de ~860-900px); media ~260px, trasera ~156px.
    2. La base era PLANA: cada SVG terminaba en un borde recto que quedaba
       flotando a media altura. Ahora el borde inferior de cada baldosa
       coincide con el borde inferior de la pantalla (la capa es fixed con
@@ -970,20 +974,20 @@ select.ui-campo {
      cresta (la curva baja donde la anterior sube), así el perfil ondula de
      verdad en vez de dibujar cuatro jorobas iguales. */
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240' preserveAspectRatio='none'%3E%3Cpath d='M0 96 C120 36 240 36 360 96 C480 156 600 156 720 96 C840 36 960 36 1080 96 C1200 156 1320 156 1440 96 L1440 240 L0 240 Z' fill='%23a8763e' fill-opacity='0.10'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 180' preserveAspectRatio='none'%3E%3Cpath d='M0 92 C80 48 160 48 240 92 C320 136 400 136 480 92 C560 48 640 48 720 92 C800 136 880 136 960 92 L960 180 L0 180 Z' fill='%23a8763e' fill-opacity='0.075'/%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 140' preserveAspectRatio='none'%3E%3Cpath d='M0 96 C160 62 320 62 480 96 C640 130 800 130 960 96 C1120 62 1280 62 1440 96 C1600 130 1760 130 1920 96 L1920 140 L0 140 Z' fill='%23a8763e' fill-opacity='0.055'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 480' preserveAspectRatio='none'%3E%3Cpath d='M0 190 C120 70 240 70 360 190 C480 310 600 310 720 190 C840 70 960 70 1080 190 C1200 310 1320 310 1440 190 L1440 480 L0 480 Z' fill='%2396682f' fill-opacity='0.16'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 360' preserveAspectRatio='none'%3E%3Cpath d='M0 188 C80 100 160 100 240 188 C320 276 400 276 480 188 C560 100 640 100 720 188 C800 276 880 276 960 188 L960 360 L0 360 Z' fill='%2396682f' fill-opacity='0.12'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 280' preserveAspectRatio='none'%3E%3Cpath d='M0 192 C160 124 320 124 480 192 C640 260 800 260 960 192 C1120 124 1280 124 1440 192 C1600 260 1760 260 1920 192 L1920 280 L0 280 Z' fill='%2396682f' fill-opacity='0.085'/%3E%3C/svg%3E"),
     radial-gradient(
-      1200px 620px at 72% -10%,
-      rgb(168 118 62 / 12%),
+      1400px 680px at 72% -12%,
+      rgb(150 104 47 / 18%),
       transparent 70%
     );
 
   background-repeat: repeat-x, repeat-x, repeat-x, no-repeat;
   background-size:
-    1440px 240px,
-    960px 180px,
-    1920px 140px,
+    1440px 480px,
+    960px 360px,
+    1920px 280px,
     auto;
   background-position:
     var(--ui-ola-a, 0px) 100%,
