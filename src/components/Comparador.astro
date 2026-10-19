@@ -31,7 +31,6 @@ const opciones = pares.map((par) => JSON.stringify(par).replace(/"/g, '&quot;'))
   class="comparador"
   data-comparador
   data-pares={opciones.join('|')}
-  x-show="true"
 >
   {/* Pista de carga de los datos */}
   <div class="marco" style={`--proporcion:${proporcion}`} data-marco>
@@ -51,7 +50,6 @@ const opciones = pares.map((par) => JSON.stringify(par).replace(/"/g, '&quot;'))
             <div
               class="capa"
               data-capa={indice}
-              x-show={indice === 0}
               style="display: contents"
             >
               <div class="capa__despues">
@@ -82,6 +80,7 @@ const opciones = pares.map((par) => JSON.stringify(par).replace(/"/g, '&quot;'))
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow="50"
+            aria-valuetext="50% antes — 50% después"
             role="slider"
           >
             <span class="manija__punto" aria-hidden="true">
@@ -409,6 +408,10 @@ const opciones = pares.map((par) => JSON.stringify(par).replace(/"/g, '&quot;'))
           marco.style.setProperty('--pos', `${pos}%`);
           manija.style.setProperty('--pos', `${pos}%`);
           manija.setAttribute('aria-valuenow', String(Math.round(pos)));
+          manija.setAttribute(
+            'aria-valuetext',
+            `${Math.round(pos)}% antes — ${Math.round(100 - pos)}% después`,
+          );
 
           if (!animar) {
             // Saltea la transición mientras se arrastra: sin esto la línea
