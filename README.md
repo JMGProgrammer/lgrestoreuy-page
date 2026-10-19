@@ -111,9 +111,11 @@ Detalle y tabla del recorrido: [`Docs/15-versionado.md`](./Docs/15-versionado.md
 
 MVP completo: sitio público (inicio, servicios, piezas, galería antes/después, cotización, nosotros, contacto, legal), panel admin con borradores, foco de edición, reordenamiento y deshacer, y migración de galería desde piezas.
 
-Pendiente:
+Pendiente (fase de perfeccionamiento — `v1.0` aplazado; deploy y dominio no son criterio de corte):
 
-- Correr `0003_galeria-desde-piezas.sql` en Supabase (ver arriba).
+- Verificar en Supabase qué migraciones corrieron (`0003`–`0006`).
 - Probar el circuito de fotos de punta a punta: subir → Storage → `piece_photos` → `/piezas`.
 - Quitar la cotización de prueba que quedó en la base.
-- Deploy a Vercel + dominio `.uy`, y después el video de capacitación para el cliente.
+- QA visual y responsive real desde el celular.
+- SEO: `robots.txt` + `sitemap.xml` + `og:image` real.
+- Deploy a Vercel + dominio `.uy` y video de capacitación: **aplazados** hasta después del perfeccionamiento.
