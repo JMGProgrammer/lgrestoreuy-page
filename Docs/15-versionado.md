@@ -60,6 +60,10 @@ El script se niega a tagear dos veces el mismo HEAD y a crear tags que no encaje
 | `v0.14.1` | `fb91397` | fix centro de giro del anillo |
 | `v0.14.2` | `8a8b6a5` | fix medidas del anillo con perspectiva |
 | `v0.15` | `3f0bc8f` | Galería por destino de uso: pestañas, chips y librería de assets (plan 14) |
+| `v0.16` | `926810c` | Accesibilidad pública: pausa manual del carrusel 3D, foco siempre visible, valuetext en el comparador |
+| `v0.16.1` | `ce1c0dd` | fix confirmaciones CSP-safe: diálogo propio del panel reemplaza onclick inline (bloqueados en prod) + Papelera pregunta antes de borrar |
+| `v0.17` | `fe164a6` | Panel visible: papelera en la nav con badge, 7 secciones en el nav del celu, botones con iconos en vez de links subrayados |
+| `v0.18` | `3cd79f0` | Panel manejable: miniaturas en la lista de piezas, búsqueda de texto, WhatsApp por fila, pasos que desaparecen al cumplirse y guard en Contenido |
 
 Sigue en `v0.15`: **sin fixes después del último minor**, HEAD pendiente de tag en el próximo feature grande (`v0.16`) o fix (`v0.15.1`).
 
