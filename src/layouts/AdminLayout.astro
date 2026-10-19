@@ -211,6 +211,35 @@ const iconoNav: Record<string, string> = {
       </ul>
     </nav>
 
+    <!--
+      Confirmación de envíos peligrosos. Cualquier form con data-confirm
+      lo abre antes de enviar (lo instala scripts/admin.ts). Reemplaza al
+      confirm() del navegador: la CSP de producción bloquea los handlers
+      inline, así que el de la galería/servicios no va a andar nunca acá.
+    -->
+    <div class="ui-fondo" data-confirm-dialog hidden>
+      <div
+        class="ui-dialogo p-5"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="titulo-confirmar"
+        aria-describedby="texto-confirmar"
+      >
+        <h2 id="titulo-confirmar" class="text-base font-semibold text-ui-texto">
+          Confirmar acción
+        </h2>
+        <p id="texto-confirmar" class="mt-1.5 text-sm text-ui-texto-2"></p>
+        <div class="mt-5 flex flex-wrap justify-end gap-2">
+          <button type="button" class="ui-btn ui-btn-neutro" data-confirmar-cancelar>
+            Volver
+          </button>
+          <button type="button" class="ui-btn ui-btn-peligro" data-confirmar-ok>
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <Toasts />
 
     <!--

@@ -156,7 +156,13 @@ function cuandoVence(seBorraEl: string): { texto: string; vencido: boolean } {
                   <form method="post">
                     <input type="hidden" name="_accion" value="borrar" />
                     <input type="hidden" name="id" value={item.id} />
-                    <button type="submit" class="ui-btn ui-btn-neutro ui-btn-sm">
+                    <button
+                      type="submit"
+                      class="ui-btn ui-btn-peligro ui-btn-sm"
+                      data-confirm="«Borrar ahora» saca el pedido y sus fotos de la base para siempre. No hay vuelta atrás."
+                      data-confirm-ok="Borrar para siempre"
+                      data-confirm-peligro
+                    >
                       Borrar ahora
                     </button>
                   </form>

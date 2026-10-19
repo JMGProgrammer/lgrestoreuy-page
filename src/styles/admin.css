@@ -587,6 +587,11 @@ select.ui-campo {
   box-shadow: 0 24px 56px -16px rgb(31 25 16 / 45%);
 }
 
+/* El atributo hidden tiene que ganarle al display:flex de arriba. */
+.ui-fondo[hidden] {
+  display: none;
+}
+
 /* ---------------------------------------------------------------- foco al editar
 
    Mientras se edita una fila, el resto se atenúa y la fila en edición queda

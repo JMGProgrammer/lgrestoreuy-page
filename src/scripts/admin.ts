@@ -322,6 +322,119 @@ function instalarEtiquetasDeSubida() {
 }
 
 /**
+ * Confirmación de envíos peligrosos.
+ *
+ * El `confirm()` del navegador se escribe como handler inline (`onclick`)
+ * y la CSP de producción no permite inline scripts en el panel: el handler
+ * desaparece y la acción corre sin preguntar nada. Acá el reemplazo es un
+ * diálogo propio, igual que el de cambios sin guardar.
+ *
+ * Convención en cualquier formulario del panel:
+ *
+ *   <button type="submit"
+ *     data-confirm="¿Quitar esta foto de la pieza?"
+ *     data-confirm-ok="Quitar"            ← texto del botón (opcional)
+ *     data-confirm-peligro                ← rojo en vez de acento (opcional)
+ *   >
+ *
+ * El envío se intercepta en captura; si hay confirmación, se re-emite con
+ * form.submit() (sin evento, sin riesgo de acople infinito).
+ */
+function instalarConfirmaciones() {
+  const fondo = document.querySelector<HTMLDivElement>('[data-confirm-dialog]');
+  if (!fondo || fondo.dataset.listo) return;
+  fondo.dataset.listo = 'si';
+
+  const texto = fondo.querySelector<HTMLParagraphElement>('#texto-confirmar');
+  const okBtn = fondo.querySelector<HTMLButtonElement>('[data-confirmar-ok]');
+  const cancelBtn =
+    fondo.querySelector<HTMLButtonElement>('[data-confirmar-cancelar]');
+
+  let pendiente: (() => void) | null = null;
+  let ultimoFoco: HTMLElement | null = null;
+
+  const cerrar = () => {
+    fondo.hidden = true;
+    pendiente = null;
+    ultimoFoco?.focus?.();
+    ultimoFoco = null;
+  };
+
+  const abrir = (
+    mensaje: string,
+    enviar: () => void,
+    okTexto: string,
+    peligro: boolean,
+  ) => {
+    pendiente = enviar;
+    ultimoFoco = document.activeElement as HTMLElement | null;
+    if (texto) texto.textContent = mensaje;
+    if (okBtn) {
+      okBtn.textContent = okTexto || 'Confirmar';
+      okBtn.classList.toggle('ui-btn-peligro', peligro);
+      okBtn.classList.toggle('ui-btn-acento', !peligro);
+    }
+    fondo.hidden = false;
+    okBtn?.focus();
+  };
+
+  fondo.addEventListener('click', (evento) => {
+    if (evento.target === fondo) cerrar();
+  });
+
+  cancelBtn?.addEventListener('click', cerrar);
+
+  okBtn?.addEventListener('click', () => {
+    const enviar = pendiente;
+    pendiente = null;
+    ultimoFoco = null;
+    fondo.hidden = true;
+    enviar?.();
+  });
+
+  document.addEventListener('keydown', (evento) => {
+    if (fondo.hidden) return;
+    if (evento.key === 'Escape') {
+      evento.preventDefault();
+      cerrar();
+    } else if (evento.key === 'Tab') {
+      // Foco atrapado entre Volver y Confirmar.
+      const focos = [cancelBtn, okBtn].filter(Boolean) as HTMLButtonElement[];
+      if (focos.length === 0) return;
+      const primero = focos[0];
+      const ultimo = focos[focos.length - 1];
+      if (evento.shiftKey && document.activeElement === primero) {
+        evento.preventDefault();
+        ultimo.focus();
+      } else if (!evento.shiftKey && document.activeElement === ultimo) {
+        evento.preventDefault();
+        primero.focus();
+      }
+    }
+  });
+
+  document.addEventListener(
+    'submit',
+    (evento) => {
+      const submitter = (evento as SubmitEvent).submitter as HTMLElement | null;
+      const fuente =
+        submitter?.closest('[data-confirm]') ??
+        (evento.target as HTMLElement).closest('[data-confirm]');
+      if (!fuente) return;
+
+      evento.preventDefault();
+      const mensaje = fuente.getAttribute('data-confirm') ?? '¿Confirmar esta acción?';
+      const okTexto = fuente.getAttribute('data-confirm-ok') ?? 'Confirmar';
+      const peligro = fuente.hasAttribute('data-confirm-peligro');
+      const form = evento.target as HTMLFormElement;
+
+      abrir(mensaje, () => form.submit(), okTexto, peligro);
+    },
+    true,
+  );
+}
+
+/**
  * Alpine arranca recién en DOMContentLoaded. Los scripts de Astro son módulos
  * diferidos: se ejecutan todos antes de ese evento, así que cada página
  * registra sus componentes en el orden que quiera.
@@ -332,6 +445,7 @@ document.addEventListener(
     instalarGuardNavegacion();
     instalarCompresionImagenes();
     instalarEtiquetasDeSubida();
+    instalarConfirmaciones();
     Alpine.start();
   },
   { once: true },

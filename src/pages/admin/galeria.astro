@@ -577,7 +577,9 @@ function etiquetaDe(foto: { rol: string }): string {
                               class="ui-btn ui-btn-peligro ui-btn-icono ui-btn-sm"
                               title="Quitar esta foto de la pieza"
                               aria-label="Quitar esta foto de la pieza"
-                              onclick="return confirm('¿Quitar esta foto de la pieza?')"
+                              data-confirm="¿Quitar esta foto de la pieza? Vuelve a subirla si te arrepentís."
+                              data-confirm-ok="Quitar"
+                              data-confirm-peligro
                             >
                               <Icon nombre="tacho" clase="size-4" />
                             </button>
@@ -712,7 +714,9 @@ function etiquetaDe(foto: { rol: string }): string {
                           <button
                             type="submit"
                             class="text-xs text-[#a03328] underline underline-offset-4"
-                            onclick="return confirm('¿Quitar este par de la galería?')"
+                            data-confirm="¿Quitar este par de la galería? Puede volver a armarse."
+                            data-confirm-ok="Quitar"
+                            data-confirm-peligro
                           >
                             Quitar
                           </button>
@@ -1321,7 +1325,9 @@ function etiquetaDe(foto: { rol: string }): string {
                         <button
                           type="submit"
                           class="text-xs text-[#a03328] underline underline-offset-4"
-                          onclick="return confirm('¿Borrar este asset? También se borra el archivo.')"
+                          data-confirm="¿Borrar este asset? También se borra el archivo."
+                          data-confirm-ok="Borrar"
+                          data-confirm-peligro
                         >
                           <Icon nombre="tacho" clase="inline size-3.5" />
                           Borrar
