@@ -23,6 +23,8 @@
 | `10-modelo-relacional.md` | Modelo relacional planteado (ER, estados, índices, RLS) — sin migrar |
 | `11-mercado-pago-desde-cero.md` | Guía MP paso a paso primera vez — **congelada, es Fase 2** |
 | `12-decisiones-mvp-sin-mp.md` | **Vigente** — MVP sin MP + contenido cargado desde el panel admin |
+| `13-seguridad.md` | Checklist de seguridad y audit de RLS / Storage |
+| `14-galeria-admin-por-destino.md` | **NUEVO (2026-10-19)** — Galería admin por destino (pestañas, anillo bajo control, chips de uso) + librería de assets. Incluye pasos externos: Supabase, cliente, operación |
 
 ## Cómo usar esto
 
